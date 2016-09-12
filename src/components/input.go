@@ -49,32 +49,35 @@ func (i *Input) SetY(y int) {
 
 func (i *Input) Insert(key string) {
 	i.Block.Text = i.Block.Text + key
-	i.Block.TextBgColor = termui.ColorWhite
-	i.Block.TextFgColor = termui.ColorBlack
-	i.CursorPosition++
+	i.MoveCursorRight()
 }
 
 func (i *Input) Remove() {
 	if i.CursorPosition > 0 {
-
 		i.Block.Text = i.Block.Text[0:i.CursorPosition-1] + i.Block.Text[i.CursorPosition:len(i.Block.Text)]
-
-		i.Block.TextBgColor = termui.ColorBlack
-		i.Block.TextFgColor = termui.ColorWhite
-
-		i.CursorPosition--
+		i.MoveCursorLeft()
 	}
 }
 
 func (i *Input) MoveCursorRight() {
 	if i.CursorPosition < len(i.Block.Text) {
 		i.CursorPosition++
+		i.Block.Block.Buffer().Set(
+			i.CursorPosition,       // x
+			i.Block.Block.InnerY(), // y
+			termui.Cell{Ch: rune('$'), Fg: termui.ColorBlack, Bg: termui.ColorWhite},
+		)
 	}
 }
 
 func (i *Input) MoveCursorLeft() {
 	if i.CursorPosition > 0 {
 		i.CursorPosition--
+		i.Block.Block.Buffer().Set(
+			i.CursorPosition,       // x
+			i.Block.Block.InnerY(), // y
+			termui.Cell{Ch: rune('$'), Fg: termui.ColorBlack, Bg: termui.ColorWhite},
+		)
 	}
 }
 
