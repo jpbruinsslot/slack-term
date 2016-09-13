@@ -2,6 +2,7 @@ package components
 
 import "github.com/gizak/termui"
 
+// Input is the definition of and input box
 type Input struct {
 	Par            *termui.Par
 	CursorPosition int
@@ -9,6 +10,7 @@ type Input struct {
 	CursorBgColor  termui.Attribute
 }
 
+// CreateInput is the constructor of the Input struct
 func CreateInput() *Input {
 	input := &Input{
 		Par:            termui.NewPar(""),
@@ -22,11 +24,11 @@ func CreateInput() *Input {
 	return input
 }
 
-// implements interface termui.Bufferer
+// Buffer implements interface termui.Bufferer
 func (i *Input) Buffer() termui.Buffer {
 	buf := i.Par.Buffer()
 
-	// Set cursor
+	// Set visible cursor
 	char := buf.At(i.Par.InnerX()+i.CursorPosition, i.Par.Block.InnerY())
 	buf.Set(
 		i.Par.InnerX()+i.CursorPosition,
@@ -37,32 +39,33 @@ func (i *Input) Buffer() termui.Buffer {
 	return buf
 }
 
-// implements interface termui.GridBufferer
+// GetHeight implements interface termui.GridBufferer
 func (i *Input) GetHeight() int {
 	return i.Par.Block.GetHeight()
 }
 
-// implements interface termui.GridBufferer
+// SetWidth implements interface termui.GridBufferer
 func (i *Input) SetWidth(w int) {
 	i.Par.SetWidth(w)
 }
 
-// implements interface termui.GridBufferer
+// SetX implements interface termui.GridBufferer
 func (i *Input) SetX(x int) {
 	i.Par.SetX(x)
 }
 
-// implements interface termui.GridBufferer
+// SetY implements interface termui.GridBufferer
 func (i *Input) SetY(y int) {
 	i.Par.SetY(y)
 }
 
+// Insert will insert a given key at the place of the current CursorPosition
 func (i *Input) Insert(key string) {
 	i.Par.Text = i.Par.Text[0:i.CursorPosition] + key + i.Par.Text[i.CursorPosition:len(i.Par.Text)]
-
 	i.MoveCursorRight()
 }
 
+// Remove will remove a character at the place of the current CursorPosition
 func (i *Input) Remove() {
 	if i.CursorPosition > 0 {
 		i.Par.Text = i.Par.Text[0:i.CursorPosition-1] + i.Par.Text[i.CursorPosition:len(i.Par.Text)]
@@ -70,18 +73,21 @@ func (i *Input) Remove() {
 	}
 }
 
+// MoveCursorRight will increase the current CursorPosition with 1
 func (i *Input) MoveCursorRight() {
 	if i.CursorPosition < len(i.Par.Text) {
 		i.CursorPosition++
 	}
 }
 
+// MoveCursorLeft will decrease the current CursorPosition with 1
 func (i *Input) MoveCursorLeft() {
 	if i.CursorPosition > 0 {
 		i.CursorPosition--
 	}
 }
 
+// IsEmpty will return true when the input is empty
 func (i *Input) IsEmpty() bool {
 	if i.Par.Text == "" {
 		return true
@@ -89,11 +95,13 @@ func (i *Input) IsEmpty() bool {
 	return false
 }
 
+// Clear will empty the input and move the cursor to the start position
 func (i *Input) Clear() {
 	i.Par.Text = ""
 	i.CursorPosition = 0
 }
 
+// Text returns the text currently in the input
 func (i *Input) Text() string {
 	return i.Par.Text
 }
