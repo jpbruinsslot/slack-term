@@ -15,8 +15,8 @@ type View struct {
 
 func CreateChatView() *View {
 	input := components.CreateInput()
-	channels := components.CreateChannelsComponent(input.Block.Height)
-	chat := components.CreateChatComponent(input.Block.Height)
+	channels := components.CreateChannelsComponent(input.Par.Height)
+	chat := components.CreateChatComponent(input.Par.Height)
 	mode := components.CreateModeComponent()
 
 	view := &View{
