@@ -91,7 +91,7 @@ func actionMoveCursorLeft(view *views.View) {
 func actionSend(ctx *context.AppContext) {
 	if !ctx.View.Input.IsEmpty() {
 		// FIXME
-		ctx.View.Chat.Items = append(ctx.View.Chat.Items, ctx.View.Input.Text())
+		ctx.View.Chat.List.Items = append(ctx.View.Chat.List.Items, ctx.View.Input.Text())
 		ctx.View.Input.Clear()
 		ctx.View.Refresh()
 	}

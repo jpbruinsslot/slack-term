@@ -8,7 +8,7 @@ import (
 
 type View struct {
 	Input    *components.Input
-	Chat     *termui.List
+	Chat     *components.Chat
 	Channels *termui.List
 	Mode     *termui.Par
 }
@@ -16,7 +16,7 @@ type View struct {
 func CreateChatView() *View {
 	input := components.CreateInput()
 	channels := components.CreateChannelsComponent(input.Par.Height)
-	chat := components.CreateChatComponent(input.Par.Height)
+	chat := components.CreateChat(input.Par.Height)
 	mode := components.CreateModeComponent()
 
 	view := &View{

@@ -61,8 +61,10 @@ func (i *Input) SetY(y int) {
 
 // Insert will insert a given key at the place of the current CursorPosition
 func (i *Input) Insert(key string) {
-	i.Par.Text = i.Par.Text[0:i.CursorPosition] + key + i.Par.Text[i.CursorPosition:len(i.Par.Text)]
-	i.MoveCursorRight()
+	if len(i.Par.Text) < i.Par.InnerBounds().Dx()-1 {
+		i.Par.Text = i.Par.Text[0:i.CursorPosition] + key + i.Par.Text[i.CursorPosition:len(i.Par.Text)]
+		i.MoveCursorRight()
+	}
 }
 
 // Remove will remove a character at the place of the current CursorPosition
