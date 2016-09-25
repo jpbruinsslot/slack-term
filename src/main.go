@@ -1,6 +1,11 @@
 package main
 
 import (
+	"flag"
+	"log"
+	"os/user"
+	"path"
+
 	"github.com/erroneousboat/slack-term/src/context"
 	"github.com/erroneousboat/slack-term/src/handlers"
 
@@ -8,16 +13,31 @@ import (
 )
 
 func main() {
+	// Start terminal user interface
 	err := termui.Init()
 	if err != nil {
 		panic(err)
 	}
 	defer termui.Close()
 
-	// create context
-	ctx := context.CreateAppContext()
+	// Get home dir for config file default
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// setup view
+	// Parse flags
+	flgConfig := flag.String(
+		"config",
+		path.Join(usr.HomeDir, "slack-term.json"),
+		"location of config file",
+	)
+	flag.Parse()
+
+	// Create context
+	ctx := context.CreateAppContext(*flgConfig)
+
+	// Setup body
 	termui.Body.AddRows(
 		termui.NewRow(
 			termui.NewCol(1, 0, ctx.View.Channels),
@@ -31,9 +51,10 @@ func main() {
 	termui.Body.Align()
 	termui.Render(termui.Body)
 
+	// Set body in context
 	ctx.Body = termui.Body
 
-	// register handlers
+	// Register handlers
 	handlers.RegisterEventHandlers(ctx)
 
 	termui.Loop()

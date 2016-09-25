@@ -3,21 +3,26 @@ package components
 import (
 	"strings"
 
+	"github.com/erroneousboat/slack-term/src/service"
 	"github.com/gizak/termui"
 )
 
 type Chat struct {
-	List *termui.List
+	List            *termui.List
+	SelectedChannel string
 }
 
-func CreateChat(inputHeight int) *Chat {
+func CreateChat(svc *service.SlackService, inputHeight int) *Chat {
 	chat := &Chat{
 		List: termui.NewList(),
 	}
 
+	// TODO: should be SetSelectedChannel
+	chat.SelectedChannel = svc.GetChannels()[0].ID
+
 	chat.List.Height = termui.TermHeight() - inputHeight
 	chat.List.Overflow = "wrap"
-	chat.LoadMessages()
+	chat.GetMessages(svc)
 
 	return chat
 }
@@ -125,18 +130,15 @@ func (c *Chat) SetY(y int) {
 	c.List.SetY(y)
 }
 
-func (c *Chat) LoadMessages() {
-	messages := []string{
-		"[jp] hello world",
-		"[erroneousboat] foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar",
-	}
+func (c *Chat) GetMessages(svc *service.SlackService) {
+	messages := svc.GetMessages(c.SelectedChannel)
 
 	for _, message := range messages {
-		c.AddMessages(message)
+		c.AddMessage(message)
 	}
 }
 
-func (c *Chat) AddMessages(message string) {
+func (c *Chat) AddMessage(message string) {
 	c.List.Items = append(c.List.Items, message)
 }
 

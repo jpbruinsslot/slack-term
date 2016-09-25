@@ -15,7 +15,3 @@ Examples:
 - https://github.com/nsf/godit
 - https://github.com/moncho/dry
 - https://github.com/mikepea/go-jira-ui
-
-- [ ] show cursor, see if you can alter Par
-- [ ] input overflow
-- [ ] chat

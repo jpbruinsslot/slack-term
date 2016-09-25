@@ -1,8 +1,13 @@
 package context
 
 import (
-	"github.com/erroneousboat/slack-term/src/views"
+	"log"
+
 	"github.com/gizak/termui"
+
+	"github.com/erroneousboat/slack-term/src/config"
+	"github.com/erroneousboat/slack-term/src/service"
+	"github.com/erroneousboat/slack-term/src/views"
 )
 
 const (
@@ -11,17 +16,30 @@ const (
 )
 
 type AppContext struct {
-	Body *termui.Grid
-	View *views.View
-	Mode string
+	Service *service.SlackService
+	Body    *termui.Grid
+	View    *views.View
+	Config  *config.Config
+	Mode    string
 }
 
-// TODO: arg Config
-func CreateAppContext() *AppContext {
-	view := views.CreateChatView()
+func CreateAppContext(flgConfig string) *AppContext {
+	// Load config
+	config, err := config.NewConfig(flgConfig)
+	if err != nil {
+		log.Fatalf("ERROR: not able to load config file: %s", flgConfig)
+	}
+
+	// Create Service
+	svc := service.NewSlackService(config.SlackToken)
+
+	// Create ChatView
+	view := views.CreateChatView(svc)
 
 	return &AppContext{
-		View: view,
-		Mode: CommandMode,
+		Service: svc,
+		View:    view,
+		Config:  config,
+		Mode:    CommandMode,
 	}
 }

@@ -2,6 +2,7 @@ package views
 
 import (
 	"github.com/erroneousboat/slack-term/src/components"
+	"github.com/erroneousboat/slack-term/src/service"
 
 	"github.com/gizak/termui"
 )
@@ -9,15 +10,15 @@ import (
 type View struct {
 	Input    *components.Input
 	Chat     *components.Chat
-	Channels *termui.List
-	Mode     *termui.Par
+	Channels *components.Channels
+	Mode     *components.Mode
 }
 
-func CreateChatView() *View {
+func CreateChatView(svc *service.SlackService) *View {
 	input := components.CreateInput()
-	channels := components.CreateChannelsComponent(input.Par.Height)
-	chat := components.CreateChat(input.Par.Height)
-	mode := components.CreateModeComponent()
+	channels := components.CreateChannels(svc, input.Par.Height)
+	chat := components.CreateChat(svc, input.Par.Height)
+	mode := components.CreateMode()
 
 	view := &View{
 		Input:    input,
