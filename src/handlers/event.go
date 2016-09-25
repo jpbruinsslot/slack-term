@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"fmt"
+
 	"github.com/gizak/termui"
+	"github.com/nlopes/slack"
 
 	"github.com/erroneousboat/slack-term/src/context"
 	"github.com/erroneousboat/slack-term/src/views"
@@ -10,6 +13,28 @@ import (
 func RegisterEventHandlers(ctx *context.AppContext) {
 	termui.Handle("/sys/kbd/", anyKeyHandler(ctx))
 	termui.Handle("/sys/wnd/resize", resizeHandler(ctx))
+	termui.Handle("/timer/1s", timeHandler(ctx))
+
+	// TODO: check channel of message should be added to correct channel
+	go func() {
+		for {
+			select {
+			case msg := <-ctx.Service.RTM.IncomingEvents:
+				switch ev := msg.Data.(type) {
+				case *slack.MessageEvent:
+					var name string
+					user, err := ctx.Service.Client.GetUserInfo(ev.User)
+					if err == nil {
+						name = user.Name
+					} else {
+						name = "unknown"
+					}
+					msg := fmt.Sprintf("[%s] %s", name, ev.Text)
+					ctx.View.Chat.AddMessage(msg)
+				}
+			}
+		}
+	}()
 }
 
 func anyKeyHandler(ctx *context.AppContext) func(termui.Event) {
@@ -60,6 +85,11 @@ func resizeHandler(ctx *context.AppContext) func(termui.Event) {
 	}
 }
 
+func timeHandler(ctx *context.AppContext) func(termui.Event) {
+	return func(e termui.Event) {
+	}
+}
+
 // FIXME: resize only seems to work for width and resizing it too small
 // will cause termui to panic
 func actionResize(ctx *context.AppContext) {
@@ -103,12 +133,23 @@ func actionQuit() {
 
 func actionInsertMode(ctx *context.AppContext) {
 	ctx.Mode = context.InsertMode
-	ctx.View.Mode.Text = "INSERT"
+	ctx.View.Mode.Par.Text = "INSERT"
 	termui.Render(ctx.View.Mode)
 }
 
 func actionCommandMode(ctx *context.AppContext) {
 	ctx.Mode = context.CommandMode
-	ctx.View.Mode.Text = "NORMAL"
+	ctx.View.Mode.Par.Text = "NORMAL"
 	termui.Render(ctx.View.Mode)
+}
+
+// TODO: get message for channel
+func actionGetMessages(ctx *context.AppContext) {
+	ctx.View.Chat.GetMessages(ctx.Service)
+	termui.Render(ctx.View.Chat)
+}
+
+func actionGetChannels(ctx *context.AppContext) {
+	ctx.View.Channels.GetChannels(ctx.Service)
+	termui.Render(ctx.View.Channels)
 }
