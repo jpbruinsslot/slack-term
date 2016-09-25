@@ -30,11 +30,14 @@ func (c *Chat) Buffer() termui.Buffer {
 		c.List.ItemFgColor, c.List.ItemBgColor,
 	)
 
+	// We will create an array of Line structs, this allows us
+	// to more easily render the items in a list. We will range
+	// over the cells we've created and create a Line within
+	// the bounds of the Chat pane
 	type Line struct {
 		cells []termui.Cell
 	}
 
-	// Uncover how many lines there are in total for all items
 	lines := []Line{}
 	line := Line{}
 
@@ -57,17 +60,18 @@ func (c *Chat) Buffer() termui.Buffer {
 		line.cells = append(line.cells, cell)
 		x++
 	}
+	lines = append(lines, line)
 
-	// We will print lines bottom up
+	// We will print lines bottom up, it will loop over the lines
+	// backwards and for every line it'll set the cell in that line
 	buf := c.List.Buffer()
 	linesHeight := len(lines)
+	paneMinY := c.List.InnerBounds().Min.Y
+	paneMaxY := c.List.InnerBounds().Max.Y
 
-	windowMinY := c.List.InnerBounds().Min.Y
-	windowMaxY := c.List.InnerBounds().Max.Y
-
-	currentY := windowMaxY - 1
+	currentY := paneMaxY - 1
 	for i := linesHeight - 1; i >= 0; i-- {
-		if currentY <= windowMinY {
+		if currentY < paneMinY {
 			break
 		}
 
@@ -77,6 +81,24 @@ func (c *Chat) Buffer() termui.Buffer {
 			x += cell.Width()
 		}
 
+		// When we're not at the end of the pane, fill it up
+		// with empty characters
+		for x < c.List.InnerBounds().Max.X {
+			buf.Set(x, currentY, termui.Cell{Ch: ' '})
+			x++
+		}
+		currentY--
+	}
+
+	// If the space above currentY is empty we need to fill
+	// it up with blank lines, otherwise the List object will
+	// render the items top down, and the result will mix.
+	for currentY >= paneMinY {
+		x := c.List.InnerBounds().Min.X
+		for x < c.List.InnerBounds().Max.X {
+			buf.Set(x, currentY, termui.Cell{Ch: ' '})
+			x++
+		}
 		currentY--
 	}
 
