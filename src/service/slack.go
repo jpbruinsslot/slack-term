@@ -52,12 +52,10 @@ func (s *SlackService) GetChannels() []Channel {
 
 func (s *SlackService) SendMessage(message string) {}
 
-func (s *SlackService) GetMessages(channel string) []string {
+func (s *SlackService) GetMessages(channel string, count int) []string {
 	// https://api.slack.com/methods/channels.history
 	historyParams := slack.HistoryParameters{
-		// Latest: "now",
-		// Oldest:    0,
-		Count:     50,
+		Count:     count,
 		Inclusive: false,
 		Unreads:   false,
 	}
@@ -84,5 +82,12 @@ func (s *SlackService) GetMessages(channel string) []string {
 		messages = append(messages, msg)
 	}
 
-	return messages
+	// Reverse the order of the messages, we want the newest in
+	// the last place
+	var messagesReversed []string
+	for i := len(messages) - 1; i >= 0; i-- {
+		messagesReversed = append(messagesReversed, messages[i])
+	}
+
+	return messagesReversed
 }
