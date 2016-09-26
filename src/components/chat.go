@@ -131,7 +131,9 @@ func (c *Chat) SetY(y int) {
 }
 
 func (c *Chat) GetMessages(svc *service.SlackService) {
-	messages := svc.GetMessages(c.SelectedChannel)
+	// Get the count of message that fit in the pane
+	count := c.List.InnerBounds().Max.Y - c.List.InnerBounds().Min.Y
+	messages := svc.GetMessages(c.SelectedChannel, count)
 
 	for _, message := range messages {
 		c.AddMessage(message)
