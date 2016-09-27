@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/gizak/termui"
 	"github.com/nlopes/slack"
@@ -25,6 +27,12 @@ func anyKeyHandler(ctx *context.AppContext) func(termui.Event) {
 			switch key {
 			case "q":
 				actionQuit()
+				return
+			case "j":
+				actionMoveCursorDownChannels(ctx)
+				return
+			case "k":
+				actionMoveCursorUpChannels(ctx)
 				return
 			case "i":
 				actionInsertMode(ctx)
@@ -70,6 +78,7 @@ func timeHandler(ctx *context.AppContext) func(termui.Event) {
 	}
 }
 
+// TODO: it'll always add the latest message
 func incomingMessageHandler(ctx *context.AppContext) {
 	go func() {
 		for {
@@ -86,12 +95,25 @@ func incomingMessageHandler(ctx *context.AppContext) {
 					} else {
 						name = "unknown"
 					}
-					m := fmt.Sprintf("[%s] %s", name, ev.Text)
+
+					// Parse the time we get from slack which is a Unix time float
+					floatTime, err := strconv.ParseFloat(ev.Timestamp, 64)
+					if err != nil {
+						floatTime = 0.0
+					}
+					intTime := int64(floatTime)
+
+					m := fmt.Sprintf(
+						"[%s] <%s> %s",
+						time.Unix(intTime, 0).Format("15:04"),
+						name,
+						ev.Text,
+					)
 
 					// Add message to the selected channel
-					// fmt.Println(ev.Channel)
-					if ev.Channel == ctx.View.Chat.SelectedChannel {
+					if ev.Channel == ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].ID {
 						ctx.View.Chat.AddMessage(m)
+						termui.Render(ctx.View.Chat)
 					}
 				}
 			}
@@ -129,8 +151,11 @@ func actionMoveCursorLeft(view *views.View) {
 
 func actionSend(ctx *context.AppContext) {
 	if !ctx.View.Input.IsEmpty() {
-		// FIXME
-		ctx.View.Chat.List.Items = append(ctx.View.Chat.List.Items, ctx.View.Input.Text())
+		ctx.View.Input.SendMessage(
+			ctx.Service,
+			ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].ID,
+			ctx.View.Input.Text(),
+		)
 		ctx.View.Input.Clear()
 		ctx.View.Refresh()
 	}
@@ -152,13 +177,40 @@ func actionCommandMode(ctx *context.AppContext) {
 	termui.Render(ctx.View.Mode)
 }
 
-// TODO: get message for channel
 func actionGetMessages(ctx *context.AppContext) {
-	ctx.View.Chat.GetMessages(ctx.Service)
+	ctx.View.Chat.GetMessages(
+		ctx.Service,
+		ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].ID,
+	)
+
 	termui.Render(ctx.View.Chat)
 }
 
 func actionGetChannels(ctx *context.AppContext) {
 	ctx.View.Channels.GetChannels(ctx.Service)
 	termui.Render(ctx.View.Channels)
+}
+
+func actionMoveCursorUpChannels(ctx *context.AppContext) {
+	ctx.View.Channels.MoveCursorUp()
+
+	ctx.View.Chat.GetMessages(
+		ctx.Service,
+		ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].ID,
+	)
+
+	termui.Render(ctx.View.Channels)
+	termui.Render(ctx.View.Chat)
+}
+
+func actionMoveCursorDownChannels(ctx *context.AppContext) {
+	ctx.View.Channels.MoveCursorDown()
+
+	ctx.View.Chat.GetMessages(
+		ctx.Service,
+		ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].ID,
+	)
+
+	termui.Render(ctx.View.Channels)
+	termui.Render(ctx.View.Chat)
 }

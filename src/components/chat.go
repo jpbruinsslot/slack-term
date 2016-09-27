@@ -17,12 +17,9 @@ func CreateChat(svc *service.SlackService, inputHeight int) *Chat {
 		List: termui.NewList(),
 	}
 
-	// TODO: should be SetSelectedChannel
-	chat.SelectedChannel = svc.GetChannels()[0].ID
-
 	chat.List.Height = termui.TermHeight() - inputHeight
 	chat.List.Overflow = "wrap"
-	chat.GetMessages(svc)
+	// chat.GetMessages(svc)
 
 	return chat
 }
@@ -130,10 +127,10 @@ func (c *Chat) SetY(y int) {
 	c.List.SetY(y)
 }
 
-func (c *Chat) GetMessages(svc *service.SlackService) {
+func (c *Chat) GetMessages(svc *service.SlackService, channel string) {
 	// Get the count of message that fit in the pane
 	count := c.List.InnerBounds().Max.Y - c.List.InnerBounds().Min.Y
-	messages := svc.GetMessages(c.SelectedChannel, count)
+	messages := svc.GetMessages(channel, count)
 
 	for _, message := range messages {
 		c.AddMessage(message)
