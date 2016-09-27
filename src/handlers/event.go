@@ -14,27 +14,7 @@ func RegisterEventHandlers(ctx *context.AppContext) {
 	termui.Handle("/sys/kbd/", anyKeyHandler(ctx))
 	termui.Handle("/sys/wnd/resize", resizeHandler(ctx))
 	termui.Handle("/timer/1s", timeHandler(ctx))
-
-	// TODO: check channel of message should be added to correct channel
-	go func() {
-		for {
-			select {
-			case msg := <-ctx.Service.RTM.IncomingEvents:
-				switch ev := msg.Data.(type) {
-				case *slack.MessageEvent:
-					var name string
-					user, err := ctx.Service.Client.GetUserInfo(ev.User)
-					if err == nil {
-						name = user.Name
-					} else {
-						name = "unknown"
-					}
-					msg := fmt.Sprintf("[%s] %s", name, ev.Text)
-					ctx.View.Chat.AddMessage(msg)
-				}
-			}
-		}
-	}()
+	incomingMessageHandler(ctx)
 }
 
 func anyKeyHandler(ctx *context.AppContext) func(termui.Event) {
@@ -88,6 +68,35 @@ func resizeHandler(ctx *context.AppContext) func(termui.Event) {
 func timeHandler(ctx *context.AppContext) func(termui.Event) {
 	return func(e termui.Event) {
 	}
+}
+
+func incomingMessageHandler(ctx *context.AppContext) {
+	go func() {
+		for {
+			select {
+			case msg := <-ctx.Service.RTM.IncomingEvents:
+				switch ev := msg.Data.(type) {
+				case *slack.MessageEvent:
+
+					// TODO: refactor this to CreateMessage
+					var name string
+					user, err := ctx.Service.Client.GetUserInfo(ev.User)
+					if err == nil {
+						name = user.Name
+					} else {
+						name = "unknown"
+					}
+					m := fmt.Sprintf("[%s] %s", name, ev.Text)
+
+					// Add message to the selected channel
+					// fmt.Println(ev.Channel)
+					if ev.Channel == ctx.View.Chat.SelectedChannel {
+						ctx.View.Chat.AddMessage(m)
+					}
+				}
+			}
+		}
+	}()
 }
 
 // FIXME: resize only seems to work for width and resizing it too small
