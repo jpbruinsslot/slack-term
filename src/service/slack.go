@@ -3,6 +3,8 @@ package service
 import (
 	"fmt"
 	"log"
+	"strconv"
+	"time"
 
 	"github.com/nlopes/slack"
 )
@@ -50,7 +52,13 @@ func (s *SlackService) GetChannels() []Channel {
 	return chans
 }
 
-func (s *SlackService) SendMessage(message string) {}
+func (s *SlackService) SendMessage(channel, message string) {
+	// https://godoc.org/github.com/nlopes/slack#PostMessageParameters
+	postParams := slack.PostMessageParameters{}
+
+	// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
+	s.Client.PostMessage(channel, message, postParams)
+}
 
 func (s *SlackService) GetMessages(channel string, count int) []string {
 	// https://api.slack.com/methods/channels.history
@@ -67,18 +75,41 @@ func (s *SlackService) GetMessages(channel string, count int) []string {
 		return []string{""}
 	}
 
-	// TODO: this takes a long time, maybe use some dynamic programming
+	// Here we will construct the messages and format them with a username.
+	// Because we need to call the API again for an username because we only
+	// will get an user ID from a message, we will storage user ID's and names
+	// in a map.
 	var messages []string
+	users := make(map[string]string)
 	for _, message := range history.Messages {
 		var name string
-		user, err := s.Client.GetUserInfo(message.User)
-		if err == nil {
-			name = user.Name
-		} else {
-			name = "unknown"
+		name, ok := users[message.User]
+		if !ok {
+			user, err := s.Client.GetUserInfo(message.User)
+			if err == nil {
+				name = user.Name
+				users[message.User] = user.Name
+			} else {
+				name = "unknown"
+				users[message.User] = user.Name
+			}
 		}
 
-		msg := fmt.Sprintf("[%s] %s", name, message.Text)
+		// TODO: refactor this to CreateMessage
+
+		// Parse the time we get from slack which is a Unix time float
+		floatTime, err := strconv.ParseFloat(message.Timestamp, 64)
+		if err != nil {
+			floatTime = 0.0
+		}
+		intTime := int64(floatTime)
+
+		msg := fmt.Sprintf(
+			"[%s] <%s> %s",
+			time.Unix(intTime, 0).Format("15:04"),
+			name,
+			message.Text,
+		)
 		messages = append(messages, msg)
 	}
 

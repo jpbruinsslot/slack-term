@@ -1,6 +1,9 @@
 package components
 
-import "github.com/gizak/termui"
+import (
+	"github.com/erroneousboat/slack-term/src/service"
+	"github.com/gizak/termui"
+)
 
 // Input is the definition of and input box
 type Input struct {
@@ -57,6 +60,10 @@ func (i *Input) SetX(x int) {
 // SetY implements interface termui.GridBufferer
 func (i *Input) SetY(y int) {
 	i.Par.SetY(y)
+}
+
+func (i *Input) SendMessage(svc *service.SlackService, channel string, message string) {
+	svc.SendMessage(channel, message)
 }
 
 // Insert will insert a given key at the place of the current CursorPosition
