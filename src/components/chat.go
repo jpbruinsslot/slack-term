@@ -12,14 +12,16 @@ type Chat struct {
 	SelectedChannel string
 }
 
-func CreateChat(svc *service.SlackService, inputHeight int) *Chat {
+func CreateChat(svc *service.SlackService, inputHeight int, selectedChannel SlackChannel) *Chat {
 	chat := &Chat{
 		List: termui.NewList(),
 	}
 
 	chat.List.Height = termui.TermHeight() - inputHeight
 	chat.List.Overflow = "wrap"
-	// chat.GetMessages(svc)
+
+	chat.GetMessages(svc, selectedChannel.ID)
+	chat.SetBorderLabel(selectedChannel.Name)
 
 	return chat
 }
@@ -145,3 +147,7 @@ func (c *Chat) ScrollUp() {
 }
 
 func (c *Chat) ScrollDown() {}
+
+func (c *Chat) SetBorderLabel(label string) {
+	c.List.BorderLabel = label
+}

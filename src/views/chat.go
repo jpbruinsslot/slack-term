@@ -16,8 +16,14 @@ type View struct {
 
 func CreateChatView(svc *service.SlackService) *View {
 	input := components.CreateInput()
+
 	channels := components.CreateChannels(svc, input.Par.Height)
-	chat := components.CreateChat(svc, input.Par.Height)
+
+	chat := components.CreateChat(
+		svc, input.Par.Height,
+		channels.SlackChannels[channels.SelectedChannel],
+	)
+
 	mode := components.CreateMode()
 
 	view := &View{

@@ -52,9 +52,11 @@ func (s *SlackService) GetChannels() []Channel {
 	return chans
 }
 
-func (s *SlackService) SendMessage(channel, message string) {
+func (s *SlackService) SendMessage(channel string, user string, message string) {
 	// https://godoc.org/github.com/nlopes/slack#PostMessageParameters
-	postParams := slack.PostMessageParameters{}
+	postParams := slack.PostMessageParameters{
+		Username: user,
+	}
 
 	// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
 	s.Client.PostMessage(channel, message, postParams)
@@ -90,8 +92,8 @@ func (s *SlackService) GetMessages(channel string, count int) []string {
 				name = user.Name
 				users[message.User] = user.Name
 			} else {
-				name = "unknown"
-				users[message.User] = user.Name
+				name = message.Username
+				users[message.User] = name
 			}
 		}
 
