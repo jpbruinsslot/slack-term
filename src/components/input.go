@@ -62,8 +62,8 @@ func (i *Input) SetY(y int) {
 	i.Par.SetY(y)
 }
 
-func (i *Input) SendMessage(svc *service.SlackService, channel string, message string) {
-	svc.SendMessage(channel, message)
+func (i *Input) SendMessage(svc *service.SlackService, channel string, user string, message string) {
+	svc.SendMessage(channel, user, message)
 }
 
 // Insert will insert a given key at the place of the current CursorPosition

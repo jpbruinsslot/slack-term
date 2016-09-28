@@ -7,6 +7,7 @@ import (
 
 type Config struct {
 	SlackToken string `json:"slack_token"`
+	User       string `json:"user"`
 }
 
 func NewConfig(filepath string) (*Config, error) {

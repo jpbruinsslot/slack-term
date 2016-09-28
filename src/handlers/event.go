@@ -93,7 +93,10 @@ func incomingMessageHandler(ctx *context.AppContext) {
 					if err == nil {
 						name = user.Name
 					} else {
-						name = "unknown"
+						name = ev.Username
+						if name == "" {
+							name = "unknown"
+						}
 					}
 
 					// Parse the time we get from slack which is a Unix time float
@@ -154,6 +157,7 @@ func actionSend(ctx *context.AppContext) {
 		ctx.View.Input.SendMessage(
 			ctx.Service,
 			ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].ID,
+			ctx.Config.User,
 			ctx.View.Input.Text(),
 		)
 		ctx.View.Input.Clear()
@@ -199,6 +203,10 @@ func actionMoveCursorUpChannels(ctx *context.AppContext) {
 		ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].ID,
 	)
 
+	ctx.View.Chat.SetBorderLabel(
+		ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].Name,
+	)
+
 	termui.Render(ctx.View.Channels)
 	termui.Render(ctx.View.Chat)
 }
@@ -209,6 +217,10 @@ func actionMoveCursorDownChannels(ctx *context.AppContext) {
 	ctx.View.Chat.GetMessages(
 		ctx.Service,
 		ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].ID,
+	)
+
+	ctx.View.Chat.SetBorderLabel(
+		ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].Name,
 	)
 
 	termui.Render(ctx.View.Channels)
