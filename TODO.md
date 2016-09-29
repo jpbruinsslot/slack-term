@@ -1,6 +1,6 @@
 Bugs:
 
-- [ ] when switching channels sometimes messages are persisted in the new
+- [x] when switching channels sometimes messages are persisted in the new
       channel, the Buffer() in Chat will probably not go further than the
       latest message. Could be that items are added to List and not cleared
       when switching channels

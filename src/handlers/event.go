@@ -197,28 +197,25 @@ func actionGetChannels(ctx *context.AppContext) {
 
 func actionMoveCursorUpChannels(ctx *context.AppContext) {
 	ctx.View.Channels.MoveCursorUp()
-
-	ctx.View.Chat.GetMessages(
-		ctx.Service,
-		ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].ID,
-	)
-
-	ctx.View.Chat.SetBorderLabel(
-		ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].Name,
-	)
-
-	termui.Render(ctx.View.Channels)
-	termui.Render(ctx.View.Chat)
+	actionChangeChannel(ctx)
 }
 
 func actionMoveCursorDownChannels(ctx *context.AppContext) {
 	ctx.View.Channels.MoveCursorDown()
+	actionChangeChannel(ctx)
+}
 
+func actionChangeChannel(ctx *context.AppContext) {
+	// Clear messages from Chat pane
+	ctx.View.Chat.ClearMessages()
+
+	// Get message for the new channel
 	ctx.View.Chat.GetMessages(
 		ctx.Service,
 		ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].ID,
 	)
 
+	// Set channel name for the Chat pane
 	ctx.View.Chat.SetBorderLabel(
 		ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].Name,
 	)
