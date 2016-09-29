@@ -12,6 +12,7 @@ type Chat struct {
 	SelectedChannel string
 }
 
+// CreateChat is the constructor for the Chat struct
 func CreateChat(svc *service.SlackService, inputHeight int, selectedChannel SlackChannel) *Chat {
 	chat := &Chat{
 		List: termui.NewList(),
@@ -129,6 +130,8 @@ func (c *Chat) SetY(y int) {
 	c.List.SetY(y)
 }
 
+// GetMessages will get an array of strings for a specific channel which will
+// contain messages in turn all these messages will be added to List.Items
 func (c *Chat) GetMessages(svc *service.SlackService, channel string) {
 	// Get the count of message that fit in the pane
 	count := c.List.InnerBounds().Max.Y - c.List.InnerBounds().Min.Y
@@ -139,8 +142,14 @@ func (c *Chat) GetMessages(svc *service.SlackService, channel string) {
 	}
 }
 
+// AddMessage adds a single message to List.Items
 func (c *Chat) AddMessage(message string) {
 	c.List.Items = append(c.List.Items, message)
+}
+
+// ClearMessages clear the List.Items
+func (c *Chat) ClearMessages() {
+	c.List.Items = []string{}
 }
 
 func (c *Chat) ScrollUp() {
@@ -148,6 +157,7 @@ func (c *Chat) ScrollUp() {
 
 func (c *Chat) ScrollDown() {}
 
+// SetBorderLabel will set Label of the Chat pane to the specified string
 func (c *Chat) SetBorderLabel(label string) {
 	c.List.BorderLabel = label
 }
