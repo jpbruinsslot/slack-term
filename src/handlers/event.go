@@ -157,7 +157,6 @@ func actionSend(ctx *context.AppContext) {
 		ctx.View.Input.SendMessage(
 			ctx.Service,
 			ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].ID,
-			ctx.Config.User,
 			ctx.View.Input.Text(),
 		)
 		ctx.View.Input.Clear()
