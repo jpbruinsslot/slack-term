@@ -1,10 +1,6 @@
 package handlers
 
 import (
-	"fmt"
-	"strconv"
-	"time"
-
 	"github.com/gizak/termui"
 	"github.com/nlopes/slack"
 
@@ -87,31 +83,8 @@ func incomingMessageHandler(ctx *context.AppContext) {
 				switch ev := msg.Data.(type) {
 				case *slack.MessageEvent:
 
-					// TODO: refactor this to CreateMessage
-					var name string
-					user, err := ctx.Service.Client.GetUserInfo(ev.User)
-					if err == nil {
-						name = user.Name
-					} else {
-						name = ev.Username
-						if name == "" {
-							name = "unknown"
-						}
-					}
-
-					// Parse the time we get from slack which is a Unix time float
-					floatTime, err := strconv.ParseFloat(ev.Timestamp, 64)
-					if err != nil {
-						floatTime = 0.0
-					}
-					intTime := int64(floatTime)
-
-					m := fmt.Sprintf(
-						"[%s] <%s> %s",
-						time.Unix(intTime, 0).Format("15:04"),
-						name,
-						ev.Text,
-					)
+					// Construct message
+					m := ctx.Service.CreateMessageFromMessageEvent(ev)
 
 					// Add message to the selected channel
 					if ev.Channel == ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].ID {
