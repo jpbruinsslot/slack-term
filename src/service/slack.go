@@ -10,9 +10,10 @@ import (
 )
 
 type SlackService struct {
-	Client   *slack.Client
-	RTM      *slack.RTM
-	Channels []slack.Channel
+	Client    *slack.Client
+	RTM       *slack.RTM
+	Channels  []slack.Channel
+	UserCache map[string]string
 }
 
 type Channel struct {
@@ -21,18 +22,16 @@ type Channel struct {
 }
 
 func NewSlackService(token string) *SlackService {
-	svc := new(SlackService)
+	svc := &SlackService{
+		Client:    slack.New(token),
+		UserCache: make(map[string]string),
+	}
 
-	svc.Client = slack.New(token)
 	svc.RTM = svc.Client.NewRTM()
 
 	go svc.RTM.ManageConnection()
 
 	return svc
-}
-
-func (s *SlackService) Connect() {
-
 }
 
 func (s *SlackService) GetChannels() []Channel {
@@ -77,41 +76,10 @@ func (s *SlackService) GetMessages(channel string, count int) []string {
 		return []string{""}
 	}
 
-	// Here we will construct the messages and format them with a username.
-	// Because we need to call the API again for an username because we only
-	// will get an user ID from a message, we will storage user ID's and names
-	// in a map.
+	// Construct the messages
 	var messages []string
-	users := make(map[string]string)
 	for _, message := range history.Messages {
-		var name string
-		name, ok := users[message.User]
-		if !ok {
-			user, err := s.Client.GetUserInfo(message.User)
-			if err == nil {
-				name = user.Name
-				users[message.User] = user.Name
-			} else {
-				name = message.Username
-				users[message.User] = name
-			}
-		}
-
-		// TODO: refactor this to CreateMessage
-
-		// Parse the time we get from slack which is a Unix time float
-		floatTime, err := strconv.ParseFloat(message.Timestamp, 64)
-		if err != nil {
-			floatTime = 0.0
-		}
-		intTime := int64(floatTime)
-
-		msg := fmt.Sprintf(
-			"[%s] <%s> %s",
-			time.Unix(intTime, 0).Format("15:04"),
-			name,
-			message.Text,
-		)
+		msg := s.CreateMessage(message)
 		messages = append(messages, msg)
 	}
 
@@ -123,4 +91,108 @@ func (s *SlackService) GetMessages(channel string, count int) []string {
 	}
 
 	return messagesReversed
+}
+
+// CreateMessage will create a string formatted message that can be rendered
+// in the Chat pane.
+//
+// [23:59] <erroneousboat> Hello world!
+//
+func (s *SlackService) CreateMessage(message slack.Message) string {
+	var name string
+
+	// Get username from cache
+	name, ok := s.UserCache[message.User]
+
+	// Name not in cache
+	if !ok {
+		user, err := s.Client.GetUserInfo(message.User)
+
+		if err == nil {
+			// Name found
+			name = user.Name
+			s.UserCache[message.User] = user.Name
+		} else {
+			// Name not found, perhaps a bot, use Username
+			if message.Username != "" {
+				name, ok = s.UserCache[message.BotID]
+				if !ok {
+					// Not found in cache add it
+					name = message.Username
+					s.UserCache[message.BotID] = message.Username
+				}
+			}
+		}
+	}
+
+	if name == "" {
+		name = "unknown"
+	}
+
+	// Parse time
+	floatTime, err := strconv.ParseFloat(message.Timestamp, 64)
+	if err != nil {
+		floatTime = 0.0
+	}
+	intTime := int64(floatTime)
+
+	// Format message
+	msg := fmt.Sprintf(
+		"[%s] <%s> %s",
+		time.Unix(intTime, 0).Format("15:04"),
+		name,
+		message.Text,
+	)
+
+	return msg
+}
+
+func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent) string {
+
+	var name string
+
+	// Get username from cache
+	name, ok := s.UserCache[message.User]
+
+	// Name not in cache
+	if !ok {
+		user, err := s.Client.GetUserInfo(message.User)
+
+		if err == nil {
+			// Name found
+			name = user.Name
+			s.UserCache[message.User] = user.Name
+		} else {
+			// Name not found, perhaps a bot, use Username
+			if message.Username != "" {
+				name, ok = s.UserCache[message.BotID]
+				if !ok {
+					// Not found in cache add it
+					name = message.Username
+					s.UserCache[message.BotID] = message.Username
+				}
+			}
+		}
+	}
+
+	if name == "" {
+		name = "unknown"
+	}
+
+	// Parse time
+	floatTime, err := strconv.ParseFloat(message.Timestamp, 64)
+	if err != nil {
+		floatTime = 0.0
+	}
+	intTime := int64(floatTime)
+
+	// Format message
+	msg := fmt.Sprintf(
+		"[%s] <%s> %s",
+		time.Unix(intTime, 0).Format("15:04"),
+		name,
+		message.Text,
+	)
+
+	return msg
 }
