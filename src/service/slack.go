@@ -10,10 +10,11 @@ import (
 )
 
 type SlackService struct {
-	Client    *slack.Client
-	RTM       *slack.RTM
-	Channels  []slack.Channel
-	UserCache map[string]string
+	Client        *slack.Client
+	RTM           *slack.RTM
+	SlackChannels []interface{}
+	Channels      []Channel
+	UserCache     map[string]string
 }
 
 type Channel struct {
@@ -42,16 +43,38 @@ func NewSlackService(token string) *SlackService {
 func (s *SlackService) GetChannels() []Channel {
 	var chans []Channel
 
+	// Channel
 	slackChans, err := s.Client.GetChannels(true)
 	if err != nil {
 		chans = append(chans, Channel{})
 	}
-
-	s.Channels = slackChans
-
-	for _, slackChan := range slackChans {
-		chans = append(chans, Channel{slackChan.ID, slackChan.Name})
+	for _, chn := range slackChans {
+		s.SlackChannels = append(s.SlackChannels, chn)
+		chans = append(chans, Channel{chn.ID, chn.Name})
 	}
+
+	// TODO: json: cannot unmarshal number into Go value of type string, GetMessages
+	// Groups
+	// slackGroups, err := s.Client.GetGroups(true)
+	// if err != nil {
+	// 	chans = append(chans, Channel{})
+	// }
+	// for _, grp := range slackGroups {
+	// 	s.SlackChannels = append(s.SlackChannels, grp)
+	// 	chans = append(chans, Channel{grp.ID, grp.Name})
+	// }
+
+	// IM
+	slackIM, err := s.Client.GetIMChannels()
+	if err != nil {
+		chans = append(chans, Channel{})
+	}
+	for _, im := range slackIM {
+		s.SlackChannels = append(s.SlackChannels, im)
+		chans = append(chans, Channel{im.ID, im.User})
+	}
+
+	s.Channels = chans
 
 	return chans
 }
@@ -66,7 +89,54 @@ func (s *SlackService) SendMessage(channel string, message string) {
 	s.Client.PostMessage(channel, message, postParams)
 }
 
-func (s *SlackService) GetMessages(channel string, count int) []string {
+func (s *SlackService) GetMessages(channel interface{}, count int) []string {
+	// https://api.slack.com/methods/channels.history
+	historyParams := slack.HistoryParameters{
+		Count:     count,
+		Inclusive: false,
+		Unreads:   false,
+	}
+
+	// https://godoc.org/github.com/nlopes/slack#History
+	history := new(slack.History)
+	var err error
+	switch chnType := channel.(type) {
+	case slack.Channel:
+		history, err = s.Client.GetChannelHistory(chnType.ID, historyParams)
+		if err != nil {
+			log.Fatal(err) // FIXME
+		}
+	case slack.Group:
+		// TODO: json: cannot unmarshal number into Go value of type string<Paste>
+		history, err = s.Client.GetGroupHistory(chnType.ID, historyParams)
+		if err != nil {
+			log.Fatal(err) // FIXME
+		}
+	case slack.IM:
+		history, err = s.Client.GetIMHistory(chnType.ID, historyParams)
+		if err != nil {
+			log.Fatal(err) // FIXME
+		}
+	}
+
+	// Construct the messages
+	var messages []string
+	for _, message := range history.Messages {
+		msg := s.CreateMessage(message)
+		messages = append(messages, msg)
+	}
+
+	// Reverse the order of the messages, we want the newest in
+	// the last place
+	var messagesReversed []string
+	for i := len(messages) - 1; i >= 0; i-- {
+		messagesReversed = append(messagesReversed, messages[i])
+	}
+
+	return messagesReversed
+}
+
+func (s *SlackService) GetMessagesForChannel(channel string, count int) []string {
 	// https://api.slack.com/methods/channels.history
 	historyParams := slack.HistoryParameters{
 		Count:     count,
@@ -96,6 +166,10 @@ func (s *SlackService) GetMessages(channel string, count int) []string {
 	}
 
 	return messagesReversed
+}
+
+func (s *SlackService) GetMessageForGroup() {
+
 }
 
 // CreateMessage will create a string formatted message that can be rendered
