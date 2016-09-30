@@ -74,7 +74,6 @@ func timeHandler(ctx *context.AppContext) func(termui.Event) {
 	}
 }
 
-// TODO: it'll always add the latest message
 func incomingMessageHandler(ctx *context.AppContext) {
 	go func() {
 		for {
@@ -91,6 +90,9 @@ func incomingMessageHandler(ctx *context.AppContext) {
 						ctx.View.Chat.AddMessage(m)
 						termui.Render(ctx.View.Chat)
 					}
+
+					// Set new message indicator for channel
+					actionNewMessage(ctx, ev.Channel)
 				}
 			}
 		}
@@ -194,4 +196,9 @@ func actionChangeChannel(ctx *context.AppContext) {
 
 	termui.Render(ctx.View.Channels)
 	termui.Render(ctx.View.Chat)
+}
+
+func actionNewMessage(ctx *context.AppContext, channelID string) {
+	ctx.View.Channels.NewMessage(channelID)
+	termui.Render(ctx.View.Channels)
 }
