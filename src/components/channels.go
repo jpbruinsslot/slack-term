@@ -10,7 +10,6 @@ import (
 
 type Channels struct {
 	List            *termui.List
-	SlackChannels   []SlackChannel
 	SelectedChannel int
 }
 
@@ -65,10 +64,6 @@ func (c *Channels) Buffer() termui.Buffer {
 	return buf
 }
 
-func (c *Channels) Add() {
-
-}
-
 // GetHeight implements interface termui.GridBufferer
 func (c *Channels) GetHeight() int {
 	return c.List.Block.GetHeight()
@@ -96,13 +91,6 @@ func (c *Channels) SetY(y int) {
 func (c *Channels) GetChannels(svc *service.SlackService) {
 	for _, slackChan := range svc.GetChannels() {
 		c.List.Items = append(c.List.Items, fmt.Sprintf("  %s", slackChan.Name))
-		c.SlackChannels = append(
-			c.SlackChannels,
-			SlackChannel{
-				ID:   slackChan.ID,
-				Name: slackChan.Name,
-			},
-		)
 	}
 }
 
@@ -129,11 +117,11 @@ func (c *Channels) MoveCursorDown() {
 
 // NewMessage will be called when a new message arrives and will
 // render an asterisk in front of the channel name
-func (c *Channels) NewMessage(channelID string) {
+func (c *Channels) NewMessage(svc *service.SlackService, channelID string) {
 	var index int
 
 	// Get the correct Channel from SlackChannels
-	for i, channel := range c.SlackChannels {
+	for i, channel := range svc.Channels {
 		if channelID == channel.ID {
 			index = i
 			break

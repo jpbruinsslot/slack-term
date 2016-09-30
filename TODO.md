@@ -26,4 +26,5 @@ Features:
 - [x] new message indicator
 - [x] scrolling in chat pane
 - [ ] group channels, im channels
+- [ ] incomming message event.go probably need a type switch
 - [ ] scrolling in channel pane
