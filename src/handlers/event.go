@@ -33,6 +33,10 @@ func anyKeyHandler(ctx *context.AppContext) func(termui.Event) {
 			case "i":
 				actionInsertMode(ctx)
 				return
+			case "<previous>":
+				actionScrollUpChat(ctx)
+			case "<next>":
+				actionScrollDownChat(ctx)
 			}
 		} else if ctx.Mode == context.InsertMode {
 			switch key {
@@ -89,6 +93,8 @@ func incomingMessageHandler(ctx *context.AppContext) {
 					if ev.Channel == ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].ID {
 						ctx.View.Chat.AddMessage(m)
 						termui.Render(ctx.View.Chat)
+
+						// TODO: set Chat.Offset to 0?
 					}
 
 					// Set new message indicator for channel
@@ -201,4 +207,14 @@ func actionChangeChannel(ctx *context.AppContext) {
 func actionNewMessage(ctx *context.AppContext, channelID string) {
 	ctx.View.Channels.NewMessage(channelID)
 	termui.Render(ctx.View.Channels)
+}
+
+func actionScrollUpChat(ctx *context.AppContext) {
+	ctx.View.Chat.ScrollUp()
+	termui.Render(ctx.View.Chat)
+}
+
+func actionScrollDownChat(ctx *context.AppContext) {
+	ctx.View.Chat.ScrollDown()
+	termui.Render(ctx.View.Chat)
 }

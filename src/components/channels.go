@@ -140,9 +140,11 @@ func (c *Channels) NewMessage(channelID string) {
 		}
 	}
 
-	// The order of SlackChannels relates to the order of
-	// List.Items, index will be the index of the channel
-	c.List.Items[index] = fmt.Sprintf("* %s", strings.TrimSpace(c.List.Items[index]))
+	if !strings.Contains(c.List.Items[index], "*") {
+		// The order of SlackChannels relates to the order of
+		// List.Items, index will be the index of the channel
+		c.List.Items[index] = fmt.Sprintf("* %s", strings.TrimSpace(c.List.Items[index]))
+	}
 
 	// Play terminal bell sound
 	fmt.Print("\a")

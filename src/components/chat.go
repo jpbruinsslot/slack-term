@@ -10,12 +10,14 @@ import (
 type Chat struct {
 	List            *termui.List
 	SelectedChannel string
+	Offset          int
 }
 
 // CreateChat is the constructor for the Chat struct
 func CreateChat(svc *service.SlackService, inputHeight int, selectedChannel SlackChannel) *Chat {
 	chat := &Chat{
-		List: termui.NewList(),
+		List:   termui.NewList(),
+		Offset: 0,
 	}
 
 	chat.List.Height = termui.TermHeight() - inputHeight
@@ -68,14 +70,16 @@ func (c *Chat) Buffer() termui.Buffer {
 	lines = append(lines, line)
 
 	// We will print lines bottom up, it will loop over the lines
-	// backwards and for every line it'll set the cell in that line
+	// backwards and for every line it'll set the cell in that line.
+	// Offset is the number which allows us to begin printing the
+	// line above the last line.
 	buf := c.List.Buffer()
 	linesHeight := len(lines)
 	paneMinY := c.List.InnerBounds().Min.Y
 	paneMaxY := c.List.InnerBounds().Max.Y
 
 	currentY := paneMaxY - 1
-	for i := linesHeight - 1; i >= 0; i-- {
+	for i := (linesHeight - 1) - c.Offset; i >= 0; i-- {
 		if currentY < paneMinY {
 			break
 		}
@@ -152,10 +156,37 @@ func (c *Chat) ClearMessages() {
 	c.List.Items = []string{}
 }
 
+// ScrollUp will render the chat messages based on the Offset of the Chat
+// pane.
+//
+// Offset is 0 when scrolled down. (we loop backwards over the array, so we
+// start with rendering last item in the list at the maximum y of the Chat
+// pane). Increasing the Offset will thus result in substracting the offset
+// from the len(Chat.List.Items).
 func (c *Chat) ScrollUp() {
+	c.Offset = c.Offset + 10
+
+	// Protect overscrolling
+	if c.Offset > len(c.List.Items)-1 {
+		c.Offset = len(c.List.Items) - 1
+	}
 }
 
-func (c *Chat) ScrollDown() {}
+// ScrollDown will render the chat messages based on the Offset of the Chat
+// pane.
+//
+// Offset is 0 when scrolled down. (we loop backwards over the array, so we
+// start with rendering last item in the list at the maximum y of the Chat
+// pane). Increasing the Offset will thus result in substracting the offset
+// from the len(Chat.List.Items).
+func (c *Chat) ScrollDown() {
+	c.Offset = c.Offset - 10
+
+	// Protect overscrolling
+	if c.Offset < 0 {
+		c.Offset = 0
+	}
+}
 
 // SetBorderLabel will set Label of the Chat pane to the specified string
 func (c *Chat) SetBorderLabel(label string) {

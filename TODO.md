@@ -12,6 +12,10 @@ Bugs:
       through RTM in the selected channel
 - [x] uncovering usernames takes too long, should find a better way
       test without uncovering, if that is the problem
+- [ ] GetMessages for a channel doesn't have to load messages based on height
+      of chat pane (y). Because message will sometimes span more than one
+      line and we're able to scroll. Only figure out how many messages you
+      want to load.
 - [ ] GetMessages for a channel can result in `json: cannot unmarshal number
       into Go value of type string` https://github.com/nlopes/slack/issues/92
 - [ ] docs at exported functions
@@ -20,6 +24,6 @@ Features:
 
 - [x] channel name in chat pane
 - [x] new message indicator
+- [x] scrolling in chat pane
 - [ ] group channels, im channels
-- [ ] scrolling in chat pane
 - [ ] scrolling in channel pane
