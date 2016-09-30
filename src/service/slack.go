@@ -31,6 +31,11 @@ func NewSlackService(token string) *SlackService {
 
 	go svc.RTM.ManageConnection()
 
+	users, _ := svc.Client.GetUsers()
+	for _, user := range users {
+		svc.UserCache[user.ID] = user.Name
+	}
+
 	return svc
 }
 
@@ -106,21 +111,23 @@ func (s *SlackService) CreateMessage(message slack.Message) string {
 
 	// Name not in cache
 	if !ok {
-		user, err := s.Client.GetUserInfo(message.User)
-
-		if err == nil {
-			// Name found
-			name = user.Name
-			s.UserCache[message.User] = user.Name
-		} else {
+		if message.BotID != "" {
 			// Name not found, perhaps a bot, use Username
-			if message.Username != "" {
-				name, ok = s.UserCache[message.BotID]
-				if !ok {
-					// Not found in cache add it
-					name = message.Username
-					s.UserCache[message.BotID] = message.Username
-				}
+			name, ok = s.UserCache[message.BotID]
+			if !ok {
+				// Not found in cache, add it
+				name = message.Username
+				s.UserCache[message.BotID] = message.Username
+			}
+		} else {
+			// Not a bot, not in cache, get user info
+			user, err := s.Client.GetUserInfo(message.User)
+			if err != nil {
+				name = "unknown"
+				s.UserCache[message.User] = name
+			} else {
+				name = user.Name
+				s.UserCache[message.User] = user.Name
 			}
 		}
 	}
@@ -156,21 +163,23 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 
 	// Name not in cache
 	if !ok {
-		user, err := s.Client.GetUserInfo(message.User)
-
-		if err == nil {
-			// Name found
-			name = user.Name
-			s.UserCache[message.User] = user.Name
-		} else {
+		if message.BotID != "" {
 			// Name not found, perhaps a bot, use Username
-			if message.Username != "" {
-				name, ok = s.UserCache[message.BotID]
-				if !ok {
-					// Not found in cache add it
-					name = message.Username
-					s.UserCache[message.BotID] = message.Username
-				}
+			name, ok = s.UserCache[message.BotID]
+			if !ok {
+				// Not found in cache, add it
+				name = message.Username
+				s.UserCache[message.BotID] = message.Username
+			}
+		} else {
+			// Not a bot, not in cache, get user info
+			user, err := s.Client.GetUserInfo(message.User)
+			if err != nil {
+				name = "unknown"
+				s.UserCache[message.User] = name
+			} else {
+				name = user.Name
+				s.UserCache[message.User] = user.Name
 			}
 		}
 	}
