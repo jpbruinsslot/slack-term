@@ -1,6 +1,9 @@
 package components
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/erroneousboat/slack-term/src/service"
 	"github.com/gizak/termui"
 )
@@ -86,9 +89,13 @@ func (c *Channels) SetY(y int) {
 	c.List.SetY(y)
 }
 
+// GetChannels will get all available channels from the SlackService
+// and add them to the List as well as to the SlackChannels, this is done
+// to better relate the ID and name given to Channels, for Chat.GetMessages.
+// See event.go actionChangeChannel for more explanation
 func (c *Channels) GetChannels(svc *service.SlackService) {
 	for _, slackChan := range svc.GetChannels() {
-		c.List.Items = append(c.List.Items, slackChan.Name)
+		c.List.Items = append(c.List.Items, fmt.Sprintf("  %s", slackChan.Name))
 		c.SlackChannels = append(
 			c.SlackChannels,
 			SlackChannel{
@@ -99,21 +106,56 @@ func (c *Channels) GetChannels(svc *service.SlackService) {
 	}
 }
 
-func (c *Channels) SetSelectedChannel(num int) {
-	c.SelectedChannel = num
+// SetSelectedChannel sets the SelectedChannel given the index
+func (c *Channels) SetSelectedChannel(index int) {
+	c.SelectedChannel = index
 }
 
+// MoveCursorUp will decrease the SelectedChannel by 1
 func (c *Channels) MoveCursorUp() {
 	if c.SelectedChannel > 0 {
 		c.SetSelectedChannel(c.SelectedChannel - 1)
+		c.ClearNewMessageIndicator()
 	}
 }
 
+// MoveCursorDown will increase the SelectedChannel by 1
 func (c *Channels) MoveCursorDown() {
 	if c.SelectedChannel < len(c.List.Items)-1 {
 		c.SetSelectedChannel(c.SelectedChannel + 1)
+		c.ClearNewMessageIndicator()
 	}
 }
 
-func (c *Channels) NewMessage() {
+// NewMessage will be called when a new message arrives and will
+// render an asterisk in front of the channel name
+func (c *Channels) NewMessage(channelID string) {
+	var index int
+
+	// Get the correct Channel from SlackChannels
+	for i, channel := range c.SlackChannels {
+		if channelID == channel.ID {
+			index = i
+			break
+		}
+	}
+
+	// The order of SlackChannels relates to the order of
+	// List.Items, index will be the index of the channel
+	c.List.Items[index] = fmt.Sprintf("* %s", strings.TrimSpace(c.List.Items[index]))
+
+	// Play terminal bell sound
+	fmt.Print("\a")
+}
+
+// ClearNewMessageIndicator will remove the asterisk in front of a channel that
+// received a new message. This will happen as one will move up or down the
+// cursor for Channels
+func (c *Channels) ClearNewMessageIndicator() {
+	channelName := strings.Split(c.List.Items[c.SelectedChannel], "* ")
+	if len(channelName) > 1 {
+		c.List.Items[c.SelectedChannel] = fmt.Sprintf("  %s", channelName[1])
+	} else {
+		c.List.Items[c.SelectedChannel] = channelName[0]
+	}
 }

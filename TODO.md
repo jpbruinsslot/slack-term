@@ -18,7 +18,8 @@ Bugs:
 
 Features:
 
+- [x] channel name in chat pane
+- [x] new message indicator
 - [ ] group channels, im channels
 - [ ] scrolling in chat pane
 - [ ] scrolling in channel pane
-- [x] channel name in chat pane
