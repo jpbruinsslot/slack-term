@@ -55,14 +55,14 @@ func (s *SlackService) GetChannels() []Channel {
 
 	// TODO: json: cannot unmarshal number into Go value of type string, GetMessages
 	// Groups
-	// slackGroups, err := s.Client.GetGroups(true)
-	// if err != nil {
-	// 	chans = append(chans, Channel{})
-	// }
-	// for _, grp := range slackGroups {
-	// 	s.SlackChannels = append(s.SlackChannels, grp)
-	// 	chans = append(chans, Channel{grp.ID, grp.Name})
-	// }
+	slackGroups, err := s.Client.GetGroups(true)
+	if err != nil {
+		chans = append(chans, Channel{})
+	}
+	for _, grp := range slackGroups {
+		s.SlackChannels = append(s.SlackChannels, grp)
+		chans = append(chans, Channel{grp.ID, grp.Name})
+	}
 
 	// IM
 	slackIM, err := s.Client.GetIMChannels()
@@ -71,7 +71,13 @@ func (s *SlackService) GetChannels() []Channel {
 	}
 	for _, im := range slackIM {
 		s.SlackChannels = append(s.SlackChannels, im)
-		chans = append(chans, Channel{im.ID, im.User})
+
+		// Uncover name
+		name, ok := s.UserCache[im.User]
+		if !ok {
+			name = im.User
+		}
+		chans = append(chans, Channel{im.ID, name})
 	}
 
 	s.Channels = chans
