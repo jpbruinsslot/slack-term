@@ -3,8 +3,9 @@ package components
 import (
 	"strings"
 
-	"github.com/erroneousboat/slack-term/src/service"
 	"github.com/gizak/termui"
+
+	"github.com/erroneousboat/slack-term/src/service"
 )
 
 type Chat struct {

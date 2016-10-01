@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"github.com/erroneousboat/slack"
 	"github.com/gizak/termui"
-	"github.com/nlopes/slack"
 
 	"github.com/erroneousboat/slack-term/src/context"
 	"github.com/erroneousboat/slack-term/src/views"
