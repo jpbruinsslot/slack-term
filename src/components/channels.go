@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/erroneousboat/slack-term/src/service"
 	"github.com/gizak/termui"
+
+	"github.com/erroneousboat/slack-term/src/service"
 )
 
 type Channels struct {
