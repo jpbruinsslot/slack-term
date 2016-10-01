@@ -94,10 +94,14 @@ func incomingMessageHandler(ctx *context.AppContext) {
 						ctx.View.Chat.AddMessage(m)
 						termui.Render(ctx.View.Chat)
 
-						// TODO: set Chat.Offset to 0?
+						// TODO: set Chat.Offset to 0, to automatically scroll
+						// down?
 					}
 
-					// Set new message indicator for channel
+					// Set new message indicator for channel, I'm leaving
+					// this here because I also want to be notified when
+					// I'm currently in a channel but not in the terminal
+					// window (tmux)
 					actionNewMessage(ctx, ev.Channel)
 				}
 			}

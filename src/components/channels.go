@@ -11,13 +11,11 @@ import (
 type Channels struct {
 	List            *termui.List
 	SelectedChannel int
+	Offset          int
+	CursorPosition  int
 }
 
-type SlackChannel struct {
-	Name string
-	ID   string
-}
-
+// CreateChannels is the constructor for the Channels component
 func CreateChannels(svc *service.SlackService, inputHeight int) *Channels {
 	channels := &Channels{
 		List: termui.NewList(),
@@ -27,6 +25,8 @@ func CreateChannels(svc *service.SlackService, inputHeight int) *Channels {
 	channels.List.Height = termui.TermHeight() - inputHeight
 
 	channels.SelectedChannel = 0
+	channels.Offset = 0
+	channels.CursorPosition = channels.List.InnerBounds().Min.Y
 
 	channels.GetChannels(svc)
 
@@ -37,9 +37,16 @@ func CreateChannels(svc *service.SlackService, inputHeight int) *Channels {
 func (c *Channels) Buffer() termui.Buffer {
 	buf := c.List.Buffer()
 
-	for y, item := range c.List.Items {
+	for i, item := range c.List.Items[c.Offset:] {
+
+		y := c.List.InnerBounds().Min.Y + i
+
+		if y > c.List.InnerBounds().Max.Y-1 {
+			break
+		}
+
 		var cells []termui.Cell
-		if y == c.SelectedChannel {
+		if y == c.CursorPosition {
 			cells = termui.DefaultTxBuilder.Build(
 				item, termui.ColorBlack, termui.ColorWhite)
 		} else {
@@ -52,12 +59,22 @@ func (c *Channels) Buffer() termui.Buffer {
 		x := 0
 		for _, cell := range cells {
 			width := cell.Width()
-			buf.Set(
-				c.List.InnerBounds().Min.X+x,
-				c.List.InnerBounds().Min.Y+y,
-				cell,
-			)
+			buf.Set(c.List.InnerBounds().Min.X+x, y, cell)
 			x += width
+		}
+
+		// When not at the end of the pane fill it up empty characters
+		for x < c.List.InnerBounds().Max.X-1 {
+			if y == c.CursorPosition {
+				buf.Set(x+1, y,
+					termui.Cell{
+						Ch: ' ', Fg: termui.ColorBlack, Bg: termui.ColorWhite,
+					},
+				)
+			} else {
+				buf.Set(x+1, y, termui.Cell{Ch: ' '})
+			}
+			x++
 		}
 	}
 
@@ -85,9 +102,6 @@ func (c *Channels) SetY(y int) {
 }
 
 // GetChannels will get all available channels from the SlackService
-// and add them to the List as well as to the SlackChannels, this is done
-// to better relate the ID and name given to Channels, for Chat.GetMessages.
-// See event.go actionChangeChannel for more explanation
 func (c *Channels) GetChannels(svc *service.SlackService) {
 	for _, slackChan := range svc.GetChannels() {
 		c.List.Items = append(c.List.Items, fmt.Sprintf("  %s", slackChan.Name))
@@ -103,6 +117,7 @@ func (c *Channels) SetSelectedChannel(index int) {
 func (c *Channels) MoveCursorUp() {
 	if c.SelectedChannel > 0 {
 		c.SetSelectedChannel(c.SelectedChannel - 1)
+		c.ScrollUp()
 		c.ClearNewMessageIndicator()
 	}
 }
@@ -111,7 +126,28 @@ func (c *Channels) MoveCursorUp() {
 func (c *Channels) MoveCursorDown() {
 	if c.SelectedChannel < len(c.List.Items)-1 {
 		c.SetSelectedChannel(c.SelectedChannel + 1)
+		c.ScrollDown()
 		c.ClearNewMessageIndicator()
+	}
+}
+
+func (c *Channels) ScrollUp() {
+	if c.CursorPosition == c.List.InnerBounds().Min.Y {
+		if c.Offset > 0 {
+			c.Offset--
+		}
+	} else {
+		c.CursorPosition--
+	}
+}
+
+func (c *Channels) ScrollDown() {
+	if c.CursorPosition == c.List.InnerBounds().Max.Y-1 {
+		if c.Offset < len(c.List.Items)-1 {
+			c.Offset++
+		}
+	} else {
+		c.CursorPosition++
 	}
 }
 
@@ -120,7 +156,7 @@ func (c *Channels) MoveCursorDown() {
 func (c *Channels) NewMessage(svc *service.SlackService, channelID string) {
 	var index int
 
-	// Get the correct Channel from SlackChannels
+	// Get the correct Channel from svc.Channels
 	for i, channel := range svc.Channels {
 		if channelID == channel.ID {
 			index = i
@@ -129,7 +165,7 @@ func (c *Channels) NewMessage(svc *service.SlackService, channelID string) {
 	}
 
 	if !strings.Contains(c.List.Items[index], "*") {
-		// The order of SlackChannels relates to the order of
+		// The order of svc.Channels relates to the order of
 		// List.Items, index will be the index of the channel
 		c.List.Items[index] = fmt.Sprintf("* %s", strings.TrimSpace(c.List.Items[index]))
 	}
