@@ -16,14 +16,17 @@ Bugs:
       of chat pane (y). Because message will sometimes span more than one
       line and we're able to scroll. Only figure out how many messages you
       want to load.
-- [ ] GetMessages for a channel can result in `json: cannot unmarshal number
+- [x] GetMessages for a channel can result in `json: cannot unmarshal number
       into Go value of type string` https://github.com/nlopes/slack/issues/92
 - [ ] docs at exported functions
+- [ ] incoming message event.go probably need a type switch
+- [ ] set channel on start
 
 Features:
 
 - [x] channel name in chat pane
 - [x] new message indicator
 - [x] scrolling in chat pane
-- [ ] group channels, im channels
-- [ ] scrolling in channel pane
+- [x] group channels, im channels
+- [x] scrolling in channel pane
+- [ ] remove unsubscribed or closed channels/groups/im

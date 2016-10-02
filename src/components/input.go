@@ -1,8 +1,9 @@
 package components
 
 import (
-	"github.com/erroneousboat/slack-term/src/service"
 	"github.com/gizak/termui"
+
+	"github.com/erroneousboat/slack-term/src/service"
 )
 
 // Input is the definition of and input box

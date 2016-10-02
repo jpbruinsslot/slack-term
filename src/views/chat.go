@@ -1,10 +1,10 @@
 package views
 
 import (
+	"github.com/gizak/termui"
+
 	"github.com/erroneousboat/slack-term/src/components"
 	"github.com/erroneousboat/slack-term/src/service"
-
-	"github.com/gizak/termui"
 )
 
 type View struct {
@@ -20,8 +20,9 @@ func CreateChatView(svc *service.SlackService) *View {
 	channels := components.CreateChannels(svc, input.Par.Height)
 
 	chat := components.CreateChat(
-		svc, input.Par.Height,
-		channels.SlackChannels[channels.SelectedChannel],
+		svc,
+		input.Par.Height,
+		svc.SlackChannels[channels.SelectedChannel],
 	)
 
 	mode := components.CreateMode()
