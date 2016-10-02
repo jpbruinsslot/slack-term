@@ -9,6 +9,7 @@ import (
 	"github.com/erroneousboat/slack-term/src/service"
 )
 
+// Channels is the definition of a Channels component
 type Channels struct {
 	List            *termui.List
 	SelectedChannel int
