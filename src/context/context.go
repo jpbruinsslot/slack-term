@@ -23,6 +23,8 @@ type AppContext struct {
 	Mode    string
 }
 
+// CreateAppContext creates an application context which can be passed
+// and referenced througout the application
 func CreateAppContext(flgConfig string) *AppContext {
 	// Load config
 	config, err := config.NewConfig(flgConfig)

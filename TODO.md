@@ -12,15 +12,16 @@ Bugs:
       through RTM in the selected channel
 - [x] uncovering usernames takes too long, should find a better way
       test without uncovering, if that is the problem
+- [x] GetMessages for a channel can result in `json: cannot unmarshal number
+      into Go value of type string` https://github.com/nlopes/slack/issues/92
+- [x] set channelname on start
+- [x] incoming message event.go probably need a type switch
 - [ ] GetMessages for a channel doesn't have to load messages based on height
       of chat pane (y). Because message will sometimes span more than one
       line and we're able to scroll. Only figure out how many messages you
       want to load.
-- [x] GetMessages for a channel can result in `json: cannot unmarshal number
-      into Go value of type string` https://github.com/nlopes/slack/issues/92
-- [x] set channelname on start
+- [ ] implement the other keys
 - [ ] docs at exported functions
-- [ ] incoming message event.go probably need a type switch
 
 Features:
 
@@ -29,5 +30,6 @@ Features:
 - [x] scrolling in chat pane
 - [x] group channels, im channels
 - [x] scrolling in channel pane
-- [ ] command mode center text
+- [x] command mode center text
 - [ ] remove unsubscribed or closed channels/groups/im
+- [ ] remapping of keys

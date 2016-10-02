@@ -63,6 +63,7 @@ func (i *Input) SetY(y int) {
 	i.Par.SetY(y)
 }
 
+// SendMessage send the input text through the SlackService
 func (i *Input) SendMessage(svc *service.SlackService, channel string, message string) {
 	svc.SendMessage(channel, message)
 }

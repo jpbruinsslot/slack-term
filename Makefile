@@ -36,6 +36,14 @@ test:
 build:
 	CGO_ENABLED=0 go build -a -installsuffix cgo -o ./bin/slack-term ./src/
 
+# Cross-compile
+# http://dave.cheney.net/2015/08/22/cross-compilation-with-go-1-5
+build-linux:
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -o ./bin/slack-term-linux-amd64 ./src/
+
+build-mac:
+	GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -o ./bin/slack-term-darwin-amd64 ./src/
+
 run: build
 	./bin/slack-term
 
