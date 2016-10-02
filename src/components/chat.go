@@ -9,13 +9,12 @@ import (
 )
 
 type Chat struct {
-	List            *termui.List
-	SelectedChannel string
-	Offset          int
+	List   *termui.List
+	Offset int
 }
 
 // CreateChat is the constructor for the Chat struct
-func CreateChat(svc *service.SlackService, inputHeight int, selectedChannel interface{}) *Chat {
+func CreateChat(svc *service.SlackService, inputHeight int, selectedChannel interface{}, selectedChannelName string) *Chat {
 	chat := &Chat{
 		List:   termui.NewList(),
 		Offset: 0,
@@ -25,7 +24,7 @@ func CreateChat(svc *service.SlackService, inputHeight int, selectedChannel inte
 	chat.List.Overflow = "wrap"
 
 	chat.GetMessages(svc, selectedChannel)
-	// chat.SetBorderLabel(selectedChannel.Name)
+	chat.SetBorderLabel(selectedChannelName)
 
 	return chat
 }
