@@ -22,6 +22,8 @@ type Channel struct {
 	Name string
 }
 
+// NewSlackService is the constructor for the SlackService and will initialize
+// the RTM and a Client
 func NewSlackService(token string) *SlackService {
 	svc := &SlackService{
 		Client:    slack.New(token),
@@ -32,6 +34,8 @@ func NewSlackService(token string) *SlackService {
 
 	go svc.RTM.ManageConnection()
 
+	// Creation of user cache this speeds up
+	// the uncovering of usernames of messages
 	users, _ := svc.Client.GetUsers()
 	for _, user := range users {
 		svc.UserCache[user.ID] = user.Name
@@ -40,6 +44,10 @@ func NewSlackService(token string) *SlackService {
 	return svc
 }
 
+// GetChannels will retrieve all available channels, groups, and im channels.
+// Because the channels are of different types, we will append them to
+// an []interface as well as to a []Channel which will give us easy access
+// to the id and name of the Channel.
 func (s *SlackService) GetChannels() []Channel {
 	var chans []Channel
 
@@ -53,7 +61,6 @@ func (s *SlackService) GetChannels() []Channel {
 		chans = append(chans, Channel{chn.ID, chn.Name})
 	}
 
-	// TODO: json: cannot unmarshal number into Go value of type string, GetMessages
 	// Groups
 	slackGroups, err := s.Client.GetGroups(true)
 	if err != nil {
@@ -172,10 +179,6 @@ func (s *SlackService) GetMessagesForChannel(channel string, count int) []string
 	}
 
 	return messagesReversed
-}
-
-func (s *SlackService) GetMessageForGroup() {
-
 }
 
 // CreateMessage will create a string formatted message that can be rendered

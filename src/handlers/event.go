@@ -11,7 +11,6 @@ import (
 func RegisterEventHandlers(ctx *context.AppContext) {
 	termui.Handle("/sys/kbd/", anyKeyHandler(ctx))
 	termui.Handle("/sys/wnd/resize", resizeHandler(ctx))
-	termui.Handle("/timer/1s", timeHandler(ctx))
 	incomingMessageHandler(ctx)
 }
 
@@ -23,16 +22,12 @@ func anyKeyHandler(ctx *context.AppContext) func(termui.Event) {
 			switch key {
 			case "q":
 				actionQuit()
-				return
 			case "j":
 				actionMoveCursorDownChannels(ctx)
-				return
 			case "k":
 				actionMoveCursorUpChannels(ctx)
-				return
 			case "i":
 				actionInsertMode(ctx)
-				return
 			case "<previous>":
 				actionScrollUpChat(ctx)
 			case "<next>":
@@ -42,13 +37,10 @@ func anyKeyHandler(ctx *context.AppContext) func(termui.Event) {
 			switch key {
 			case "<escape>":
 				actionCommandMode(ctx)
-				return
 			case "<enter>":
 				actionSend(ctx)
-				return
 			case "<space>":
 				actionInput(ctx.View, " ")
-				return
 			case "<backspace>":
 				actionBackSpace(ctx.View)
 			case "C-8":
@@ -59,22 +51,14 @@ func anyKeyHandler(ctx *context.AppContext) func(termui.Event) {
 				actionMoveCursorLeft(ctx.View)
 			default:
 				actionInput(ctx.View, key)
-				return
 			}
-
 		}
-
 	}
 }
 
 func resizeHandler(ctx *context.AppContext) func(termui.Event) {
 	return func(e termui.Event) {
 		actionResize(ctx)
-	}
-}
-
-func timeHandler(ctx *context.AppContext) func(termui.Event) {
-	return func(e termui.Event) {
 	}
 }
 

@@ -133,6 +133,7 @@ func (c *Channels) MoveCursorDown() {
 	}
 }
 
+// ScrollUp enables us to scroll through the channel list when it overflows
 func (c *Channels) ScrollUp() {
 	if c.CursorPosition == c.List.InnerBounds().Min.Y {
 		if c.Offset > 0 {
@@ -143,6 +144,7 @@ func (c *Channels) ScrollUp() {
 	}
 }
 
+// ScrollDown enables us to scroll through the channel list when it overflows
 func (c *Channels) ScrollDown() {
 	if c.CursorPosition == c.List.InnerBounds().Max.Y-1 {
 		if c.Offset < len(c.List.Items)-1 {
