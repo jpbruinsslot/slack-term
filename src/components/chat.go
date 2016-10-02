@@ -8,6 +8,7 @@ import (
 	"github.com/erroneousboat/slack-term/src/service"
 )
 
+// Chat is the definition of a Chat component
 type Chat struct {
 	List   *termui.List
 	Offset int
