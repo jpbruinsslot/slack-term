@@ -6,7 +6,7 @@ import (
 	"github.com/erroneousboat/slack-term/src/service"
 )
 
-// Input is the definition of and input box
+// Input is the definition of an Input component
 type Input struct {
 	Par            *termui.Par
 	CursorPosition int
