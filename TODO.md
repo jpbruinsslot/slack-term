@@ -18,9 +18,9 @@ Bugs:
       want to load.
 - [x] GetMessages for a channel can result in `json: cannot unmarshal number
       into Go value of type string` https://github.com/nlopes/slack/issues/92
+- [x] set channelname on start
 - [ ] docs at exported functions
 - [ ] incoming message event.go probably need a type switch
-- [ ] set channel on start
 
 Features:
 
@@ -29,4 +29,5 @@ Features:
 - [x] scrolling in chat pane
 - [x] group channels, im channels
 - [x] scrolling in channel pane
+- [ ] command mode center text
 - [ ] remove unsubscribed or closed channels/groups/im
