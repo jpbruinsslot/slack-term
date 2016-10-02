@@ -3,8 +3,9 @@ package components
 import (
 	"strings"
 
-	"github.com/erroneousboat/slack-term/src/service"
 	"github.com/gizak/termui"
+
+	"github.com/erroneousboat/slack-term/src/service"
 )
 
 type Chat struct {
@@ -14,7 +15,7 @@ type Chat struct {
 }
 
 // CreateChat is the constructor for the Chat struct
-func CreateChat(svc *service.SlackService, inputHeight int, selectedChannel SlackChannel) *Chat {
+func CreateChat(svc *service.SlackService, inputHeight int, selectedChannel interface{}) *Chat {
 	chat := &Chat{
 		List:   termui.NewList(),
 		Offset: 0,
@@ -23,8 +24,8 @@ func CreateChat(svc *service.SlackService, inputHeight int, selectedChannel Slac
 	chat.List.Height = termui.TermHeight() - inputHeight
 	chat.List.Overflow = "wrap"
 
-	chat.GetMessages(svc, selectedChannel.ID)
-	chat.SetBorderLabel(selectedChannel.Name)
+	chat.GetMessages(svc, selectedChannel)
+	// chat.SetBorderLabel(selectedChannel.Name)
 
 	return chat
 }
@@ -136,7 +137,7 @@ func (c *Chat) SetY(y int) {
 
 // GetMessages will get an array of strings for a specific channel which will
 // contain messages in turn all these messages will be added to List.Items
-func (c *Chat) GetMessages(svc *service.SlackService, channel string) {
+func (c *Chat) GetMessages(svc *service.SlackService, channel interface{}) {
 	// Get the count of message that fit in the pane
 	count := c.List.InnerBounds().Max.Y - c.List.InnerBounds().Min.Y
 	messages := svc.GetMessages(channel, count)

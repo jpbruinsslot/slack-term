@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"github.com/erroneousboat/slack"
 	"github.com/gizak/termui"
-	"github.com/nlopes/slack"
 
 	"github.com/erroneousboat/slack-term/src/context"
 	"github.com/erroneousboat/slack-term/src/views"
@@ -90,14 +90,18 @@ func incomingMessageHandler(ctx *context.AppContext) {
 					m := ctx.Service.CreateMessageFromMessageEvent(ev)
 
 					// Add message to the selected channel
-					if ev.Channel == ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].ID {
+					if ev.Channel == ctx.Service.Channels[ctx.View.Channels.SelectedChannel].ID {
 						ctx.View.Chat.AddMessage(m)
 						termui.Render(ctx.View.Chat)
 
-						// TODO: set Chat.Offset to 0?
+						// TODO: set Chat.Offset to 0, to automatically scroll
+						// down?
 					}
 
-					// Set new message indicator for channel
+					// Set new message indicator for channel, I'm leaving
+					// this here because I also want to be notified when
+					// I'm currently in a channel but not in the terminal
+					// window (tmux)
 					actionNewMessage(ctx, ev.Channel)
 				}
 			}
@@ -137,7 +141,7 @@ func actionSend(ctx *context.AppContext) {
 	if !ctx.View.Input.IsEmpty() {
 		ctx.View.Input.SendMessage(
 			ctx.Service,
-			ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].ID,
+			ctx.Service.Channels[ctx.View.Channels.SelectedChannel].ID,
 			ctx.View.Input.Text(),
 		)
 		ctx.View.Input.Clear()
@@ -164,7 +168,7 @@ func actionCommandMode(ctx *context.AppContext) {
 func actionGetMessages(ctx *context.AppContext) {
 	ctx.View.Chat.GetMessages(
 		ctx.Service,
-		ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].ID,
+		ctx.Service.Channels[ctx.View.Channels.SelectedChannel],
 	)
 
 	termui.Render(ctx.View.Chat)
@@ -192,12 +196,12 @@ func actionChangeChannel(ctx *context.AppContext) {
 	// Get message for the new channel
 	ctx.View.Chat.GetMessages(
 		ctx.Service,
-		ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].ID,
+		ctx.Service.SlackChannels[ctx.View.Channels.SelectedChannel],
 	)
 
 	// Set channel name for the Chat pane
 	ctx.View.Chat.SetBorderLabel(
-		ctx.View.Channels.SlackChannels[ctx.View.Channels.SelectedChannel].Name,
+		ctx.Service.Channels[ctx.View.Channels.SelectedChannel].Name,
 	)
 
 	termui.Render(ctx.View.Channels)
@@ -205,7 +209,7 @@ func actionChangeChannel(ctx *context.AppContext) {
 }
 
 func actionNewMessage(ctx *context.AppContext, channelID string) {
-	ctx.View.Channels.NewMessage(channelID)
+	ctx.View.Channels.NewMessage(ctx.Service, channelID)
 	termui.Render(ctx.View.Channels)
 }
 
