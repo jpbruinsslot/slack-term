@@ -3,13 +3,7 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "2xFMeuNz5+Q/Zoj4UB7VLVEUUBg=",
-			"path": "github.com/erroneousboat/slack",
-			"revision": "bffff62454d1f96706a775078228eb4313863cf2",
-			"revisionTime": "2016-10-01T12:00:35Z"
-		},
-		{
-			"checksumSHA1": "h3TS3NxvpHvzwUysrtqVu2BntAE=",
+			"checksumSHA1": "e8j3de5Zz0Y8YvoNvCVxqCVbgZg=",
 			"path": "github.com/gizak/termui",
 			"revision": "23b25db08316d51303b96a02edebae1649136565",
 			"revisionTime": "2016-08-14T02:39:28Z"
@@ -27,22 +21,22 @@
 			"revisionTime": "2015-03-14T17:03:34Z"
 		},
 		{
-			"checksumSHA1": "tmVf+KYwk1cpNJqPkL3/TIugsPI=",
+			"checksumSHA1": "LgycO10DeSc2JRSEJEnXg6SfB0s=",
 			"path": "github.com/nlopes/slack",
-			"revision": "49e63910abfdb2e5416d48e1b08ec8b8ac510c16",
-			"revisionTime": "2016-09-26T17:06:30Z"
+			"revision": "a1a63712460a18dbe828ae915f954a0f214f3d8e",
+			"revisionTime": "2016-10-03T12:27:58Z"
 		},
 		{
-			"checksumSHA1": "bcgbmZhNRsfsLgd8obtn7yIey6I=",
+			"checksumSHA1": "pqTEAm1W2tlmdHJ6b/J0no+cfso=",
 			"path": "github.com/nsf/termbox-go",
-			"revision": "e8f6d27f72a2f2bb598eb3579afd5ea364ef67f7",
-			"revisionTime": "2016-08-08T04:50:38Z"
+			"revision": "b6acae516ace002cb8105a89024544a1480655a5",
+			"revisionTime": "2016-09-13T19:16:50Z"
 		},
 		{
-			"checksumSHA1": "likOl7O0BJntqagR050kkOBuY4o=",
+			"checksumSHA1": "sM7kVFxASf7lzSkUI9sF6YClGaA=",
 			"path": "golang.org/x/net/websocket",
-			"revision": "0d8126fc6144eb5257485c59148128691e8ff849",
-			"revisionTime": "2016-09-30T20:34:21Z"
+			"revision": "ffe101cce3477a6c6d8f0754d103bb0a84ec1266",
+			"revisionTime": "2016-10-03T09:22:05Z"
 		}
 	],
 	"rootPath": "github.com/erroneousboat/slack-term/src"
