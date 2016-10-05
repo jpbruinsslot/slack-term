@@ -47,4 +47,6 @@ build-mac:
 run: build
 	./bin/slack-term
 
-.PHONY: default test build run
+build-all: build build-linux build-mac
+
+.PHONY: default test build build-linux build-mac run
