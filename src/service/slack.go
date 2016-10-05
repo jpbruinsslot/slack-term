@@ -15,6 +15,7 @@ type SlackService struct {
 	SlackChannels []interface{}
 	Channels      []Channel
 	UserCache     map[string]string
+	CurrentUserID string
 }
 
 type Channel struct {
@@ -40,6 +41,15 @@ func NewSlackService(token string) *SlackService {
 	for _, user := range users {
 		svc.UserCache[user.ID] = user.Name
 	}
+
+	// Get user associated with token, mainly
+	// used to identify user when new messages
+	// arrives
+	authTest, err := svc.Client.AuthTest()
+	if err != nil {
+		log.Fatal("Client.AuthTest() failed")
+	}
+	svc.CurrentUserID = authTest.UserID
 
 	return svc
 }

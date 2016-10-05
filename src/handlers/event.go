@@ -85,8 +85,11 @@ func incomingMessageHandler(ctx *context.AppContext) {
 					// Set new message indicator for channel, I'm leaving
 					// this here because I also want to be notified when
 					// I'm currently in a channel but not in the terminal
-					// window (tmux)
-					actionNewMessage(ctx, ev.Channel)
+					// window (tmux). But only create a notification when
+					// it comes from someone else but the current user.
+					if ev.User != ctx.Service.CurrentUserID {
+						actionNewMessage(ctx, ev.Channel)
+					}
 				}
 			}
 		}
