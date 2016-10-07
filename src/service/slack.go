@@ -39,7 +39,10 @@ func NewSlackService(token string) *SlackService {
 	// the uncovering of usernames of messages
 	users, _ := svc.Client.GetUsers()
 	for _, user := range users {
-		svc.UserCache[user.ID] = user.Name
+		// only add non-deleted users
+		if !user.Deleted {
+			svc.UserCache[user.ID] = user.Name
+		}
 	}
 
 	// Get user associated with token, mainly
@@ -89,12 +92,14 @@ func (s *SlackService) GetChannels() []Channel {
 	for _, im := range slackIM {
 		s.SlackChannels = append(s.SlackChannels, im)
 
-		// Uncover name
+		// Uncover name, when we can't uncover name for
+		// IM channel this is then probably a deleted
+		// user, because we wont add deleted users
+		// to the UserCache, so we skip it
 		name, ok := s.UserCache[im.User]
-		if !ok {
-			name = im.User
+		if ok {
+			chans = append(chans, Channel{im.ID, name})
 		}
-		chans = append(chans, Channel{im.ID, name})
 	}
 
 	s.Channels = chans
