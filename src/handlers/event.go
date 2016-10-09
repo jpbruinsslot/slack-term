@@ -71,11 +71,13 @@ func incomingMessageHandler(ctx *context.AppContext) {
 				case *slack.MessageEvent:
 
 					// Construct message
-					m := ctx.Service.CreateMessageFromMessageEvent(ev)
+					msg := ctx.Service.CreateMessageFromMessageEvent(ev)
 
 					// Add message to the selected channel
 					if ev.Channel == ctx.Service.Channels[ctx.View.Channels.SelectedChannel].ID {
-						ctx.View.Chat.AddMessage(m)
+						for _, m := range msg {
+							ctx.View.Chat.AddMessage(m)
+						}
 						termui.Render(ctx.View.Chat)
 
 						// TODO: set Chat.Offset to 0, to automatically scroll

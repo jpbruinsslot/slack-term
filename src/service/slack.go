@@ -151,39 +151,7 @@ func (s *SlackService) GetMessages(channel interface{}, count int) []string {
 	var messages []string
 	for _, message := range history.Messages {
 		msg := s.CreateMessage(message)
-		messages = append(messages, msg)
-	}
-
-	// Reverse the order of the messages, we want the newest in
-	// the last place
-	var messagesReversed []string
-	for i := len(messages) - 1; i >= 0; i-- {
-		messagesReversed = append(messagesReversed, messages[i])
-	}
-
-	return messagesReversed
-}
-
-func (s *SlackService) GetMessagesForChannel(channel string, count int) []string {
-	// https://api.slack.com/methods/channels.history
-	historyParams := slack.HistoryParameters{
-		Count:     count,
-		Inclusive: false,
-		Unreads:   false,
-	}
-
-	// https://godoc.org/github.com/nlopes/slack#History
-	history, err := s.Client.GetChannelHistory(channel, historyParams)
-	if err != nil {
-		log.Fatal(err)
-		return []string{""}
-	}
-
-	// Construct the messages
-	var messages []string
-	for _, message := range history.Messages {
-		msg := s.CreateMessage(message)
-		messages = append(messages, msg)
+		messages = append(messages, msg...)
 	}
 
 	// Reverse the order of the messages, we want the newest in
@@ -201,7 +169,10 @@ func (s *SlackService) GetMessagesForChannel(channel string, count int) []string
 //
 // [23:59] <erroneousboat> Hello world!
 //
-func (s *SlackService) CreateMessage(message slack.Message) string {
+// This returns an array of string because we will try to uncover attachments
+// associated with messages.
+func (s *SlackService) CreateMessage(message slack.Message) []string {
+	var msgs []string
 	var name string
 
 	// Get username from cache
@@ -234,6 +205,11 @@ func (s *SlackService) CreateMessage(message slack.Message) string {
 		name = "unknown"
 	}
 
+	// When there are attachments append them
+	if len(message.Attachments) > 0 {
+		msgs = append(msgs, createMessageFromAttachments(message.Attachments)...)
+	}
+
 	// Parse time
 	floatTime, err := strconv.ParseFloat(message.Timestamp, 64)
 	if err != nil {
@@ -249,11 +225,14 @@ func (s *SlackService) CreateMessage(message slack.Message) string {
 		message.Text,
 	)
 
-	return msg
+	msgs = append(msgs, msg)
+
+	return msgs
 }
 
-func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent) string {
+func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent) []string {
 
+	var msgs []string
 	var name string
 
 	// Get username from cache
@@ -286,6 +265,11 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 		name = "unknown"
 	}
 
+	// When there are attachments append them
+	if len(message.Attachments) > 0 {
+		msgs = append(msgs, createMessageFromAttachments(message.Attachments)...)
+	}
+
 	// Parse time
 	floatTime, err := strconv.ParseFloat(message.Timestamp, 64)
 	if err != nil {
@@ -301,5 +285,25 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 		message.Text,
 	)
 
-	return msg
+	msgs = append(msgs, msg)
+
+	return msgs
+}
+
+// createMessageFromAttachments will construct a array of string of the Field
+// values of Attachments from a Message.
+func createMessageFromAttachments(atts []slack.Attachment) []string {
+	var msgs []string
+	for _, att := range atts {
+		for i := len(att.Fields) - 1; i >= 0; i-- {
+			msgs = append(msgs,
+				fmt.Sprintf(
+					"%s %s",
+					att.Fields[i].Title,
+					att.Fields[i].Value,
+				),
+			)
+		}
+	}
+	return msgs
 }
