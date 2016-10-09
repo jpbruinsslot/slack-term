@@ -30,7 +30,15 @@ func anyKeyHandler(ctx *context.AppContext) func(termui.Event) {
 				actionInsertMode(ctx)
 			case "<previous>":
 				actionScrollUpChat(ctx)
+			case "C-b":
+				actionScrollUpChat(ctx)
+			case "C-u":
+				actionScrollUpChat(ctx)
 			case "<next>":
+				actionScrollDownChat(ctx)
+			case "C-f":
+				actionScrollDownChat(ctx)
+			case "C-d":
 				actionScrollDownChat(ctx)
 			}
 		} else if ctx.Mode == context.InsertMode {
