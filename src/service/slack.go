@@ -90,7 +90,6 @@ func (s *SlackService) GetChannels() []Channel {
 		chans = append(chans, Channel{})
 	}
 	for _, im := range slackIM {
-		s.SlackChannels = append(s.SlackChannels, im)
 
 		// Uncover name, when we can't uncover name for
 		// IM channel this is then probably a deleted
@@ -99,6 +98,7 @@ func (s *SlackService) GetChannels() []Channel {
 		name, ok := s.UserCache[im.User]
 		if ok {
 			chans = append(chans, Channel{im.ID, name})
+			s.SlackChannels = append(s.SlackChannels, im)
 		}
 	}
 
