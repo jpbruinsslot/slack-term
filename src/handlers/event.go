@@ -45,6 +45,8 @@ func anyKeyHandler(ctx *context.AppContext) func(termui.Event) {
 				actionBackSpace(ctx.View)
 			case "C-8":
 				actionBackSpace(ctx.View)
+			case "<delete>":
+				actionDelete(ctx.View)
 			case "<right>":
 				actionMoveCursorRight(ctx.View)
 			case "<left>":
@@ -112,7 +114,12 @@ func actionInput(view *views.View, key string) {
 }
 
 func actionBackSpace(view *views.View) {
-	view.Input.Remove()
+	view.Input.Backspace()
+	termui.Render(view.Input)
+}
+
+func actionDelete(view *views.View) {
+	view.Input.Delete()
 	termui.Render(view.Input)
 }
 
