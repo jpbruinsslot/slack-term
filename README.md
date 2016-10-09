@@ -31,7 +31,12 @@ Usage
 | `esc`     | normal mode              |
 | `k`       | move channel cursor up   |
 | `j`       | move channel cursor down |
-| `pg-up`   | scroll up chat pane      |
-| `pg-down` | scroll down chat pane    |
+| `pg-up`   | scroll chat pane up      |
+| `ctrl-b`  | scroll chat pane up      |
+| `ctrl-u`  | scroll chat pane up      |
+| `pg-down` | scroll chat pane down    |
+| `ctrl-f`  | scroll chat pane down    |
+| `ctrl-d`  | scroll chat pane down    |
+| `pg-down` | scroll chat pane down    |
 | `q`       | quit                     |
 

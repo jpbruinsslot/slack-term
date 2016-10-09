@@ -3,7 +3,8 @@ default: test
 # -timeout 	timout in seconds
 #  -v		verbose output
 test:
-	go test -timeout=5s -v
+	@echo "+ $@"
+	@ go test -timeout=5s -v
 
 # `CGO_ENABLED=0`
 # Because of dynamically linked libraries, this will statically compile the
@@ -34,19 +35,27 @@ test:
 # `./src/`
 # Location of the source files
 build:
-	CGO_ENABLED=0 go build -a -installsuffix cgo -o ./bin/slack-term ./src/
+	@ echo "+ $@"
+	@ CGO_ENABLED=0 go build -a -installsuffix cgo -o ./bin/slack-term ./src/
 
 # Cross-compile
 # http://dave.cheney.net/2015/08/22/cross-compilation-with-go-1-5
 build-linux:
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -o ./bin/slack-term-linux-amd64 ./src/
+	@ echo "+ $@"
+	@ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -o ./bin/slack-term-linux-amd64 ./src/
 
 build-mac:
-	GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -o ./bin/slack-term-darwin-amd64 ./src/
+	@ echo "+ $@"
+	@ GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -o ./bin/slack-term-darwin-amd64 ./src/
 
 run: build
-	./bin/slack-term
+	@ echo "+ $@"
+	@ ./bin/slack-term
+
+install:
+	@ echo "+ $@"
+	@ go install .
 
 build-all: build build-linux build-mac
 
-.PHONY: default test build build-linux build-mac run
+.PHONY: default test build build-linux build-mac run install

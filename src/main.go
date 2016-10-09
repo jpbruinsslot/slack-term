@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os/user"
 	"path"
@@ -12,14 +13,29 @@ import (
 	"github.com/gizak/termui"
 )
 
-func main() {
-	// Start terminal user interface
-	err := termui.Init()
-	if err != nil {
-		panic(err)
-	}
-	defer termui.Close()
+const (
+	USAGE = `NAME:
+    slack-term - slack client for your terminal
 
+USAGE:
+    slack-term -config [path-to-config]
+
+VERSION:
+    %s
+
+GLOBAL OPTIONS:
+   --help, -h
+`
+)
+
+var (
+	flgConfig string
+	flgUsage  bool
+
+	VERSION = "dev"
+)
+
+func init() {
 	// Get home dir for config file default
 	usr, err := user.Current()
 	if err != nil {
@@ -27,15 +43,30 @@ func main() {
 	}
 
 	// Parse flags
-	flgConfig := flag.String(
+	flag.StringVar(
+		&flgConfig,
 		"config",
 		path.Join(usr.HomeDir, "slack-term.json"),
 		"location of config file",
 	)
+
+	flag.Usage = func() {
+		fmt.Printf(USAGE, VERSION)
+	}
+
 	flag.Parse()
+}
+
+func main() {
+	// Start terminal user interface
+	err := termui.Init()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer termui.Close()
 
 	// Create context
-	ctx := context.CreateAppContext(*flgConfig)
+	ctx := context.CreateAppContext(flgConfig)
 
 	// Setup body
 	termui.Body.AddRows(
