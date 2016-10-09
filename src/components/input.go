@@ -71,16 +71,23 @@ func (i *Input) SendMessage(svc *service.SlackService, channel string, message s
 // Insert will insert a given key at the place of the current CursorPosition
 func (i *Input) Insert(key string) {
 	if len(i.Par.Text) < i.Par.InnerBounds().Dx()-1 {
-		i.Par.Text = i.Par.Text[0:i.CursorPosition] + key + i.Par.Text[i.CursorPosition:len(i.Par.Text)]
+		i.Par.Text = i.Par.Text[0:i.CursorPosition] + key + i.Par.Text[i.CursorPosition:]
 		i.MoveCursorRight()
 	}
 }
 
-// Remove will remove a character at the place of the current CursorPosition
-func (i *Input) Remove() {
+// Backspace will remove a character in front of the CursorPosition
+func (i *Input) Backspace() {
 	if i.CursorPosition > 0 {
-		i.Par.Text = i.Par.Text[0:i.CursorPosition-1] + i.Par.Text[i.CursorPosition:len(i.Par.Text)]
+		i.Par.Text = i.Par.Text[0:i.CursorPosition-1] + i.Par.Text[i.CursorPosition:]
 		i.MoveCursorLeft()
+	}
+}
+
+// Delete will remove a character at the CursorPosition
+func (i *Input) Delete() {
+	if i.CursorPosition < len(i.Par.Text) {
+		i.Par.Text = i.Par.Text[0:i.CursorPosition] + i.Par.Text[i.CursorPosition+1:]
 	}
 }
 
