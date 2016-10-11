@@ -154,7 +154,14 @@ func (s *SlackService) GetMessages(channel interface{}, count int) []string {
 		messages = append(messages, msg...)
 	}
 
-	return messages
+	// Reverse the order of the messages, we want the newest in
+	// the last place
+	var messagesReversed []string
+	for i := len(messages) - 1; i >= 0; i-- {
+		messagesReversed = append(messagesReversed, messages[i])
+	}
+
+	return messagesReversed
 }
 
 // CreateMessage will create a string formatted message that can be rendered
@@ -220,14 +227,7 @@ func (s *SlackService) CreateMessage(message slack.Message) []string {
 
 	msgs = append(msgs, msg)
 
-	// Reverse the order of the messages, we want the newest in
-	// the last place
-	var messagesReversed []string
-	for i := len(msgs) - 1; i >= 0; i-- {
-		messagesReversed = append(messagesReversed, msgs[i])
-	}
-
-	return messagesReversed
+	return msgs
 }
 
 func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent) []string {
@@ -287,14 +287,7 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 
 	msgs = append(msgs, msg)
 
-	// Reverse the order of the messages, we want the newest in
-	// the last place
-	var messagesReversed []string
-	for i := len(msgs) - 1; i >= 0; i-- {
-		messagesReversed = append(messagesReversed, msgs[i])
-	}
-
-	return messagesReversed
+	return msgs
 }
 
 // createMessageFromAttachments will construct a array of string of the Field
