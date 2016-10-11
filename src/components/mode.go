@@ -38,7 +38,14 @@ func (m *Mode) Buffer() termui.Buffer {
 	x := m.Par.InnerBounds().Min.X
 	for x < m.Par.InnerBounds().Max.X {
 		if i < start {
-			buf.Set(x, m.Par.InnerY(), termui.Cell{Ch: ' '})
+			buf.Set(
+				x, m.Par.InnerY(),
+				termui.Cell{
+					Ch: ' ',
+					Fg: m.Par.TextFgColor,
+					Bg: m.Par.TextBgColor,
+				},
+			)
 			x++
 			i++
 		} else {

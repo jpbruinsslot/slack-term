@@ -50,7 +50,7 @@ func (c *Channels) Buffer() termui.Buffer {
 		var cells []termui.Cell
 		if y == c.CursorPosition {
 			cells = termui.DefaultTxBuilder.Build(
-				item, termui.ColorBlack, termui.ColorWhite)
+				item, c.List.ItemBgColor, c.List.ItemFgColor)
 		} else {
 			cells = termui.DefaultTxBuilder.Build(
 				item, c.List.ItemFgColor, c.List.ItemBgColor)
@@ -70,11 +70,20 @@ func (c *Channels) Buffer() termui.Buffer {
 			if y == c.CursorPosition {
 				buf.Set(x+1, y,
 					termui.Cell{
-						Ch: ' ', Fg: termui.ColorBlack, Bg: termui.ColorWhite,
+						Ch: ' ',
+						Fg: c.List.ItemBgColor,
+						Bg: c.List.ItemFgColor,
 					},
 				)
 			} else {
-				buf.Set(x+1, y, termui.Cell{Ch: ' '})
+				buf.Set(
+					x+1, y,
+					termui.Cell{
+						Ch: ' ',
+						Fg: c.List.ItemFgColor,
+						Bg: c.List.ItemBgColor,
+					},
+				)
 			}
 			x++
 		}

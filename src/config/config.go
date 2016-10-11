@@ -33,7 +33,7 @@ func NewConfig(filepath string) (*Config, error) {
 			"fg":           termui.ColorBlack,
 			"bg":           termui.ColorDefault,
 			"border.fg":    termui.ColorBlack,
-			"label.fg":     termui.ColorGreen,
+			"label.fg":     termui.ColorBlue,
 			"par.fg":       termui.ColorYellow,
 			"par.label.bg": termui.ColorWhite,
 		}
