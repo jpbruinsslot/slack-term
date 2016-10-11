@@ -85,9 +85,13 @@ func incomingMessageHandler(ctx *context.AppContext) {
 
 					// Add message to the selected channel
 					if ev.Channel == ctx.Service.Channels[ctx.View.Channels.SelectedChannel].ID {
-						for _, m := range msg {
-							ctx.View.Chat.AddMessage(m)
+
+						// reverse order of messages, mainly done
+						// when attachments are added to message
+						for i := len(msg) - 1; i >= 0; i-- {
+							ctx.View.Chat.AddMessage(msg[i])
 						}
+
 						termui.Render(ctx.View.Chat)
 
 						// TODO: set Chat.Offset to 0, to automatically scroll
