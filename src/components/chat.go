@@ -94,7 +94,14 @@ func (c *Chat) Buffer() termui.Buffer {
 		// When we're not at the end of the pane, fill it up
 		// with empty characters
 		for x < c.List.InnerBounds().Max.X {
-			buf.Set(x, currentY, termui.Cell{Ch: ' '})
+			buf.Set(
+				x, currentY,
+				termui.Cell{
+					Ch: ' ',
+					Fg: c.List.ItemFgColor,
+					Bg: c.List.ItemBgColor,
+				},
+			)
 			x++
 		}
 		currentY--
@@ -106,7 +113,14 @@ func (c *Chat) Buffer() termui.Buffer {
 	for currentY >= paneMinY {
 		x := c.List.InnerBounds().Min.X
 		for x < c.List.InnerBounds().Max.X {
-			buf.Set(x, currentY, termui.Cell{Ch: ' '})
+			buf.Set(
+				x, currentY,
+				termui.Cell{
+					Ch: ' ',
+					Fg: c.List.ItemFgColor,
+					Bg: c.List.ItemBgColor,
+				},
+			)
 			x++
 		}
 		currentY--
