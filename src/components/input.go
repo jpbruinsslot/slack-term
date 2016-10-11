@@ -37,7 +37,11 @@ func (i *Input) Buffer() termui.Buffer {
 	buf.Set(
 		i.Par.InnerX()+i.CursorPosition,
 		i.Par.Block.InnerY(),
-		termui.Cell{Ch: char.Ch, Fg: termui.ColorBlack, Bg: termui.ColorWhite},
+		termui.Cell{
+			Ch: char.Ch,
+			Fg: i.Par.TextBgColor,
+			Bg: i.Par.TextFgColor,
+		},
 	)
 
 	return buf

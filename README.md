@@ -8,9 +8,12 @@ of the binaries for your system from the `bin` folder. Rename the file for
 convenience into `slack-term` and create a `slack-term.json` file with
 the following contents in your home folder.
 
-```
+```javascript
 {
     "slack_token": "yourslacktokenhere"
+
+    // add the following to use light theme, default is dark
+    "theme": "light"
 }
 ```
 
