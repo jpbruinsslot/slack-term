@@ -52,9 +52,9 @@ run: build
 	@ echo "+ $@"
 	@ ./bin/slack-term
 
-install:
+install: build
 	@ echo "+ $@"
-	@ go install .
+	@ cp ./bin/slack-term ~/bin
 
 build-all: build build-linux build-mac
 
