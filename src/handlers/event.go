@@ -1,6 +1,11 @@
 package handlers
 
 import (
+	"bufio"
+	"io"
+	"log"
+	"os"
+
 	"github.com/gizak/termui"
 	"github.com/nlopes/slack"
 
@@ -60,7 +65,7 @@ func anyKeyHandler(ctx *context.AppContext) func(termui.Event) {
 			case "<left>":
 				actionMoveCursorLeft(ctx.View)
 			default:
-				actionInput(ctx.View, key)
+				// actionInput(ctx.View, key)
 			}
 		}
 	}
@@ -170,6 +175,21 @@ func actionInsertMode(ctx *context.AppContext) {
 	ctx.Mode = context.InsertMode
 	ctx.View.Mode.Par.Text = "INSERT"
 	termui.Render(ctx.View.Mode)
+
+	r := bufio.NewReader(os.Stdin)
+	for {
+		if c, _, err := r.ReadRune(); err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				log.Fatal(err)
+			}
+		} else {
+			log.Fatal(string(c))
+			ctx.View.Input.Insert(string(c))
+		}
+	}
+
 }
 
 func actionCommandMode(ctx *context.AppContext) {
