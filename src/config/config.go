@@ -31,7 +31,7 @@ func NewConfig(filepath string) (*Config, error) {
 	if cfg.Theme == "light" {
 		termui.ColorMap = map[string]termui.Attribute{
 			"fg":           termui.ColorBlack,
-			"bg":           termui.ColorDefault,
+			"bg":           termui.ColorWhite,
 			"border.fg":    termui.ColorBlack,
 			"label.fg":     termui.ColorBlue,
 			"par.fg":       termui.ColorYellow,
