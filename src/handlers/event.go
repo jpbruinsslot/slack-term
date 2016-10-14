@@ -147,13 +147,18 @@ func actionMoveCursorLeft(view *views.View) {
 
 func actionSend(ctx *context.AppContext) {
 	if !ctx.View.Input.IsEmpty() {
+
+		// Clear message before sending, to combat
+		// quick succession of actionSend
+		message := ctx.View.Input.Text()
+		ctx.View.Input.Clear()
+		ctx.View.Refresh()
+
 		ctx.View.Input.SendMessage(
 			ctx.Service,
 			ctx.Service.Channels[ctx.View.Channels.SelectedChannel].ID,
-			ctx.View.Input.Text(),
+			message,
 		)
-		ctx.View.Input.Clear()
-		ctx.View.Refresh()
 	}
 }
 

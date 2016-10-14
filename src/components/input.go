@@ -10,8 +10,6 @@ import (
 type Input struct {
 	Par            *termui.Par
 	CursorPosition int
-	CursorFgColor  termui.Attribute
-	CursorBgColor  termui.Attribute
 }
 
 // CreateInput is the constructor of the Input struct
@@ -19,8 +17,6 @@ func CreateInput() *Input {
 	input := &Input{
 		Par:            termui.NewPar(""),
 		CursorPosition: 0,
-		CursorBgColor:  termui.ColorBlack,
-		CursorFgColor:  termui.ColorWhite,
 	}
 
 	input.Par.Height = 3
