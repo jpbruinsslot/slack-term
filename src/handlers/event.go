@@ -1,74 +1,75 @@
 package handlers
 
 import (
-	"bufio"
-	"io"
-	"log"
-	"os"
-
 	"github.com/gizak/termui"
 	"github.com/nlopes/slack"
+	termbox "github.com/nsf/termbox-go"
 
 	"github.com/erroneousboat/slack-term/src/context"
 	"github.com/erroneousboat/slack-term/src/views"
 )
 
 func RegisterEventHandlers(ctx *context.AppContext) {
-	termui.Handle("/sys/kbd/", anyKeyHandler(ctx))
-	termui.Handle("/sys/wnd/resize", resizeHandler(ctx))
+	anyKeyHandler(ctx)
 	incomingMessageHandler(ctx)
+	termui.Handle("/sys/wnd/resize", resizeHandler(ctx))
 }
 
-func anyKeyHandler(ctx *context.AppContext) func(termui.Event) {
-	return func(e termui.Event) {
-		key := e.Data.(termui.EvtKbd).KeyStr
+func anyKeyHandler(ctx *context.AppContext) {
+	go func() {
+		for {
+			ev := termbox.PollEvent()
 
-		if ctx.Mode == context.CommandMode {
-			switch key {
-			case "q":
-				actionQuit()
-			case "j":
-				actionMoveCursorDownChannels(ctx)
-			case "k":
-				actionMoveCursorUpChannels(ctx)
-			case "i":
-				actionInsertMode(ctx)
-			case "<previous>":
-				actionScrollUpChat(ctx)
-			case "C-b":
-				actionScrollUpChat(ctx)
-			case "C-u":
-				actionScrollUpChat(ctx)
-			case "<next>":
-				actionScrollDownChat(ctx)
-			case "C-f":
-				actionScrollDownChat(ctx)
-			case "C-d":
-				actionScrollDownChat(ctx)
-			}
-		} else if ctx.Mode == context.InsertMode {
-			switch key {
-			case "<escape>":
-				actionCommandMode(ctx)
-			case "<enter>":
-				actionSend(ctx)
-			case "<space>":
-				actionInput(ctx.View, " ")
-			case "<backspace>":
-				actionBackSpace(ctx.View)
-			case "C-8":
-				actionBackSpace(ctx.View)
-			case "<delete>":
-				actionDelete(ctx.View)
-			case "<right>":
-				actionMoveCursorRight(ctx.View)
-			case "<left>":
-				actionMoveCursorLeft(ctx.View)
-			default:
-				// actionInput(ctx.View, key)
+			if ev.Type == termbox.EventKey {
+				if ctx.Mode == context.CommandMode {
+					switch ev.Key {
+					case termbox.KeyPgup:
+						actionScrollUpChat(ctx)
+					case termbox.KeyCtrlB:
+						actionScrollUpChat(ctx)
+					case termbox.KeyCtrlU:
+						actionScrollUpChat(ctx)
+					case termbox.KeyPgdn:
+						actionScrollDownChat(ctx)
+					case termbox.KeyCtrlF:
+						actionScrollDownChat(ctx)
+					case termbox.KeyCtrlD:
+						actionScrollDownChat(ctx)
+					default:
+						switch ev.Ch {
+						case 'q':
+							actionQuit()
+						case 'j':
+							actionMoveCursorDownChannels(ctx)
+						case 'k':
+							actionMoveCursorUpChannels(ctx)
+						case 'i':
+							actionInsertMode(ctx)
+						}
+					}
+				} else if ctx.Mode == context.InsertMode {
+					switch ev.Key {
+					case termbox.KeyEsc:
+						actionCommandMode(ctx)
+					case termbox.KeyEnter:
+						actionSend(ctx)
+					case termbox.KeySpace:
+						actionInput(ctx.View, " ")
+					case termbox.KeyBackspace, termbox.KeyBackspace2:
+						actionBackSpace(ctx.View)
+					case termbox.KeyDelete:
+						actionDelete(ctx.View)
+					case termbox.KeyArrowRight:
+						actionMoveCursorRight(ctx.View)
+					case termbox.KeyArrowLeft:
+						actionMoveCursorLeft(ctx.View)
+					default:
+						actionInput(ctx.View, string(ev.Ch))
+					}
+				}
 			}
 		}
-	}
+	}()
 }
 
 func resizeHandler(ctx *context.AppContext) func(termui.Event) {
@@ -175,21 +176,6 @@ func actionInsertMode(ctx *context.AppContext) {
 	ctx.Mode = context.InsertMode
 	ctx.View.Mode.Par.Text = "INSERT"
 	termui.Render(ctx.View.Mode)
-
-	r := bufio.NewReader(os.Stdin)
-	for {
-		if c, _, err := r.ReadRune(); err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				log.Fatal(err)
-			}
-		} else {
-			log.Fatal(string(c))
-			ctx.View.Input.Insert(string(c))
-		}
-	}
-
 }
 
 func actionCommandMode(ctx *context.AppContext) {
