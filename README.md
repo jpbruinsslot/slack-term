@@ -1,45 +1,59 @@
 Slack-Term
 ==========
 
-A [Slack](https://slack.com) client for your terminal.
+A [Slack](https://slack.com) client for your terminal. As of now the
+application is in a beta state. See [issues](https://github.com/erroneousboat/slack-term/issues)
+for known bugs and for features I'm working on at the moment
 
-*This project is still in development*, but you can test it by downloading one
-of the binaries for your system from the `bin` folder. Rename the file for
-convenience into `slack-term` and create a `slack-term.json` file with
-the following contents in your home folder.
+![Screenshot](/screenshot.png?raw=true)
 
-```javascript
-{
-    "slack_token": "yourslacktokenhere"
+Getting started
+---------------
 
-    // add the following to use light theme, default is dark
-    "theme": "light"
-}
-```
+1. [Download](https://github.com/erroneousboat/slack-term/releases) a
+   compatible version for your system, and place where you can access it from
+   the command line like, `~/bin`, `/usr/local/bin`, or `/usr/local/sbin`.
 
-Run `slack-term`: 
+2. Get a slack token, click [here](https://api.slack.com/docs/oauth-test-tokens) 
 
-```bash
-$ ./slack-term
-```
+3. Create a `slack-term.json` file, place it in your home directory. The file
+   should resemble the following structure:
+
+    ```javascript
+    {
+        "slack_token": "yourslacktokenhere"
+
+        // add the following to use light theme, default is dark
+        "theme": "light"
+    }
+    ```
+
+4. Run `slack-term`: 
+
+    ```bash
+    $ slack-term
+
+    // or specify the location of the config file
+    $ slack-term -config [path-to-config-file]
+    ```
 
 Usage
 -----
 
-| key       | action                   |
-|-----------|--------------------------|
-| `i`       | insert mode              |
-| `left`    | move input cursor left   |
-| `right`   | move input cursor right  |
-| `esc`     | normal mode              |
-| `k`       | move channel cursor up   |
-| `j`       | move channel cursor down |
-| `pg-up`   | scroll chat pane up      |
-| `ctrl-b`  | scroll chat pane up      |
-| `ctrl-u`  | scroll chat pane up      |
-| `pg-down` | scroll chat pane down    |
-| `ctrl-f`  | scroll chat pane down    |
-| `ctrl-d`  | scroll chat pane down    |
-| `pg-down` | scroll chat pane down    |
-| `q`       | quit                     |
-
+| mode   | key       | action                   |
+|--------|-----------|--------------------------|
+| normal | `i`       | insert mode              |
+| normal | `k`       | move channel cursor up   |
+| normal | `j`       | move channel cursor down |
+| normal | `pg-up`   | scroll chat pane up      |
+| normal | `ctrl-b`  | scroll chat pane up      |
+| normal | `ctrl-u`  | scroll chat pane up      |
+| normal | `pg-down` | scroll chat pane down    |
+| normal | `ctrl-f`  | scroll chat pane down    |
+| normal | `ctrl-d`  | scroll chat pane down    |
+| normal | `pg-down` | scroll chat pane down    |
+| normal | `q`       | quit                     |
+| insert | `left`    | move input cursor left   |
+| insert | `right`   | move input cursor right  |
+| insert | `enter`   | send message             |
+| insert | `esc`     | normal mode              |
