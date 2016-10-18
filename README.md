@@ -42,20 +42,22 @@ Getting started
 Usage
 -----
 
-| mode   | key       | action                   |
-|--------|-----------|--------------------------|
-| normal | `i`       | insert mode              |
-| normal | `k`       | move channel cursor up   |
-| normal | `j`       | move channel cursor down |
-| normal | `pg-up`   | scroll chat pane up      |
-| normal | `ctrl-b`  | scroll chat pane up      |
-| normal | `ctrl-u`  | scroll chat pane up      |
-| normal | `pg-down` | scroll chat pane down    |
-| normal | `ctrl-f`  | scroll chat pane down    |
-| normal | `ctrl-d`  | scroll chat pane down    |
-| normal | `pg-down` | scroll chat pane down    |
-| normal | `q`       | quit                     |
-| insert | `left`    | move input cursor left   |
-| insert | `right`   | move input cursor right  |
-| insert | `enter`   | send message             |
-| insert | `esc`     | normal mode              |
+| mode   | key       | action                     |
+|--------|-----------|----------------------------|
+| normal | `i`       | insert mode                |
+| normal | `k`       | move channel cursor up     |
+| normal | `j`       | move channel cursor down   |
+| normal | `gg`      | move channel cursor top    |
+| normal | `G`       | move channel cursor bottom |
+| normal | `pg-up`   | scroll chat pane up        |
+| normal | `ctrl-b`  | scroll chat pane up        |
+| normal | `ctrl-u`  | scroll chat pane up        |
+| normal | `pg-down` | scroll chat pane down      |
+| normal | `ctrl-f`  | scroll chat pane down      |
+| normal | `ctrl-d`  | scroll chat pane down      |
+| normal | `pg-down` | scroll chat pane down      |
+| normal | `q`       | quit                       |
+| insert | `left`    | move input cursor left     |
+| insert | `right`   | move input cursor right    |
+| insert | `enter`   | send message               |
+| insert | `esc`     | normal mode                |

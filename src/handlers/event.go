@@ -43,6 +43,10 @@ func anyKeyHandler(ctx *context.AppContext) {
 							actionMoveCursorDownChannels(ctx)
 						case 'k':
 							actionMoveCursorUpChannels(ctx)
+						case 'g':
+							actionMoveCursorTopChannels(ctx)
+						case 'G':
+							actionMoveCursorBottomChannels(ctx)
 						case 'i':
 							actionInsertMode(ctx)
 						}
@@ -205,6 +209,16 @@ func actionMoveCursorUpChannels(ctx *context.AppContext) {
 
 func actionMoveCursorDownChannels(ctx *context.AppContext) {
 	ctx.View.Channels.MoveCursorDown()
+	actionChangeChannel(ctx)
+}
+
+func actionMoveCursorTopChannels(ctx *context.AppContext) {
+	ctx.View.Channels.MoveCursorTop()
+	actionChangeChannel(ctx)
+}
+
+func actionMoveCursorBottomChannels(ctx *context.AppContext) {
+	ctx.View.Channels.MoveCursorBottom()
 	actionChangeChannel(ctx)
 }
 
