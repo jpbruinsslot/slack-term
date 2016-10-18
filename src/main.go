@@ -32,7 +32,7 @@ var (
 	flgConfig string
 	flgUsage  bool
 
-	VERSION = "v0.1.0-beta.1"
+	VERSION = "v0.1.0-beta.2"
 )
 
 func init() {
