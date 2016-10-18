@@ -12,9 +12,9 @@ import (
 // Channels is the definition of a Channels component
 type Channels struct {
 	List            *termui.List
-	SelectedChannel int
-	Offset          int
-	CursorPosition  int
+	SelectedChannel int // index of which channel is selected from the List
+	Offset          int // from what offset are channels rendered
+	CursorPosition  int // the y position of the 'cursor'
 }
 
 // CreateChannels is the constructor for the Channels component
@@ -139,6 +139,28 @@ func (c *Channels) MoveCursorDown() {
 		c.SetSelectedChannel(c.SelectedChannel + 1)
 		c.ScrollDown()
 		c.ClearNewMessageIndicator()
+	}
+}
+
+// MoveCursorTop will move the cursor to the top of the channels
+func (c *Channels) MoveCursorTop() {
+	c.SetSelectedChannel(0)
+	c.CursorPosition = c.List.InnerBounds().Min.Y
+	c.Offset = 0
+}
+
+// MoveCursorBottom will move the cursor to the bottom of the channels
+func (c *Channels) MoveCursorBottom() {
+	c.SetSelectedChannel(len(c.List.Items) - 1)
+
+	offset := len(c.List.Items) - (c.List.InnerBounds().Max.Y - 1)
+
+	if offset < 0 {
+		c.Offset = 0
+		c.CursorPosition = c.SelectedChannel + 1
+	} else {
+		c.Offset = offset
+		c.CursorPosition = c.List.InnerBounds().Max.Y - 1
 	}
 }
 
