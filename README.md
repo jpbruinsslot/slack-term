@@ -21,7 +21,7 @@ Getting started
 
     ```javascript
     {
-        "slack_token": "yourslacktokenhere"
+        "slack_token": "yourslacktokenhere",
 
         // add the following to use light theme, default is dark
         "theme": "light"
