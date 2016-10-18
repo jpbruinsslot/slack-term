@@ -29,7 +29,7 @@ func CreateAppContext(flgConfig string) *AppContext {
 	// Load config
 	config, err := config.NewConfig(flgConfig)
 	if err != nil {
-		log.Fatalf("ERROR: not able to load config file: %s", flgConfig)
+		log.Fatalf("ERROR: not able to load config file (%s): %s", flgConfig, err)
 	}
 
 	// Create Service

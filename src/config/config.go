@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 
 	"github.com/gizak/termui"
@@ -26,6 +27,10 @@ func NewConfig(filepath string) (*Config, error) {
 
 	if err := json.NewDecoder(file).Decode(&cfg); err != nil {
 		return &cfg, err
+	}
+
+	if cfg.SlackToken == "" {
+		return &cfg, errors.New("couldn't find 'slack_token' parameter")
 	}
 
 	if cfg.Theme == "light" {
