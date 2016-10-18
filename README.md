@@ -14,6 +14,8 @@ Getting started
    compatible version for your system, and place where you can access it from
    the command line like, `~/bin`, `/usr/local/bin`, or `/usr/local/sbin`.
 
+   For the latest version, click [here](https://github.com/erroneousboat/slack-term/tree/master/bin)
+
 2. Get a slack token, click [here](https://api.slack.com/docs/oauth-test-tokens) 
 
 3. Create a `slack-term.json` file, place it in your home directory. The file
