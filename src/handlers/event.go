@@ -38,7 +38,7 @@ func anyKeyHandler(ctx *context.AppContext) {
 					default:
 						switch ev.Ch {
 						case 'q':
-							actionQuit()
+							actionAskQuit(ctx)
 						case 'j':
 							actionMoveCursorDownChannels(ctx)
 						case 'k':
@@ -69,6 +69,20 @@ func anyKeyHandler(ctx *context.AppContext) {
 						actionMoveCursorLeft(ctx.View)
 					default:
 						actionInput(ctx.View, string(ev.Ch))
+					}
+				} else if ctx.Mode == context.QuitMode {
+					switch ev.Key {
+					case termbox.KeyEsc:
+						actionCommandMode(ctx)
+					case termbox.KeyEnter:
+						actionCommandMode(ctx)
+					default:
+						switch ev.Ch {
+						case 'y', 'Y':
+							actionQuit()
+						case 'n', 'N':
+							actionCommandMode(ctx)
+						}
 					}
 				}
 			}
@@ -170,6 +184,13 @@ func actionSend(ctx *context.AppContext) {
 			message,
 		)
 	}
+}
+
+// Ask before quit
+func actionAskQuit(ctx *context.AppContext) {
+	ctx.Mode = context.QuitMode
+	ctx.View.Mode.Par.Text = "Quit? [y/N]"
+	termui.Render(ctx.View.Mode)
 }
 
 func actionQuit() {
