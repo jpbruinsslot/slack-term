@@ -5,8 +5,8 @@ import (
 	"github.com/nlopes/slack"
 	termbox "github.com/nsf/termbox-go"
 
-	"github.com/erroneousboat/slack-term/src/context"
-	"github.com/erroneousboat/slack-term/src/views"
+	"github.com/erroneousboat/slack-term/context"
+	"github.com/erroneousboat/slack-term/views"
 )
 
 func RegisterEventHandlers(ctx *context.AppContext) {

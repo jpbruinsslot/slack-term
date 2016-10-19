@@ -7,8 +7,8 @@ import (
 	"os/user"
 	"path"
 
-	"github.com/erroneousboat/slack-term/src/context"
-	"github.com/erroneousboat/slack-term/src/handlers"
+	"github.com/erroneousboat/slack-term/context"
+	"github.com/erroneousboat/slack-term/handlers"
 
 	"github.com/gizak/termui"
 )

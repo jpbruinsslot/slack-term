@@ -5,9 +5,9 @@ import (
 
 	"github.com/gizak/termui"
 
-	"github.com/erroneousboat/slack-term/src/config"
-	"github.com/erroneousboat/slack-term/src/service"
-	"github.com/erroneousboat/slack-term/src/views"
+	"github.com/erroneousboat/slack-term/config"
+	"github.com/erroneousboat/slack-term/service"
+	"github.com/erroneousboat/slack-term/views"
 )
 
 const (

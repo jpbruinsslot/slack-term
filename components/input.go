@@ -3,7 +3,7 @@ package components
 import (
 	"github.com/gizak/termui"
 
-	"github.com/erroneousboat/slack-term/src/service"
+	"github.com/erroneousboat/slack-term/service"
 )
 
 // Input is the definition of an Input component
