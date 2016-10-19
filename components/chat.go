@@ -1,6 +1,7 @@
 package components
 
 import (
+	"html"
 	"strings"
 
 	"github.com/gizak/termui"
@@ -163,7 +164,7 @@ func (c *Chat) GetMessages(svc *service.SlackService, channel interface{}) {
 
 // AddMessage adds a single message to List.Items
 func (c *Chat) AddMessage(message string) {
-	c.List.Items = append(c.List.Items, message)
+	c.List.Items = append(c.List.Items, html.UnescapeString(message))
 }
 
 // ClearMessages clear the List.Items
