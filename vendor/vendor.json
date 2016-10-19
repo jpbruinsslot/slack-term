@@ -1,0 +1,43 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "e8j3de5Zz0Y8YvoNvCVxqCVbgZg=",
+			"path": "github.com/gizak/termui",
+			"revision": "23b25db08316d51303b96a02edebae1649136565",
+			"revisionTime": "2016-08-14T02:39:28Z"
+		},
+		{
+			"checksumSHA1": "DdH3xAkzAWJ4B/LGYJyCeRsly2I=",
+			"path": "github.com/mattn/go-runewidth",
+			"revision": "d6bea18f789704b5f83375793155289da36a3c7f",
+			"revisionTime": "2016-03-15T04:07:12Z"
+		},
+		{
+			"checksumSHA1": "L3leymg2RT8hFl5uL+5KP/LpBkg=",
+			"path": "github.com/mitchellh/go-wordwrap",
+			"revision": "ad45545899c7b13c020ea92b2072220eefad42b8",
+			"revisionTime": "2015-03-14T17:03:34Z"
+		},
+		{
+			"checksumSHA1": "LgycO10DeSc2JRSEJEnXg6SfB0s=",
+			"path": "github.com/nlopes/slack",
+			"revision": "a1a63712460a18dbe828ae915f954a0f214f3d8e",
+			"revisionTime": "2016-10-03T12:27:58Z"
+		},
+		{
+			"checksumSHA1": "pqTEAm1W2tlmdHJ6b/J0no+cfso=",
+			"path": "github.com/nsf/termbox-go",
+			"revision": "b6acae516ace002cb8105a89024544a1480655a5",
+			"revisionTime": "2016-09-13T19:16:50Z"
+		},
+		{
+			"checksumSHA1": "sM7kVFxASf7lzSkUI9sF6YClGaA=",
+			"path": "golang.org/x/net/websocket",
+			"revision": "ffe101cce3477a6c6d8f0754d103bb0a84ec1266",
+			"revisionTime": "2016-10-03T09:22:05Z"
+		}
+	],
+	"rootPath": "github.com/erroneousboat/slack-term/src"
+}

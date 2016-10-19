@@ -32,21 +32,21 @@ test:
 # `./bin/slack-term`
 # Placement of the binary
 #
-# `./src/`
+# `.`
 # Location of the source files
 build:
 	@ echo "+ $@"
-	@ CGO_ENABLED=0 go build -a -installsuffix cgo -o ./bin/slack-term ./src/
+	@ CGO_ENABLED=0 go build -a -installsuffix cgo -o ./bin/slack-term .
 
 # Cross-compile
 # http://dave.cheney.net/2015/08/22/cross-compilation-with-go-1-5
 build-linux:
 	@ echo "+ $@"
-	@ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -o ./bin/slack-term-linux-amd64 ./src/
+	@ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -o ./bin/slack-term-linux-amd64 .
 
 build-mac:
 	@ echo "+ $@"
-	@ GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -o ./bin/slack-term-darwin-amd64 ./src/
+	@ GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -o ./bin/slack-term-darwin-amd64 .
 
 run: build
 	@ echo "+ $@"
@@ -54,7 +54,7 @@ run: build
 
 install: build
 	@ echo "+ $@"
-	@ cp ./bin/slack-term ~/bin
+	@ go install .
 
 build-all: build build-linux build-mac
 
