@@ -10,14 +10,16 @@ import (
 
 // Config is the definition of a Config struct
 type Config struct {
-	SlackToken string `json:"slack_token"`
-	Theme      string `json:"theme"`
+	SlackToken   string `json:"slack_token"`
+	Theme        string `json:"theme"`
+	SidebarWidth int    `json:"sidebar_width"`
 }
 
 // NewConfig loads the config file and returns a Config struct
 func NewConfig(filepath string) (*Config, error) {
 	cfg := Config{
-		Theme: "dark",
+		Theme:        "dark",
+		SidebarWidth: 1,
 	}
 
 	file, err := os.Open(filepath)
