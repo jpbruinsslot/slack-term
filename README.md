@@ -23,8 +23,11 @@ Getting started
     {
         "slack_token": "yourslacktokenhere",
 
-        // add the following to use light theme, default is dark
-        "theme": "light"
+        // optional: add the following to use light theme, default is dark
+        "theme": "light",
+
+        // optional: set the width of the sidebar (between 1 and 11), default is 1
+        "sidebar_width": 3
     }
     ```
 
