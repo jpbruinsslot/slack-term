@@ -23,11 +23,10 @@ Getting started
     {
         "slack_token": "yourslacktokenhere",
 
-        // add the following to use light theme, default is dark
+        // optional: add the following to use light theme, default is dark
         "theme": "light",
 
-        // Set the width of the channel list sidebar. Must be between 1 and 11
-        // as the entire width of the screen is 12 columns.
+        // optional: set the width of the sidebar (between 1 and 11), default is 1
         "sidebar_width": 3
     }
     ```

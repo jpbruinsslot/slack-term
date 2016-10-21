@@ -68,17 +68,15 @@ func main() {
 	// Create context
 	ctx := context.CreateAppContext(flgConfig)
 
-	mainWidth := 12 - ctx.Config.SidebarWidth
-
 	// Setup body
 	termui.Body.AddRows(
 		termui.NewRow(
 			termui.NewCol(ctx.Config.SidebarWidth, 0, ctx.View.Channels),
-			termui.NewCol(mainWidth, 0, ctx.View.Chat),
+			termui.NewCol(ctx.Config.MainWidth, 0, ctx.View.Chat),
 		),
 		termui.NewRow(
 			termui.NewCol(ctx.Config.SidebarWidth, 0, ctx.View.Mode),
-			termui.NewCol(mainWidth, 0, ctx.View.Input),
+			termui.NewCol(ctx.Config.MainWidth, 0, ctx.View.Input),
 		),
 	)
 	termui.Body.Align()
