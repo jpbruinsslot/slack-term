@@ -58,7 +58,7 @@ func anyKeyHandler(ctx *context.AppContext) {
 					case termbox.KeyEnter:
 						actionSend(ctx)
 					case termbox.KeySpace:
-						actionInput(ctx.View, " ")
+						actionInput(ctx.View, ' ')
 					case termbox.KeyBackspace, termbox.KeyBackspace2:
 						actionBackSpace(ctx.View)
 					case termbox.KeyDelete:
@@ -68,7 +68,7 @@ func anyKeyHandler(ctx *context.AppContext) {
 					case termbox.KeyArrowLeft:
 						actionMoveCursorLeft(ctx.View)
 					default:
-						actionInput(ctx.View, string(ev.Ch))
+						actionInput(ctx.View, ev.Ch)
 					}
 				}
 			}
@@ -130,7 +130,7 @@ func actionResize(ctx *context.AppContext) {
 	termui.Render(termui.Body)
 }
 
-func actionInput(view *views.View, key string) {
+func actionInput(view *views.View, key rune) {
 	view.Input.Insert(key)
 	termui.Render(view.Input)
 }
@@ -160,7 +160,7 @@ func actionSend(ctx *context.AppContext) {
 
 		// Clear message before sending, to combat
 		// quick succession of actionSend
-		message := ctx.View.Input.Text()
+		message := ctx.View.Input.GetText()
 		ctx.View.Input.Clear()
 		ctx.View.Refresh()
 

@@ -9,6 +9,7 @@ import (
 // Input is the definition of an Input component
 type Input struct {
 	Par            *termui.Par
+	Text           []rune
 	CursorPosition int
 }
 
@@ -16,6 +17,7 @@ type Input struct {
 func CreateInput() *Input {
 	input := &Input{
 		Par:            termui.NewPar(""),
+		Text:           make([]rune, 0),
 		CursorPosition: 0,
 	}
 
@@ -69,9 +71,13 @@ func (i *Input) SendMessage(svc *service.SlackService, channel string, message s
 }
 
 // Insert will insert a given key at the place of the current CursorPosition
-func (i *Input) Insert(key string) {
-	if len(i.Par.Text) < i.Par.InnerBounds().Dx()-1 {
-		i.Par.Text = i.Par.Text[0:i.CursorPosition] + key + i.Par.Text[i.CursorPosition:]
+func (i *Input) Insert(key rune) {
+	if len(i.Text) < i.Par.InnerBounds().Dx()-1 {
+
+		first := append(i.Text[0:i.CursorPosition], key)
+		i.Text = append(first, i.Text[i.CursorPosition:]...)
+
+		i.Par.Text = string(i.Text)
 		i.MoveCursorRight()
 	}
 }
@@ -79,15 +85,17 @@ func (i *Input) Insert(key string) {
 // Backspace will remove a character in front of the CursorPosition
 func (i *Input) Backspace() {
 	if i.CursorPosition > 0 {
-		i.Par.Text = i.Par.Text[0:i.CursorPosition-1] + i.Par.Text[i.CursorPosition:]
+		i.Text = append(i.Text[0:i.CursorPosition-1], i.Text[i.CursorPosition:]...)
+		i.Par.Text = string(i.Text)
 		i.MoveCursorLeft()
 	}
 }
 
 // Delete will remove a character at the CursorPosition
 func (i *Input) Delete() {
-	if i.CursorPosition < len(i.Par.Text) {
-		i.Par.Text = i.Par.Text[0:i.CursorPosition] + i.Par.Text[i.CursorPosition+1:]
+	if i.CursorPosition < len(i.Text) {
+		i.Text = append(i.Text[0:i.CursorPosition], i.Text[i.CursorPosition+1:]...)
+		i.Par.Text = string(i.Text)
 	}
 }
 
@@ -119,7 +127,7 @@ func (i *Input) Clear() {
 	i.CursorPosition = 0
 }
 
-// Text returns the text currently in the input
-func (i *Input) Text() string {
+// GetText returns the text currently in the input
+func (i *Input) GetText() string {
 	return i.Par.Text
 }
