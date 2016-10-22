@@ -123,6 +123,7 @@ func (i *Input) IsEmpty() bool {
 
 // Clear will empty the input and move the cursor to the start position
 func (i *Input) Clear() {
+	i.Text = make([]rune, 0)
 	i.Par.Text = ""
 	i.CursorPosition = 0
 }
