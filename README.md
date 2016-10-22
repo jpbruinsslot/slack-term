@@ -1,9 +1,7 @@
 Slack-Term
 ==========
 
-A [Slack](https://slack.com) client for your terminal. As of now the
-application is in a beta state. See [issues](https://github.com/erroneousboat/slack-term/issues)
-for known bugs and for features I'm working on at the moment
+A [Slack](https://slack.com) client for your terminal.
 
 ![Screenshot](/screenshot.png?raw=true)
 
@@ -12,7 +10,13 @@ Getting started
 
 1. [Download](https://github.com/erroneousboat/slack-term/releases) a
    compatible version for your system, and place where you can access it from
-   the command line like, `~/bin`, `/usr/local/bin`, or `/usr/local/sbin`.
+   the command line like, `~/bin`, `/usr/local/bin`, or `/usr/local/sbin`. Or
+   get it via Go:
+
+
+    ```bash
+    $ go get github.com/erroneouboat/slack-term
+    ```
 
 2. Get a slack token, click [here](https://api.slack.com/docs/oauth-test-tokens) 
 

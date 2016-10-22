@@ -101,7 +101,7 @@ func (i *Input) Delete() {
 
 // MoveCursorRight will increase the current CursorPosition with 1
 func (i *Input) MoveCursorRight() {
-	if i.CursorPosition < len(i.Par.Text) {
+	if i.CursorPosition < len(i.Text) {
 		i.CursorPosition++
 	}
 }
