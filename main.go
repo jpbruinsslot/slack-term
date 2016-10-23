@@ -7,8 +7,8 @@ import (
 	"os/user"
 	"path"
 
-	"github.com/erroneousboat/slack-term/context"
-	"github.com/erroneousboat/slack-term/handlers"
+	"./context"
+	"./handlers"
 
 	"github.com/gizak/termui"
 )
@@ -30,8 +30,6 @@ GLOBAL OPTIONS:
 
 var (
 	flgConfig string
-	flgUsage  bool
-
 	VERSION = "v0.1.0"
 )
 
