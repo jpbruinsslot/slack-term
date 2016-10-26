@@ -32,7 +32,7 @@ var (
 	flgConfig string
 	flgUsage  bool
 
-	VERSION = "v0.1.0-beta.2"
+	VERSION = "v0.1.0"
 )
 
 func init() {
@@ -71,12 +71,12 @@ func main() {
 	// Setup body
 	termui.Body.AddRows(
 		termui.NewRow(
-			termui.NewCol(1, 0, ctx.View.Channels),
-			termui.NewCol(11, 0, ctx.View.Chat),
+			termui.NewCol(ctx.Config.SidebarWidth, 0, ctx.View.Channels),
+			termui.NewCol(ctx.Config.MainWidth, 0, ctx.View.Chat),
 		),
 		termui.NewRow(
-			termui.NewCol(1, 0, ctx.View.Mode),
-			termui.NewCol(11, 0, ctx.View.Input),
+			termui.NewCol(ctx.Config.SidebarWidth, 0, ctx.View.Mode),
+			termui.NewCol(ctx.Config.MainWidth, 0, ctx.View.Input),
 		),
 	)
 	termui.Body.Align()

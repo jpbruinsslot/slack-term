@@ -10,14 +10,18 @@ import (
 
 // Config is the definition of a Config struct
 type Config struct {
-	SlackToken string `json:"slack_token"`
-	Theme      string `json:"theme"`
+	SlackToken   string `json:"slack_token"`
+	Theme        string `json:"theme"`
+	SidebarWidth int    `json:"sidebar_width"`
+	MainWidth    int    `json:"-"`
 }
 
 // NewConfig loads the config file and returns a Config struct
 func NewConfig(filepath string) (*Config, error) {
 	cfg := Config{
-		Theme: "dark",
+		Theme:        "dark",
+		SidebarWidth: 1,
+		MainWidth:    11,
 	}
 
 	file, err := os.Open(filepath)
@@ -32,6 +36,12 @@ func NewConfig(filepath string) (*Config, error) {
 	if cfg.SlackToken == "" {
 		return &cfg, errors.New("couldn't find 'slack_token' parameter")
 	}
+
+	if cfg.SidebarWidth < 1 || cfg.SidebarWidth > 11 {
+		return &cfg, errors.New("please specify the 'sidebar_width' between 1 and 11")
+	}
+
+	cfg.MainWidth = 12 - cfg.SidebarWidth
 
 	if cfg.Theme == "light" {
 		termui.ColorMap = map[string]termui.Attribute{

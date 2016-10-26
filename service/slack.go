@@ -31,8 +31,17 @@ func NewSlackService(token string) *SlackService {
 		UserCache: make(map[string]string),
 	}
 
-	svc.RTM = svc.Client.NewRTM()
+	// Get user associated with token, mainly
+	// used to identify user when new messages
+	// arrives
+	authTest, err := svc.Client.AuthTest()
+	if err != nil {
+		log.Fatal("ERROR: not able to authorize client, check your connection and/or slack-token")
+	}
+	svc.CurrentUserID = authTest.UserID
 
+	// Create RTM
+	svc.RTM = svc.Client.NewRTM()
 	go svc.RTM.ManageConnection()
 
 	// Creation of user cache this speeds up
@@ -44,15 +53,6 @@ func NewSlackService(token string) *SlackService {
 			svc.UserCache[user.ID] = user.Name
 		}
 	}
-
-	// Get user associated with token, mainly
-	// used to identify user when new messages
-	// arrives
-	authTest, err := svc.Client.AuthTest()
-	if err != nil {
-		log.Fatal("Client.AuthTest() failed")
-	}
-	svc.CurrentUserID = authTest.UserID
 
 	return svc
 }
