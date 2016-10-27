@@ -15,6 +15,39 @@ func RegisterEventHandlers(ctx *context.AppContext) {
 	termui.Handle("/sys/wnd/resize", resizeHandler(ctx))
 }
 
+var keyMapping = map[termbox.Key]string{
+	termbox.KeyPgup:       "pg-up",
+	termbox.KeyCtrlB:      "ctrl-b",
+	termbox.KeyCtrlU:      "ctrl-u",
+	termbox.KeyPgdn:       "pg-dn",
+	termbox.KeyCtrlF:      "ctrl-f",
+	termbox.KeyCtrlD:      "ctrl-d",
+	termbox.KeyEsc:        "esc",
+	termbox.KeyEnter:      "enter",
+	termbox.KeyBackspace:  "backspace",
+	termbox.KeyBackspace2: "backspace",
+	termbox.KeyDelete:     "del",
+	termbox.KeyArrowRight: "right",
+	termbox.KeyArrowLeft:  "left",
+}
+
+var actionMap = map[string]func(*context.AppContext){
+	"backspace":      actionBackSpace,
+	"delete":         actionDelete,
+	"cursor-right":   actionMoveCursorRight,
+	"cursor-left":    actionMoveCursorLeft,
+	"send":           actionSend,
+	"quit":           actionQuit,
+	"insert":         actionInsertMode,
+	"normal":         actionCommandMode,
+	"channel-up":     actionMoveCursorUpChannels,
+	"channel-down":   actionMoveCursorDownChannels,
+	"channel-top":    actionMoveCursorTopChannels,
+	"channel-bottom": actionMoveCursorBottomChannels,
+	"chat-up":        actionScrollUpChat,
+	"chat-down":      actionScrollDownChat,
+}
+
 func anyKeyHandler(ctx *context.AppContext) {
 	go func() {
 		for {
