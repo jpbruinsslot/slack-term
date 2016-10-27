@@ -135,24 +135,24 @@ func actionInput(view *views.View, key rune) {
 	termui.Render(view.Input)
 }
 
-func actionBackSpace(view *views.View) {
-	view.Input.Backspace()
-	termui.Render(view.Input)
+func actionBackSpace(ctx *context.AppContext) {
+	ctx.View.Input.Backspace()
+	termui.Render(ctx.View.Input)
 }
 
-func actionDelete(view *views.View) {
-	view.Input.Delete()
-	termui.Render(view.Input)
+func actionDelete(ctx *context.AppContext) {
+	ctx.View.Input.Delete()
+	termui.Render(ctx.View.Input)
 }
 
-func actionMoveCursorRight(view *views.View) {
-	view.Input.MoveCursorRight()
-	termui.Render(view.Input)
+func actionMoveCursorRight(ctx *context.AppContext) {
+	ctx.View.Input.MoveCursorRight()
+	termui.Render(ctx.View.Input)
 }
 
-func actionMoveCursorLeft(view *views.View) {
-	view.Input.MoveCursorLeft()
-	termui.Render(view.Input)
+func actionMoveCursorLeft(ctx *context.AppContext) {
+	ctx.View.Input.MoveCursorLeft()
+	termui.Render(ctx.View.Input)
 }
 
 func actionSend(ctx *context.AppContext) {
@@ -172,7 +172,7 @@ func actionSend(ctx *context.AppContext) {
 	}
 }
 
-func actionQuit() {
+func actionQuit(*context.AppContext) {
 	termui.StopLoop()
 }
 
