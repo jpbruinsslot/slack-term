@@ -35,27 +35,30 @@ Getting started
 
         // optional: define custom key mappings
         // (shown are the default key mappings)
-        "keys": {
-          "normal": {
-            "i": "insert",
-            "k": "channel-up",
-            "j": "channel-down",
-            "gg": "channel-top",
-            "G": "channel-bottom",
-            "pg-up": "chat-up",
-            "ctrl-b": "chat-up",
-            "ctrl-u": "chat-up",
-            "pg-down": "chat-down",
-            "ctrl-f": "chat-down",
-            "ctrl-d": "chat-down",
-            "q": "quit"
-          },
-          "insert": {
-            "left": "cursor-left",
-            "right": "cursor-right",
-            "enter": "send",
-            "esc": "normal"
-          }
+        "key-map": {
+            "command": {
+                "i":          "mode-insert",
+                "k":          "channel-up",
+                "j":          "channel-down",
+                "g":          "channel-top",
+                "G":          "channel-bottom",
+                "<previous>": "chat-up",
+                "C-b":        "chat-up",
+                "C-u":        "chat-up",
+                "<next>":     "chat-down",
+                "C-f":        "chat-down",
+                "C-d":        "chat-down",
+                "q":          "quit",
+            },
+            "insert": {
+                "<left>":      "cursor-left",
+                "<right>":     "cursor-right",
+                "<enter>":     "send",
+                "<escape>":    "mode-command",
+                "<backspace>": "backspace",
+                "<delete>":    "delete",
+                "<space>":     "space",
+            }
         }
     }
     ```
@@ -77,7 +80,7 @@ Default Key Mapping
 | normal | `i`       | insert mode                |
 | normal | `k`       | move channel cursor up     |
 | normal | `j`       | move channel cursor down   |
-| normal | `gg`      | move channel cursor top    |
+| normal | `g`       | move channel cursor top    |
 | normal | `G`       | move channel cursor bottom |
 | normal | `pg-up`   | scroll chat pane up        |
 | normal | `ctrl-b`  | scroll chat pane up        |
