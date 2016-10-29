@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/gizak/termui"
 	"github.com/nlopes/slack"
@@ -10,6 +11,8 @@ import (
 	"github.com/erroneousboat/slack-term/context"
 	"github.com/erroneousboat/slack-term/views"
 )
+
+var timer *time.Timer
 
 // actionMap binds specific action names to the function counterparts,
 // these action names can then be used to bind them to specific keys
@@ -193,19 +196,36 @@ func actionGetMessages(ctx *context.AppContext) {
 	termui.Render(ctx.View.Chat)
 }
 
-func actionGetChannels(ctx *context.AppContext) {
-	ctx.View.Channels.GetChannels(ctx.Service)
-	termui.Render(ctx.View.Channels)
-}
-
 func actionMoveCursorUpChannels(ctx *context.AppContext) {
-	ctx.View.Channels.MoveCursorUp()
-	actionChangeChannel(ctx)
+	go func() {
+		if timer != nil {
+			timer.Stop()
+		}
+
+		ctx.View.Channels.MoveCursorUp()
+		termui.Render(ctx.View.Channels)
+
+		timer = time.NewTimer(time.Second / 4)
+		<-timer.C
+
+		actionChangeChannel(ctx)
+	}()
 }
 
 func actionMoveCursorDownChannels(ctx *context.AppContext) {
-	ctx.View.Channels.MoveCursorDown()
-	actionChangeChannel(ctx)
+	go func() {
+		if timer != nil {
+			timer.Stop()
+		}
+
+		ctx.View.Channels.MoveCursorDown()
+		termui.Render(ctx.View.Channels)
+
+		timer = time.NewTimer(time.Second / 4)
+		<-timer.C
+
+		actionChangeChannel(ctx)
+	}()
 }
 
 func actionMoveCursorTopChannels(ctx *context.AppContext) {
