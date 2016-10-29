@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+
 	"github.com/gizak/termui"
 	"github.com/nlopes/slack"
 	termbox "github.com/nsf/termbox-go"
@@ -15,61 +17,66 @@ func RegisterEventHandlers(ctx *context.AppContext) {
 	termui.Handle("/sys/wnd/resize", resizeHandler(ctx))
 }
 
+var keyMapping = map[termbox.Key]string{
+	termbox.KeyPgup:       "pg-up",
+	termbox.KeyCtrlB:      "ctrl-b",
+	termbox.KeyCtrlU:      "ctrl-u",
+	termbox.KeyPgdn:       "pg-dn",
+	termbox.KeyCtrlF:      "ctrl-f",
+	termbox.KeyCtrlD:      "ctrl-d",
+	termbox.KeyEsc:        "esc",
+	termbox.KeyEnter:      "enter",
+	termbox.KeyBackspace:  "backspace",
+	termbox.KeyBackspace2: "backspace",
+	termbox.KeyDelete:     "del",
+	termbox.KeyArrowRight: "right",
+	termbox.KeyArrowLeft:  "left",
+}
+
+var actionMap = map[string]func(*context.AppContext){
+	"backspace":      actionBackSpace,
+	"delete":         actionDelete,
+	"cursor-right":   actionMoveCursorRight,
+	"cursor-left":    actionMoveCursorLeft,
+	"send":           actionSend,
+	"quit":           actionQuit,
+	"insert":         actionInsertMode,
+	"normal":         actionCommandMode,
+	"channel-up":     actionMoveCursorUpChannels,
+	"channel-down":   actionMoveCursorDownChannels,
+	"channel-top":    actionMoveCursorTopChannels,
+	"channel-bottom": actionMoveCursorBottomChannels,
+	"chat-up":        actionScrollUpChat,
+	"chat-down":      actionScrollDownChat,
+}
+
 func anyKeyHandler(ctx *context.AppContext) {
 	go func() {
 		for {
 			ev := termbox.PollEvent()
 
-			if ev.Type == termbox.EventKey {
-				if ctx.Mode == context.CommandMode {
-					switch ev.Key {
-					case termbox.KeyPgup:
-						actionScrollUpChat(ctx)
-					case termbox.KeyCtrlB:
-						actionScrollUpChat(ctx)
-					case termbox.KeyCtrlU:
-						actionScrollUpChat(ctx)
-					case termbox.KeyPgdn:
-						actionScrollDownChat(ctx)
-					case termbox.KeyCtrlF:
-						actionScrollDownChat(ctx)
-					case termbox.KeyCtrlD:
-						actionScrollDownChat(ctx)
-					default:
-						switch ev.Ch {
-						case 'q':
-							actionQuit()
-						case 'j':
-							actionMoveCursorDownChannels(ctx)
-						case 'k':
-							actionMoveCursorUpChannels(ctx)
-						case 'g':
-							actionMoveCursorTopChannels(ctx)
-						case 'G':
-							actionMoveCursorBottomChannels(ctx)
-						case 'i':
-							actionInsertMode(ctx)
-						}
-					}
-				} else if ctx.Mode == context.InsertMode {
-					switch ev.Key {
-					case termbox.KeyEsc:
-						actionCommandMode(ctx)
-					case termbox.KeyEnter:
-						actionSend(ctx)
-					case termbox.KeySpace:
-						actionInput(ctx.View, ' ')
-					case termbox.KeyBackspace, termbox.KeyBackspace2:
-						actionBackSpace(ctx.View)
-					case termbox.KeyDelete:
-						actionDelete(ctx.View)
-					case termbox.KeyArrowRight:
-						actionMoveCursorRight(ctx.View)
-					case termbox.KeyArrowLeft:
-						actionMoveCursorLeft(ctx.View)
-					default:
-						actionInput(ctx.View, ev.Ch)
-					}
+			if ev.Type != termbox.EventKey {
+				continue
+			}
+
+			mappedKey := keyMapping[ev.Key]
+			if mappedKey == "" {
+				mappedKey = fmt.Sprintf("%c", ev.Ch)
+			}
+
+			mappedActionName := ctx.Config.KeyMapping[ctx.Mode][mappedKey]
+			action := actionMap[mappedActionName]
+			if action != nil {
+				action(ctx)
+				continue
+			}
+
+			if ctx.Mode == context.InsertMode {
+				switch ev.Key {
+				case termbox.KeySpace:
+					actionInput(ctx.View, ' ')
+				default:
+					actionInput(ctx.View, ev.Ch)
 				}
 			}
 		}
@@ -135,24 +142,24 @@ func actionInput(view *views.View, key rune) {
 	termui.Render(view.Input)
 }
 
-func actionBackSpace(view *views.View) {
-	view.Input.Backspace()
-	termui.Render(view.Input)
+func actionBackSpace(ctx *context.AppContext) {
+	ctx.View.Input.Backspace()
+	termui.Render(ctx.View.Input)
 }
 
-func actionDelete(view *views.View) {
-	view.Input.Delete()
-	termui.Render(view.Input)
+func actionDelete(ctx *context.AppContext) {
+	ctx.View.Input.Delete()
+	termui.Render(ctx.View.Input)
 }
 
-func actionMoveCursorRight(view *views.View) {
-	view.Input.MoveCursorRight()
-	termui.Render(view.Input)
+func actionMoveCursorRight(ctx *context.AppContext) {
+	ctx.View.Input.MoveCursorRight()
+	termui.Render(ctx.View.Input)
 }
 
-func actionMoveCursorLeft(view *views.View) {
-	view.Input.MoveCursorLeft()
-	termui.Render(view.Input)
+func actionMoveCursorLeft(ctx *context.AppContext) {
+	ctx.View.Input.MoveCursorLeft()
+	termui.Render(ctx.View.Input)
 }
 
 func actionSend(ctx *context.AppContext) {
@@ -172,7 +179,7 @@ func actionSend(ctx *context.AppContext) {
 	}
 }
 
-func actionQuit() {
+func actionQuit(*context.AppContext) {
 	termui.StopLoop()
 }
 
