@@ -220,3 +220,7 @@ func (c *Channels) ClearNewMessageIndicator() {
 		c.List.Items[c.SelectedChannel] = channelName[0]
 	}
 }
+
+func (c *Channels) SetReadMark(svc *service.SlackService) {
+	svc.SetChannelReadMark(svc.SlackChannels[c.SelectedChannel])
+}
