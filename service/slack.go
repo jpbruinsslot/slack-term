@@ -107,6 +107,29 @@ func (s *SlackService) GetChannels() []Channel {
 	return chans
 }
 
+// SetChannelReadMark will set the read mark for a channel, group, and im
+// channel based on the current time.
+func (s *SlackService) SetChannelReadMark(channel interface{}) {
+	switch channel := channel.(type) {
+	case slack.Channel:
+		s.Client.SetChannelReadMark(
+			channel.ID, fmt.Sprintf("%f",
+				float64(time.Now().Unix())),
+		)
+	case slack.Group:
+		s.Client.SetGroupReadMark(
+			channel.ID, fmt.Sprintf("%f",
+				float64(time.Now().Unix())),
+		)
+	case slack.IM:
+		s.Client.MarkIMChannel(
+			channel.ID, fmt.Sprintf("%f",
+				float64(time.Now().Unix())),
+		)
+	}
+}
+
+// SendMessage will send a message to a particular channel
 func (s *SlackService) SendMessage(channel string, message string) {
 	// https://godoc.org/github.com/nlopes/slack#PostMessageParameters
 	postParams := slack.PostMessageParameters{
@@ -117,6 +140,8 @@ func (s *SlackService) SendMessage(channel string, message string) {
 	s.Client.PostMessage(channel, message, postParams)
 }
 
+// GetMessages will get messages for a channel, group or im channel delimited
+// by a count.
 func (s *SlackService) GetMessages(channel interface{}, count int) []string {
 	// https://api.slack.com/methods/channels.history
 	historyParams := slack.HistoryParameters{
@@ -135,7 +160,6 @@ func (s *SlackService) GetMessages(channel interface{}, count int) []string {
 			log.Fatal(err) // FIXME
 		}
 	case slack.Group:
-		// TODO: json: cannot unmarshal number into Go value of type string<Paste>
 		history, err = s.Client.GetGroupHistory(chnType.ID, historyParams)
 		if err != nil {
 			log.Fatal(err) // FIXME
