@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	CommandMode = "normal"
+	CommandMode = "command"
 	InsertMode  = "insert"
 )
 

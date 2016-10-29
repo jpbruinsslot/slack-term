@@ -14,7 +14,7 @@ type Config struct {
 	Theme        string                `json:"theme"`
 	SidebarWidth int                   `json:"sidebar_width"`
 	MainWidth    int                   `json:"-"`
-	KeyMapping   map[string]keyMapping `json:"keys"`
+	KeyMap       map[string]keyMapping `json:"key-map"`
 }
 
 type keyMapping map[string]string
@@ -25,28 +25,29 @@ func NewConfig(filepath string) (*Config, error) {
 		Theme:        "dark",
 		SidebarWidth: 1,
 		MainWidth:    11,
-		KeyMapping: map[string]keyMapping{
-			"normal": keyMapping{
-				"i":       "insert",
-				"k":       "channel-up",
-				"j":       "channel-down",
-				"g":       "channel-top",
-				"G":       "channel-bottom",
-				"pg-up":   "chat-up",
-				"ctrl-b":  "chat-up",
-				"ctrl-u":  "chat-up",
-				"pg-down": "chat-down",
-				"ctrl-f":  "chat-down",
-				"ctrl-d":  "chat-down",
-				"q":       "quit",
+		KeyMap: map[string]keyMapping{
+			"command": {
+				"i":          "mode-insert",
+				"k":          "channel-up",
+				"j":          "channel-down",
+				"g":          "channel-top",
+				"G":          "channel-bottom",
+				"<previous>": "chat-up",
+				"C-b":        "chat-up",
+				"C-u":        "chat-up",
+				"<next>":     "chat-down",
+				"C-f":        "chat-down",
+				"C-d":        "chat-down",
+				"q":          "quit",
 			},
-			"insert": keyMapping{
-				"left":      "cursor-left",
-				"right":     "cursor-right",
-				"enter":     "send",
-				"esc":       "normal",
-				"backspace": "backspace",
-				"del":       "delete",
+			"insert": {
+				"<left>":      "cursor-left",
+				"<right>":     "cursor-right",
+				"<enter>":     "send",
+				"<escape>":    "mode-command",
+				"<backspace>": "backspace",
+				"<delete>":    "delete",
+				"<space>":     "space",
 			},
 		},
 	}

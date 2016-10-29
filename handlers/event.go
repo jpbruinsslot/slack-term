@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"fmt"
+	"strconv"
 
 	"github.com/gizak/termui"
 	"github.com/nlopes/slack"
@@ -11,43 +11,31 @@ import (
 	"github.com/erroneousboat/slack-term/views"
 )
 
-func RegisterEventHandlers(ctx *context.AppContext) {
-	anyKeyHandler(ctx)
-	incomingMessageHandler(ctx)
-	termui.Handle("/sys/wnd/resize", resizeHandler(ctx))
-}
-
-var keyMapping = map[termbox.Key]string{
-	termbox.KeyPgup:       "pg-up",
-	termbox.KeyCtrlB:      "ctrl-b",
-	termbox.KeyCtrlU:      "ctrl-u",
-	termbox.KeyPgdn:       "pg-dn",
-	termbox.KeyCtrlF:      "ctrl-f",
-	termbox.KeyCtrlD:      "ctrl-d",
-	termbox.KeyEsc:        "esc",
-	termbox.KeyEnter:      "enter",
-	termbox.KeyBackspace:  "backspace",
-	termbox.KeyBackspace2: "backspace",
-	termbox.KeyDelete:     "del",
-	termbox.KeyArrowRight: "right",
-	termbox.KeyArrowLeft:  "left",
-}
-
+// actionMap binds specific action names to the function counterparts,
+// these action names can then be used to bind them to specific keys
+// in the Config.
 var actionMap = map[string]func(*context.AppContext){
+	"space":          actionSpace,
 	"backspace":      actionBackSpace,
 	"delete":         actionDelete,
 	"cursor-right":   actionMoveCursorRight,
 	"cursor-left":    actionMoveCursorLeft,
 	"send":           actionSend,
 	"quit":           actionQuit,
-	"insert":         actionInsertMode,
-	"normal":         actionCommandMode,
+	"mode-insert":    actionInsertMode,
+	"mode-command":   actionCommandMode,
 	"channel-up":     actionMoveCursorUpChannels,
 	"channel-down":   actionMoveCursorDownChannels,
 	"channel-top":    actionMoveCursorTopChannels,
 	"channel-bottom": actionMoveCursorBottomChannels,
 	"chat-up":        actionScrollUpChat,
 	"chat-down":      actionScrollDownChat,
+}
+
+func RegisterEventHandlers(ctx *context.AppContext) {
+	anyKeyHandler(ctx)
+	incomingMessageHandler(ctx)
+	termui.Handle("/sys/wnd/resize", resizeHandler(ctx))
 }
 
 func anyKeyHandler(ctx *context.AppContext) {
@@ -59,23 +47,20 @@ func anyKeyHandler(ctx *context.AppContext) {
 				continue
 			}
 
-			mappedKey := keyMapping[ev.Key]
-			if mappedKey == "" {
-				mappedKey = fmt.Sprintf("%c", ev.Ch)
-			}
+			keyStr := getKeyString(ev)
 
-			mappedActionName := ctx.Config.KeyMapping[ctx.Mode][mappedKey]
-			action := actionMap[mappedActionName]
-			if action != nil {
-				action(ctx)
-				continue
-			}
-
-			if ctx.Mode == context.InsertMode {
-				switch ev.Key {
-				case termbox.KeySpace:
-					actionInput(ctx.View, ' ')
-				default:
+			// Get the action name (actionStr) from the key that
+			// has been pressed. If this is found try to uncover
+			// the associated function with this key and execute
+			// it.
+			actionStr, ok := ctx.Config.KeyMap[ctx.Mode][keyStr]
+			if ok {
+				action, ok := actionMap[actionStr]
+				if ok {
+					action(ctx)
+				}
+			} else {
+				if ctx.Mode == context.InsertMode && ev.Ch != 0 {
 					actionInput(ctx.View, ev.Ch)
 				}
 			}
@@ -140,6 +125,10 @@ func actionResize(ctx *context.AppContext) {
 func actionInput(view *views.View, key rune) {
 	view.Input.Insert(key)
 	termui.Render(view.Input)
+}
+
+func actionSpace(ctx *context.AppContext) {
+	actionInput(ctx.View, ' ')
 }
 
 func actionBackSpace(ctx *context.AppContext) {
@@ -261,4 +250,54 @@ func actionScrollUpChat(ctx *context.AppContext) {
 func actionScrollDownChat(ctx *context.AppContext) {
 	ctx.View.Chat.ScrollDown()
 	termui.Render(ctx.View.Chat)
+}
+
+// GetKeyString will return a string that resembles the key event from
+// termbox. This is blatanly copied from termui because it is an unexported
+// function.
+//
+// See:
+// - https://github.com/gizak/termui/blob/a7e3aeef4cdf9fa2edb723b1541cb69b7bb089ea/events.go#L31-L72
+// - https://github.com/nsf/termbox-go/blob/master/api_common.go
+func getKeyString(e termbox.Event) string {
+	var ek string
+
+	k := string(e.Ch)
+	pre := ""
+	mod := ""
+
+	if e.Mod == termbox.ModAlt {
+		mod = "M-"
+	}
+	if e.Ch == 0 {
+		if e.Key > 0xFFFF-12 {
+			k = "<f" + strconv.Itoa(0xFFFF-int(e.Key)+1) + ">"
+		} else if e.Key > 0xFFFF-25 {
+			ks := []string{"<insert>", "<delete>", "<home>", "<end>", "<previous>", "<next>", "<up>", "<down>", "<left>", "<right>"}
+			k = ks[0xFFFF-int(e.Key)-12]
+		}
+
+		if e.Key <= 0x7F {
+			pre = "C-"
+			k = string('a' - 1 + int(e.Key))
+			kmap := map[termbox.Key][2]string{
+				termbox.KeyCtrlSpace:     {"C-", "<space>"},
+				termbox.KeyBackspace:     {"", "<backspace>"},
+				termbox.KeyTab:           {"", "<tab>"},
+				termbox.KeyEnter:         {"", "<enter>"},
+				termbox.KeyEsc:           {"", "<escape>"},
+				termbox.KeyCtrlBackslash: {"C-", "\\"},
+				termbox.KeyCtrlSlash:     {"C-", "/"},
+				termbox.KeySpace:         {"", "<space>"},
+				termbox.KeyCtrl8:         {"C-", "8"},
+			}
+			if sk, ok := kmap[e.Key]; ok {
+				pre = sk[0]
+				k = sk[1]
+			}
+		}
+	}
+
+	ek = pre + mod + k
+	return ek
 }
