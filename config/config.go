@@ -10,11 +10,14 @@ import (
 
 // Config is the definition of a Config struct
 type Config struct {
-	SlackToken   string `json:"slack_token"`
-	Theme        string `json:"theme"`
-	SidebarWidth int    `json:"sidebar_width"`
-	MainWidth    int    `json:"-"`
+	SlackToken   string                `json:"slack_token"`
+	Theme        string                `json:"theme"`
+	SidebarWidth int                   `json:"sidebar_width"`
+	MainWidth    int                   `json:"-"`
+	KeyMapping   map[string]keyMapping `json:"keys"`
 }
+
+type keyMapping map[string]string
 
 // NewConfig loads the config file and returns a Config struct
 func NewConfig(filepath string) (*Config, error) {
@@ -22,6 +25,30 @@ func NewConfig(filepath string) (*Config, error) {
 		Theme:        "dark",
 		SidebarWidth: 1,
 		MainWidth:    11,
+		KeyMapping: map[string]keyMapping{
+			"normal": keyMapping{
+				"i":       "insert",
+				"k":       "channel-up",
+				"j":       "channel-down",
+				"g":       "channel-top",
+				"G":       "channel-bottom",
+				"pg-up":   "chat-up",
+				"ctrl-b":  "chat-up",
+				"ctrl-u":  "chat-up",
+				"pg-down": "chat-down",
+				"ctrl-f":  "chat-down",
+				"ctrl-d":  "chat-down",
+				"q":       "quit",
+			},
+			"insert": keyMapping{
+				"left":      "cursor-left",
+				"right":     "cursor-right",
+				"enter":     "send",
+				"esc":       "normal",
+				"backspace": "backspace",
+				"del":       "delete",
+			},
+		},
 	}
 
 	file, err := os.Open(filepath)
