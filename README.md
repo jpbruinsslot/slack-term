@@ -31,7 +31,35 @@ Getting started
         "theme": "light",
 
         // optional: set the width of the sidebar (between 1 and 11), default is 1
-        "sidebar_width": 3
+        "sidebar_width": 3,
+
+        // optional: define custom key mappings
+        // (shown are the default key mappings)
+        "key-map": {
+            "command": {
+                "i":          "mode-insert",
+                "k":          "channel-up",
+                "j":          "channel-down",
+                "g":          "channel-top",
+                "G":          "channel-bottom",
+                "<previous>": "chat-up",
+                "C-b":        "chat-up",
+                "C-u":        "chat-up",
+                "<next>":     "chat-down",
+                "C-f":        "chat-down",
+                "C-d":        "chat-down",
+                "q":          "quit",
+            },
+            "insert": {
+                "<left>":      "cursor-left",
+                "<right>":     "cursor-right",
+                "<enter>":     "send",
+                "<escape>":    "mode-command",
+                "<backspace>": "backspace",
+                "<delete>":    "delete",
+                "<space>":     "space",
+            }
+        }
     }
     ```
 
@@ -44,15 +72,15 @@ Getting started
     $ slack-term -config [path-to-config-file]
     ```
 
-Usage
------
+Default Key Mapping
+-------------------
 
 | mode   | key       | action                     |
 |--------|-----------|----------------------------|
 | normal | `i`       | insert mode                |
 | normal | `k`       | move channel cursor up     |
 | normal | `j`       | move channel cursor down   |
-| normal | `gg`      | move channel cursor top    |
+| normal | `g`       | move channel cursor top    |
 | normal | `G`       | move channel cursor bottom |
 | normal | `pg-up`   | scroll chat pane up        |
 | normal | `ctrl-b`  | scroll chat pane up        |
@@ -60,7 +88,6 @@ Usage
 | normal | `pg-down` | scroll chat pane down      |
 | normal | `ctrl-f`  | scroll chat pane down      |
 | normal | `ctrl-d`  | scroll chat pane down      |
-| normal | `pg-down` | scroll chat pane down      |
 | normal | `q`       | quit                       |
 | insert | `left`    | move input cursor left     |
 | insert | `right`   | move input cursor right    |
