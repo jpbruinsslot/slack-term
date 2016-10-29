@@ -15,7 +15,7 @@ Getting started
 
 
     ```bash
-    $ go get github.com/erroneouboat/slack-term
+    $ go get github.com/erroneousboat/slack-term
     ```
 
 2. Get a slack token, click [here](https://api.slack.com/docs/oauth-test-tokens) 
