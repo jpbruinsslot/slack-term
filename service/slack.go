@@ -259,6 +259,12 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 	var msgs []string
 	var name string
 
+	// Append (edited) when and edit message is received
+	if message.SubType == "message_changed" {
+		message = &slack.MessageEvent{Msg: *message.SubMessage}
+		message.Text = fmt.Sprintf("%s (edited)", message.Text)
+	}
+
 	// Get username from cache
 	name, ok := s.UserCache[message.User]
 
