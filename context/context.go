@@ -13,6 +13,7 @@ import (
 const (
 	CommandMode = "command"
 	InsertMode  = "insert"
+	QuitMode    = "quit"
 )
 
 type AppContext struct {
