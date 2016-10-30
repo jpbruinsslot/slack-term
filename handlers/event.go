@@ -5,8 +5,8 @@ import (
 	"github.com/nlopes/slack"
 	termbox "github.com/nsf/termbox-go"
 
-	"github.com/erroneousboat/slack-term/context"
-	"github.com/erroneousboat/slack-term/views"
+	"../context"
+	"../views"
 )
 
 func RegisterEventHandlers(ctx *context.AppContext) {
@@ -36,19 +36,36 @@ func anyKeyHandler(ctx *context.AppContext) {
 					case termbox.KeyCtrlD:
 						actionScrollDownChat(ctx)
 					default:
-						switch ev.Ch {
-						case 'q':
-							actionQuit()
-						case 'j':
-							actionMoveCursorDownChannels(ctx)
-						case 'k':
-							actionMoveCursorUpChannels(ctx)
-						case 'g':
-							actionMoveCursorTopChannels(ctx)
-						case 'G':
-							actionMoveCursorBottomChannels(ctx)
-						case 'i':
-							actionInsertMode(ctx)
+						if ctx.Config.EmacsMode {
+							switch ev.Ch {
+							case 'q':
+								actionQuit()
+							case 'n':
+								actionMoveCursorDownChannels(ctx)
+							case 'p':
+								actionMoveCursorUpChannels(ctx)
+							case '<':
+								actionMoveCursorTopChannels(ctx)
+							case '>':
+								actionMoveCursorBottomChannels(ctx)
+							case 'i':
+								actionInsertMode(ctx)
+							}
+						} else {
+							switch ev.Ch {
+							case 'q':
+								actionQuit()
+							case 'j':
+								actionMoveCursorDownChannels(ctx)
+							case 'k':
+								actionMoveCursorUpChannels(ctx)
+							case 'g':
+								actionMoveCursorTopChannels(ctx)
+							case 'G':
+								actionMoveCursorBottomChannels(ctx)
+							case 'i':
+								actionInsertMode(ctx)
+							}
 						}
 					}
 				} else if ctx.Mode == context.InsertMode {

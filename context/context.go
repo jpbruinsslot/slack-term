@@ -5,9 +5,9 @@ import (
 
 	"github.com/gizak/termui"
 
-	"github.com/erroneousboat/slack-term/config"
-	"github.com/erroneousboat/slack-term/service"
-	"github.com/erroneousboat/slack-term/views"
+	"../config"
+	"../service"
+	"../views"
 )
 
 const (
@@ -27,13 +27,13 @@ type AppContext struct {
 // and referenced througout the application
 func CreateAppContext(flgConfig string) *AppContext {
 	// Load config
-	config, err := config.NewConfig(flgConfig)
+	cfg, err := config.NewConfig(flgConfig)
 	if err != nil {
 		log.Fatalf("ERROR: not able to load config file (%s): %s", flgConfig, err)
 	}
 
 	// Create Service
-	svc := service.NewSlackService(config.SlackToken)
+	svc := service.NewSlackService(cfg.SlackToken)
 
 	// Create ChatView
 	view := views.CreateChatView(svc)
@@ -41,7 +41,7 @@ func CreateAppContext(flgConfig string) *AppContext {
 	return &AppContext{
 		Service: svc,
 		View:    view,
-		Config:  config,
+		Config:  cfg,
 		Mode:    CommandMode,
 	}
 }

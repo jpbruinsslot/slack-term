@@ -14,6 +14,7 @@ type Config struct {
 	Theme        string `json:"theme"`
 	SidebarWidth int    `json:"sidebar_width"`
 	MainWidth    int    `json:"-"`
+	EmacsMode    bool   `json:"emacs_mode"`
 }
 
 // NewConfig loads the config file and returns a Config struct

@@ -6,7 +6,7 @@ import (
 
 	"github.com/gizak/termui"
 
-	"github.com/erroneousboat/slack-term/service"
+	"../service"
 )
 
 // Chat is the definition of a Chat component
