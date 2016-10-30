@@ -1,11 +1,14 @@
 package components
 
 import (
+	"fmt"
 	"html"
+	"sort"
 	"strings"
 
 	"github.com/gizak/termui"
 
+	"github.com/erroneousboat/slack-term/config"
 	"github.com/erroneousboat/slack-term/service"
 )
 
@@ -207,4 +210,35 @@ func (c *Chat) ScrollDown() {
 // SetBorderLabel will set Label of the Chat pane to the specified string
 func (c *Chat) SetBorderLabel(label string) {
 	c.List.BorderLabel = label
+}
+
+// Help shows the usage and key bindings in the chat pane
+func (c *Chat) Help(cfg *config.Config) {
+	help := []string{
+		"slack-term - slack client for your terminal",
+		"",
+		"USAGE:",
+		"    slack-term -config [path-to-config]",
+		"",
+		"KEY BINDINGS:",
+		"",
+	}
+
+	for mode, mapping := range cfg.KeyMap {
+		help = append(help, fmt.Sprintf("    %s", strings.ToUpper(mode)))
+		help = append(help, "")
+
+		var keys []string
+		for k := range mapping {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			help = append(help, fmt.Sprintf("    %-12s%-15s", k, mapping[k]))
+		}
+		help = append(help, "")
+	}
+
+	c.List.Items = help
 }

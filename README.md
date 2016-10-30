@@ -35,7 +35,7 @@ Getting started
 
         // optional: define custom key mappings
         // (shown are the default key mappings)
-        "key-map": {
+        "key_map": {
             "command": {
                 "i":          "mode-insert",
                 "k":          "channel-up",
@@ -75,21 +75,22 @@ Getting started
 Default Key Mapping
 -------------------
 
-| mode   | key       | action                     |
-|--------|-----------|----------------------------|
-| normal | `i`       | insert mode                |
-| normal | `k`       | move channel cursor up     |
-| normal | `j`       | move channel cursor down   |
-| normal | `g`       | move channel cursor top    |
-| normal | `G`       | move channel cursor bottom |
-| normal | `pg-up`   | scroll chat pane up        |
-| normal | `ctrl-b`  | scroll chat pane up        |
-| normal | `ctrl-u`  | scroll chat pane up        |
-| normal | `pg-down` | scroll chat pane down      |
-| normal | `ctrl-f`  | scroll chat pane down      |
-| normal | `ctrl-d`  | scroll chat pane down      |
-| normal | `q`       | quit                       |
-| insert | `left`    | move input cursor left     |
-| insert | `right`   | move input cursor right    |
-| insert | `enter`   | send message               |
-| insert | `esc`     | normal mode                |
+| mode    | key       | action                     |
+|---------|-----------|----------------------------|
+| command | `i`       | insert mode                |
+| command | `k`       | move channel cursor up     |
+| command | `j`       | move channel cursor down   |
+| command | `g`       | move channel cursor top    |
+| command | `G`       | move channel cursor bottom |
+| command | `pg-up`   | scroll chat pane up        |
+| command | `ctrl-b`  | scroll chat pane up        |
+| command | `ctrl-u`  | scroll chat pane up        |
+| command | `pg-down` | scroll chat pane down      |
+| command | `ctrl-f`  | scroll chat pane down      |
+| command | `ctrl-d`  | scroll chat pane down      |
+| command | `q`       | quit                       |
+| command | `f1`      | help                       |
+| insert  | `left`    | move input cursor left     |
+| insert  | `right`   | move input cursor right    |
+| insert  | `enter`   | send message               |
+| insert  | `esc`     | command mode               |

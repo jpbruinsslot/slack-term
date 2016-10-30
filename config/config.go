@@ -14,7 +14,7 @@ type Config struct {
 	Theme        string                `json:"theme"`
 	SidebarWidth int                   `json:"sidebar_width"`
 	MainWidth    int                   `json:"-"`
-	KeyMap       map[string]keyMapping `json:"key-map"`
+	KeyMap       map[string]keyMapping `json:"key_map"`
 }
 
 type keyMapping map[string]string
@@ -39,6 +39,7 @@ func NewConfig(filepath string) (*Config, error) {
 				"C-f":        "chat-down",
 				"C-d":        "chat-down",
 				"q":          "quit",
+				"<f1>":       "help",
 			},
 			"insert": {
 				"<left>":      "cursor-left",

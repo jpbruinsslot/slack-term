@@ -33,6 +33,7 @@ var actionMap = map[string]func(*context.AppContext){
 	"channel-bottom": actionMoveCursorBottomChannels,
 	"chat-up":        actionScrollUpChat,
 	"chat-down":      actionScrollDownChat,
+	"help":           actionHelp,
 }
 
 func RegisterEventHandlers(ctx *context.AppContext) {
@@ -272,6 +273,11 @@ func actionScrollUpChat(ctx *context.AppContext) {
 
 func actionScrollDownChat(ctx *context.AppContext) {
 	ctx.View.Chat.ScrollDown()
+	termui.Render(ctx.View.Chat)
+}
+
+func actionHelp(ctx *context.AppContext) {
+	ctx.View.Chat.Help(ctx.Config)
 	termui.Render(ctx.View.Chat)
 }
 
