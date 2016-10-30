@@ -19,8 +19,9 @@ type SlackService struct {
 }
 
 type Channel struct {
-	ID   string
-	Name string
+	ID    string
+	Name  string
+	Topic string
 }
 
 // NewSlackService is the constructor for the SlackService and will initialize
@@ -71,7 +72,7 @@ func (s *SlackService) GetChannels() []Channel {
 	}
 	for _, chn := range slackChans {
 		s.SlackChannels = append(s.SlackChannels, chn)
-		chans = append(chans, Channel{chn.ID, chn.Name})
+		chans = append(chans, Channel{chn.ID, chn.Name, chn.Topic.Value})
 	}
 
 	// Groups
@@ -81,7 +82,7 @@ func (s *SlackService) GetChannels() []Channel {
 	}
 	for _, grp := range slackGroups {
 		s.SlackChannels = append(s.SlackChannels, grp)
-		chans = append(chans, Channel{grp.ID, grp.Name})
+		chans = append(chans, Channel{grp.ID, grp.Name, grp.Topic.Value})
 	}
 
 	// IM
@@ -97,7 +98,7 @@ func (s *SlackService) GetChannels() []Channel {
 		// to the UserCache, so we skip it
 		name, ok := s.UserCache[im.User]
 		if ok {
-			chans = append(chans, Channel{im.ID, name})
+			chans = append(chans, Channel{im.ID, name, ""})
 			s.SlackChannels = append(s.SlackChannels, im)
 		}
 	}
