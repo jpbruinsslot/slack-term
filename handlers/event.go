@@ -251,7 +251,7 @@ func actionChangeChannel(ctx *context.AppContext) {
 
 	// Set channel name for the Chat pane
 	ctx.View.Chat.SetBorderLabel(
-		ctx.Service.Channels[ctx.View.Channels.SelectedChannel].Name,
+		ctx.Service.Channels[ctx.View.Channels.SelectedChannel],
 	)
 
 	// Set read mark
