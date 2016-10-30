@@ -253,6 +253,9 @@ func actionChangeChannel(ctx *context.AppContext) {
 		ctx.Service.Channels[ctx.View.Channels.SelectedChannel].Name,
 	)
 
+	// Set read mark
+	ctx.View.Channels.SetReadMark(ctx.Service)
+
 	termui.Render(ctx.View.Channels)
 	termui.Render(ctx.View.Chat)
 }
