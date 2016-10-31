@@ -27,14 +27,13 @@ Getting started
     {
         "slack_token": "yourslacktokenhere",
 
-        // optional: add the following to use light theme, default is dark
+        // OPTIONAL: add the following to use light theme, default is dark
         "theme": "light",
 
-        // optional: set the width of the sidebar (between 1 and 11), default is 1
+        // OPTIONAL: set the width of the sidebar (between 1 and 11), default is 1
         "sidebar_width": 3,
 
-        // optional: define custom key mappings
-        // (shown are the default key mappings)
+        // OPTIONAL: define custom key mappings, defaults are:
         "key_map": {
             "command": {
                 "i":          "mode-insert",
@@ -49,6 +48,7 @@ Getting started
                 "C-f":        "chat-down",
                 "C-d":        "chat-down",
                 "q":          "quit",
+				"<f1>":       "help"
             },
             "insert": {
                 "<left>":      "cursor-left",
@@ -56,6 +56,7 @@ Getting started
                 "<enter>":     "send",
                 "<escape>":    "mode-command",
                 "<backspace>": "backspace",
+				"C-8":         "backspace",
                 "<delete>":    "delete",
                 "<space>":     "space",
             }
