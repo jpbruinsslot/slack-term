@@ -47,6 +47,7 @@ func NewConfig(filepath string) (*Config, error) {
 				"<enter>":     "send",
 				"<escape>":    "mode-command",
 				"<backspace>": "backspace",
+				"C-8":         "backspace",
 				"<delete>":    "delete",
 				"<space>":     "space",
 			},
