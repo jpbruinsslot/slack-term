@@ -1,11 +1,14 @@
 package components
 
 import (
+	"fmt"
 	"html"
+	"sort"
 	"strings"
 
 	"github.com/gizak/termui"
 
+	"github.com/erroneousboat/slack-term/config"
 	"github.com/erroneousboat/slack-term/service"
 )
 
@@ -16,7 +19,7 @@ type Chat struct {
 }
 
 // CreateChat is the constructor for the Chat struct
-func CreateChat(svc *service.SlackService, inputHeight int, selectedChannel interface{}, selectedChannelName string) *Chat {
+func CreateChat(svc *service.SlackService, inputHeight int, selectedSlackChannel interface{}, selectedChannel service.Channel) *Chat {
 	chat := &Chat{
 		List:   termui.NewList(),
 		Offset: 0,
@@ -25,8 +28,8 @@ func CreateChat(svc *service.SlackService, inputHeight int, selectedChannel inte
 	chat.List.Height = termui.TermHeight() - inputHeight
 	chat.List.Overflow = "wrap"
 
-	chat.GetMessages(svc, selectedChannel)
-	chat.SetBorderLabel(selectedChannelName)
+	chat.GetMessages(svc, selectedSlackChannel)
+	chat.SetBorderLabel(selectedChannel)
 
 	return chat
 }
@@ -205,6 +208,46 @@ func (c *Chat) ScrollDown() {
 }
 
 // SetBorderLabel will set Label of the Chat pane to the specified string
-func (c *Chat) SetBorderLabel(label string) {
-	c.List.BorderLabel = label
+func (c *Chat) SetBorderLabel(channel service.Channel) {
+	var channelName string
+	if channel.Topic != "" {
+		channelName = fmt.Sprintf("%s - %s",
+			channel.Name,
+			channel.Topic,
+		)
+	} else {
+		channelName = channel.Name
+	}
+	c.List.BorderLabel = channelName
+}
+
+// Help shows the usage and key bindings in the chat pane
+func (c *Chat) Help(cfg *config.Config) {
+	help := []string{
+		"slack-term - slack client for your terminal",
+		"",
+		"USAGE:",
+		"    slack-term -config [path-to-config]",
+		"",
+		"KEY BINDINGS:",
+		"",
+	}
+
+	for mode, mapping := range cfg.KeyMap {
+		help = append(help, fmt.Sprintf("    %s", strings.ToUpper(mode)))
+		help = append(help, "")
+
+		var keys []string
+		for k := range mapping {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			help = append(help, fmt.Sprintf("    %-12s%-15s", k, mapping[k]))
+		}
+		help = append(help, "")
+	}
+
+	c.List.Items = help
 }

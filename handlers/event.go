@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"strconv"
+	"time"
+
 	"github.com/gizak/termui"
 	"github.com/nlopes/slack"
 	termbox "github.com/nsf/termbox-go"
@@ -8,6 +11,30 @@ import (
 	"github.com/erroneousboat/slack-term/context"
 	"github.com/erroneousboat/slack-term/views"
 )
+
+var timer *time.Timer
+
+// actionMap binds specific action names to the function counterparts,
+// these action names can then be used to bind them to specific keys
+// in the Config.
+var actionMap = map[string]func(*context.AppContext){
+	"space":          actionSpace,
+	"backspace":      actionBackSpace,
+	"delete":         actionDelete,
+	"cursor-right":   actionMoveCursorRight,
+	"cursor-left":    actionMoveCursorLeft,
+	"send":           actionSend,
+	"quit":           actionQuit,
+	"mode-insert":    actionInsertMode,
+	"mode-command":   actionCommandMode,
+	"channel-up":     actionMoveCursorUpChannels,
+	"channel-down":   actionMoveCursorDownChannels,
+	"channel-top":    actionMoveCursorTopChannels,
+	"channel-bottom": actionMoveCursorBottomChannels,
+	"chat-up":        actionScrollUpChat,
+	"chat-down":      actionScrollDownChat,
+	"help":           actionHelp,
+}
 
 func RegisterEventHandlers(ctx *context.AppContext) {
 	anyKeyHandler(ctx)
@@ -20,56 +47,25 @@ func anyKeyHandler(ctx *context.AppContext) {
 		for {
 			ev := termbox.PollEvent()
 
-			if ev.Type == termbox.EventKey {
-				if ctx.Mode == context.CommandMode {
-					switch ev.Key {
-					case termbox.KeyPgup:
-						actionScrollUpChat(ctx)
-					case termbox.KeyCtrlB:
-						actionScrollUpChat(ctx)
-					case termbox.KeyCtrlU:
-						actionScrollUpChat(ctx)
-					case termbox.KeyPgdn:
-						actionScrollDownChat(ctx)
-					case termbox.KeyCtrlF:
-						actionScrollDownChat(ctx)
-					case termbox.KeyCtrlD:
-						actionScrollDownChat(ctx)
-					default:
-						switch ev.Ch {
-						case 'q':
-							actionQuit()
-						case 'j':
-							actionMoveCursorDownChannels(ctx)
-						case 'k':
-							actionMoveCursorUpChannels(ctx)
-						case 'g':
-							actionMoveCursorTopChannels(ctx)
-						case 'G':
-							actionMoveCursorBottomChannels(ctx)
-						case 'i':
-							actionInsertMode(ctx)
-						}
-					}
-				} else if ctx.Mode == context.InsertMode {
-					switch ev.Key {
-					case termbox.KeyEsc:
-						actionCommandMode(ctx)
-					case termbox.KeyEnter:
-						actionSend(ctx)
-					case termbox.KeySpace:
-						actionInput(ctx.View, ' ')
-					case termbox.KeyBackspace, termbox.KeyBackspace2:
-						actionBackSpace(ctx.View)
-					case termbox.KeyDelete:
-						actionDelete(ctx.View)
-					case termbox.KeyArrowRight:
-						actionMoveCursorRight(ctx.View)
-					case termbox.KeyArrowLeft:
-						actionMoveCursorLeft(ctx.View)
-					default:
-						actionInput(ctx.View, ev.Ch)
-					}
+			if ev.Type != termbox.EventKey {
+				continue
+			}
+
+			keyStr := getKeyString(ev)
+
+			// Get the action name (actionStr) from the key that
+			// has been pressed. If this is found try to uncover
+			// the associated function with this key and execute
+			// it.
+			actionStr, ok := ctx.Config.KeyMap[ctx.Mode][keyStr]
+			if ok {
+				action, ok := actionMap[actionStr]
+				if ok {
+					action(ctx)
+				}
+			} else {
+				if ctx.Mode == context.InsertMode && ev.Ch != 0 {
+					actionInput(ctx.View, ev.Ch)
 				}
 			}
 		}
@@ -135,24 +131,28 @@ func actionInput(view *views.View, key rune) {
 	termui.Render(view.Input)
 }
 
-func actionBackSpace(view *views.View) {
-	view.Input.Backspace()
-	termui.Render(view.Input)
+func actionSpace(ctx *context.AppContext) {
+	actionInput(ctx.View, ' ')
 }
 
-func actionDelete(view *views.View) {
-	view.Input.Delete()
-	termui.Render(view.Input)
+func actionBackSpace(ctx *context.AppContext) {
+	ctx.View.Input.Backspace()
+	termui.Render(ctx.View.Input)
 }
 
-func actionMoveCursorRight(view *views.View) {
-	view.Input.MoveCursorRight()
-	termui.Render(view.Input)
+func actionDelete(ctx *context.AppContext) {
+	ctx.View.Input.Delete()
+	termui.Render(ctx.View.Input)
 }
 
-func actionMoveCursorLeft(view *views.View) {
-	view.Input.MoveCursorLeft()
-	termui.Render(view.Input)
+func actionMoveCursorRight(ctx *context.AppContext) {
+	ctx.View.Input.MoveCursorRight()
+	termui.Render(ctx.View.Input)
+}
+
+func actionMoveCursorLeft(ctx *context.AppContext) {
+	ctx.View.Input.MoveCursorLeft()
+	termui.Render(ctx.View.Input)
 }
 
 func actionSend(ctx *context.AppContext) {
@@ -172,7 +172,7 @@ func actionSend(ctx *context.AppContext) {
 	}
 }
 
-func actionQuit() {
+func actionQuit(*context.AppContext) {
 	termui.StopLoop()
 }
 
@@ -197,19 +197,36 @@ func actionGetMessages(ctx *context.AppContext) {
 	termui.Render(ctx.View.Chat)
 }
 
-func actionGetChannels(ctx *context.AppContext) {
-	ctx.View.Channels.GetChannels(ctx.Service)
-	termui.Render(ctx.View.Channels)
-}
-
 func actionMoveCursorUpChannels(ctx *context.AppContext) {
-	ctx.View.Channels.MoveCursorUp()
-	actionChangeChannel(ctx)
+	go func() {
+		if timer != nil {
+			timer.Stop()
+		}
+
+		ctx.View.Channels.MoveCursorUp()
+		termui.Render(ctx.View.Channels)
+
+		timer = time.NewTimer(time.Second / 4)
+		<-timer.C
+
+		actionChangeChannel(ctx)
+	}()
 }
 
 func actionMoveCursorDownChannels(ctx *context.AppContext) {
-	ctx.View.Channels.MoveCursorDown()
-	actionChangeChannel(ctx)
+	go func() {
+		if timer != nil {
+			timer.Stop()
+		}
+
+		ctx.View.Channels.MoveCursorDown()
+		termui.Render(ctx.View.Channels)
+
+		timer = time.NewTimer(time.Second / 4)
+		<-timer.C
+
+		actionChangeChannel(ctx)
+	}()
 }
 
 func actionMoveCursorTopChannels(ctx *context.AppContext) {
@@ -234,8 +251,11 @@ func actionChangeChannel(ctx *context.AppContext) {
 
 	// Set channel name for the Chat pane
 	ctx.View.Chat.SetBorderLabel(
-		ctx.Service.Channels[ctx.View.Channels.SelectedChannel].Name,
+		ctx.Service.Channels[ctx.View.Channels.SelectedChannel],
 	)
+
+	// Set read mark
+	ctx.View.Channels.SetReadMark(ctx.Service)
 
 	termui.Render(ctx.View.Channels)
 	termui.Render(ctx.View.Chat)
@@ -254,4 +274,59 @@ func actionScrollUpChat(ctx *context.AppContext) {
 func actionScrollDownChat(ctx *context.AppContext) {
 	ctx.View.Chat.ScrollDown()
 	termui.Render(ctx.View.Chat)
+}
+
+func actionHelp(ctx *context.AppContext) {
+	ctx.View.Chat.Help(ctx.Config)
+	termui.Render(ctx.View.Chat)
+}
+
+// GetKeyString will return a string that resembles the key event from
+// termbox. This is blatanly copied from termui because it is an unexported
+// function.
+//
+// See:
+// - https://github.com/gizak/termui/blob/a7e3aeef4cdf9fa2edb723b1541cb69b7bb089ea/events.go#L31-L72
+// - https://github.com/nsf/termbox-go/blob/master/api_common.go
+func getKeyString(e termbox.Event) string {
+	var ek string
+
+	k := string(e.Ch)
+	pre := ""
+	mod := ""
+
+	if e.Mod == termbox.ModAlt {
+		mod = "M-"
+	}
+	if e.Ch == 0 {
+		if e.Key > 0xFFFF-12 {
+			k = "<f" + strconv.Itoa(0xFFFF-int(e.Key)+1) + ">"
+		} else if e.Key > 0xFFFF-25 {
+			ks := []string{"<insert>", "<delete>", "<home>", "<end>", "<previous>", "<next>", "<up>", "<down>", "<left>", "<right>"}
+			k = ks[0xFFFF-int(e.Key)-12]
+		}
+
+		if e.Key <= 0x7F {
+			pre = "C-"
+			k = string('a' - 1 + int(e.Key))
+			kmap := map[termbox.Key][2]string{
+				termbox.KeyCtrlSpace:     {"C-", "<space>"},
+				termbox.KeyBackspace:     {"", "<backspace>"},
+				termbox.KeyTab:           {"", "<tab>"},
+				termbox.KeyEnter:         {"", "<enter>"},
+				termbox.KeyEsc:           {"", "<escape>"},
+				termbox.KeyCtrlBackslash: {"C-", "\\"},
+				termbox.KeyCtrlSlash:     {"C-", "/"},
+				termbox.KeySpace:         {"", "<space>"},
+				termbox.KeyCtrl8:         {"C-", "8"},
+			}
+			if sk, ok := kmap[e.Key]; ok {
+				pre = sk[0]
+				k = sk[1]
+			}
+		}
+	}
+
+	ek = pre + mod + k
+	return ek
 }

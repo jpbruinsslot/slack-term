@@ -10,11 +10,14 @@ import (
 
 // Config is the definition of a Config struct
 type Config struct {
-	SlackToken   string `json:"slack_token"`
-	Theme        string `json:"theme"`
-	SidebarWidth int    `json:"sidebar_width"`
-	MainWidth    int    `json:"-"`
+	SlackToken   string                `json:"slack_token"`
+	Theme        string                `json:"theme"`
+	SidebarWidth int                   `json:"sidebar_width"`
+	MainWidth    int                   `json:"-"`
+	KeyMap       map[string]keyMapping `json:"key_map"`
 }
+
+type keyMapping map[string]string
 
 // NewConfig loads the config file and returns a Config struct
 func NewConfig(filepath string) (*Config, error) {
@@ -22,6 +25,33 @@ func NewConfig(filepath string) (*Config, error) {
 		Theme:        "dark",
 		SidebarWidth: 1,
 		MainWidth:    11,
+		KeyMap: map[string]keyMapping{
+			"command": {
+				"i":          "mode-insert",
+				"k":          "channel-up",
+				"j":          "channel-down",
+				"g":          "channel-top",
+				"G":          "channel-bottom",
+				"<previous>": "chat-up",
+				"C-b":        "chat-up",
+				"C-u":        "chat-up",
+				"<next>":     "chat-down",
+				"C-f":        "chat-down",
+				"C-d":        "chat-down",
+				"q":          "quit",
+				"<f1>":       "help",
+			},
+			"insert": {
+				"<left>":      "cursor-left",
+				"<right>":     "cursor-right",
+				"<enter>":     "send",
+				"<escape>":    "mode-command",
+				"<backspace>": "backspace",
+				"C-8":         "backspace",
+				"<delete>":    "delete",
+				"<space>":     "space",
+			},
+		},
 	}
 
 	file, err := os.Open(filepath)

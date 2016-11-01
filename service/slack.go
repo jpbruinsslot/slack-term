@@ -19,8 +19,9 @@ type SlackService struct {
 }
 
 type Channel struct {
-	ID   string
-	Name string
+	ID    string
+	Name  string
+	Topic string
 }
 
 // NewSlackService is the constructor for the SlackService and will initialize
@@ -71,7 +72,7 @@ func (s *SlackService) GetChannels() []Channel {
 	}
 	for _, chn := range slackChans {
 		s.SlackChannels = append(s.SlackChannels, chn)
-		chans = append(chans, Channel{chn.ID, chn.Name})
+		chans = append(chans, Channel{chn.ID, chn.Name, chn.Topic.Value})
 	}
 
 	// Groups
@@ -81,7 +82,7 @@ func (s *SlackService) GetChannels() []Channel {
 	}
 	for _, grp := range slackGroups {
 		s.SlackChannels = append(s.SlackChannels, grp)
-		chans = append(chans, Channel{grp.ID, grp.Name})
+		chans = append(chans, Channel{grp.ID, grp.Name, grp.Topic.Value})
 	}
 
 	// IM
@@ -97,7 +98,7 @@ func (s *SlackService) GetChannels() []Channel {
 		// to the UserCache, so we skip it
 		name, ok := s.UserCache[im.User]
 		if ok {
-			chans = append(chans, Channel{im.ID, name})
+			chans = append(chans, Channel{im.ID, name, ""})
 			s.SlackChannels = append(s.SlackChannels, im)
 		}
 	}
@@ -107,6 +108,29 @@ func (s *SlackService) GetChannels() []Channel {
 	return chans
 }
 
+// SetChannelReadMark will set the read mark for a channel, group, and im
+// channel based on the current time.
+func (s *SlackService) SetChannelReadMark(channel interface{}) {
+	switch channel := channel.(type) {
+	case slack.Channel:
+		s.Client.SetChannelReadMark(
+			channel.ID, fmt.Sprintf("%f",
+				float64(time.Now().Unix())),
+		)
+	case slack.Group:
+		s.Client.SetGroupReadMark(
+			channel.ID, fmt.Sprintf("%f",
+				float64(time.Now().Unix())),
+		)
+	case slack.IM:
+		s.Client.MarkIMChannel(
+			channel.ID, fmt.Sprintf("%f",
+				float64(time.Now().Unix())),
+		)
+	}
+}
+
+// SendMessage will send a message to a particular channel
 func (s *SlackService) SendMessage(channel string, message string) {
 	// https://godoc.org/github.com/nlopes/slack#PostMessageParameters
 	postParams := slack.PostMessageParameters{
@@ -117,6 +141,8 @@ func (s *SlackService) SendMessage(channel string, message string) {
 	s.Client.PostMessage(channel, message, postParams)
 }
 
+// GetMessages will get messages for a channel, group or im channel delimited
+// by a count.
 func (s *SlackService) GetMessages(channel interface{}, count int) []string {
 	// https://api.slack.com/methods/channels.history
 	historyParams := slack.HistoryParameters{
@@ -135,7 +161,6 @@ func (s *SlackService) GetMessages(channel interface{}, count int) []string {
 			log.Fatal(err) // FIXME
 		}
 	case slack.Group:
-		// TODO: json: cannot unmarshal number into Go value of type string<Paste>
 		history, err = s.Client.GetGroupHistory(chnType.ID, historyParams)
 		if err != nil {
 			log.Fatal(err) // FIXME
@@ -235,6 +260,12 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 	var msgs []string
 	var name string
 
+	// Append (edited) when an edited message is received
+	if message.SubType == "message_changed" {
+		message = &slack.MessageEvent{Msg: *message.SubMessage}
+		message.Text = fmt.Sprintf("%s (edited)", message.Text)
+	}
+
 	// Get username from cache
 	name, ok := s.UserCache[message.User]
 
@@ -304,6 +335,15 @@ func createMessageFromAttachments(atts []slack.Attachment) []string {
 				),
 			)
 		}
+
+		if att.Text != "" {
+			msgs = append(msgs, att.Text)
+		}
+
+		if att.Title != "" {
+			msgs = append(msgs, att.Title)
+		}
 	}
+
 	return msgs
 }
