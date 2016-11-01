@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	USAGE = `NAME:
+	VERSION = "v0.2.0"
+	USAGE   = `NAME:
     slack-term - slack client for your terminal
 
 USAGE:
@@ -31,8 +32,6 @@ GLOBAL OPTIONS:
 var (
 	flgConfig string
 	flgUsage  bool
-
-	VERSION = "v0.1.0"
 )
 
 func init() {
