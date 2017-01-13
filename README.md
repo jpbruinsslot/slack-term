@@ -33,6 +33,9 @@ Getting started
         // OPTIONAL: set the width of the sidebar (between 1 and 11), default is 1
         "sidebar_width": 3,
 
+        // OPTIONAL: if true it will only show channels you are a member of, default is false
+        "member_only": true,
+
         // OPTIONAL: define custom key mappings, defaults are:
         "key_map": {
             "command": {
