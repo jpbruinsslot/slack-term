@@ -45,7 +45,7 @@ func RegisterEventHandlers(ctx *context.AppContext) {
 func anyKeyHandler(ctx *context.AppContext) {
 	go func() {
 		for {
-			ev := termbox.PollEvent()
+			ev := <-ctx.EventQueue
 
 			if ev.Type != termbox.EventKey {
 				continue
