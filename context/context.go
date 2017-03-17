@@ -35,7 +35,7 @@ func CreateAppContext(flgConfig string) *AppContext {
 	}
 
 	// Create Service
-	svc := service.NewSlackService(config.SlackToken)
+	svc := service.NewSlackService(config.SlackToken, config.MemberOnly)
 
 	// Create ChatView
 	view := views.CreateChatView(svc)

@@ -16,6 +16,8 @@ type SlackService struct {
 	Channels      []Channel
 	UserCache     map[string]string
 	CurrentUserID string
+
+	showNonMemberChannels bool
 }
 
 type Channel struct {
@@ -26,10 +28,12 @@ type Channel struct {
 
 // NewSlackService is the constructor for the SlackService and will initialize
 // the RTM and a Client
-func NewSlackService(token string) *SlackService {
+// Optionally can set to only load member channels
+func NewSlackService(token string, memberOnly bool) *SlackService {
 	svc := &SlackService{
-		Client:    slack.New(token),
-		UserCache: make(map[string]string),
+		Client:                slack.New(token),
+		UserCache:             make(map[string]string),
+		showNonMemberChannels: !memberOnly,
 	}
 
 	// Get user associated with token, mainly
@@ -71,8 +75,10 @@ func (s *SlackService) GetChannels() []Channel {
 		chans = append(chans, Channel{})
 	}
 	for _, chn := range slackChans {
-		s.SlackChannels = append(s.SlackChannels, chn)
-		chans = append(chans, Channel{chn.ID, chn.Name, chn.Topic.Value})
+		if s.showNonMemberChannels || chn.IsMember {
+			s.SlackChannels = append(s.SlackChannels, chn)
+			chans = append(chans, Channel{chn.ID, chn.Name, chn.Topic.Value})
+		}
 	}
 
 	// Groups

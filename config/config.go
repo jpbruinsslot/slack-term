@@ -13,6 +13,7 @@ type Config struct {
 	SlackToken   string                `json:"slack_token"`
 	Theme        string                `json:"theme"`
 	SidebarWidth int                   `json:"sidebar_width"`
+	MemberOnly   bool                  `json:"member_only"`
 	MainWidth    int                   `json:"-"`
 	KeyMap       map[string]keyMapping `json:"key_map"`
 }
@@ -25,6 +26,7 @@ func NewConfig(filepath string) (*Config, error) {
 		Theme:        "dark",
 		SidebarWidth: 1,
 		MainWidth:    11,
+		MemberOnly:   false,
 		KeyMap: map[string]keyMapping{
 			"command": {
 				"i":          "mode-insert",
