@@ -9,6 +9,7 @@ import (
 
 	"github.com/erroneousboat/slack-term/context"
 	"github.com/erroneousboat/slack-term/handlers"
+	termbox "github.com/nsf/termbox-go"
 
 	"github.com/gizak/termui"
 )
@@ -86,6 +87,12 @@ func main() {
 
 	// Register handlers
 	handlers.RegisterEventHandlers(ctx)
+
+	go func() {
+		for {
+			ctx.EventQueue <- termbox.PollEvent()
+		}
+	}()
 
 	termui.Loop()
 }

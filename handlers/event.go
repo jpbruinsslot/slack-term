@@ -43,17 +43,9 @@ func RegisterEventHandlers(ctx *context.AppContext) {
 }
 
 func anyKeyHandler(ctx *context.AppContext) {
-	eventQueue := make(chan termbox.Event, 5)
-
 	go func() {
 		for {
-			eventQueue <- termbox.PollEvent()
-		}
-	}()
-
-	go func() {
-		for {
-			ev := <-eventQueue
+			ev := <-ctx.EventQueue
 
 			if ev.Type != termbox.EventKey {
 				continue
