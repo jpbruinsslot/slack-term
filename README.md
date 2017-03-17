@@ -48,7 +48,7 @@ Getting started
                 "C-f":        "chat-down",
                 "C-d":        "chat-down",
                 "q":          "quit",
-				"<f1>":       "help"
+                "<f1>":       "help"
             },
             "insert": {
                 "<left>":      "cursor-left",
@@ -56,7 +56,7 @@ Getting started
                 "<enter>":     "send",
                 "<escape>":    "mode-command",
                 "<backspace>": "backspace",
-				"C-8":         "backspace",
+                "C-8":         "backspace",
                 "<delete>":    "delete",
                 "<space>":     "space"
             }
