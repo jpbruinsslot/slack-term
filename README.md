@@ -15,13 +15,13 @@ Getting started
 
 
     ```bash
-    $ go get github.com/erroneousboat/slack-term
+    $ go get -u github.com/erroneousboat/slack-term
     ```
 
 2. Get a slack token, click [here](https://api.slack.com/docs/oauth-test-tokens) 
 
 3. Create a `slack-term.json` file, place it in your home directory. The file
-   should resemble the following structure:
+   should resemble the following structure (don't forget to remove the comments):
 
     ```javascript
     {
@@ -58,7 +58,7 @@ Getting started
                 "<backspace>": "backspace",
 				"C-8":         "backspace",
                 "<delete>":    "delete",
-                "<space>":     "space",
+                "<space>":     "space"
             }
         }
     }
