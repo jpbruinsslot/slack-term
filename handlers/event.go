@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"os"
 	"strconv"
 	"time"
 
@@ -172,8 +173,12 @@ func actionSend(ctx *context.AppContext) {
 	}
 }
 
-func actionQuit(*context.AppContext) {
-	termui.StopLoop()
+// actionQuit will exit the program by using os.Exit, this is
+// done because we are using a custom termui EvtStream. Which
+// we won't be able to call termui.StopLoop() on. See main.go
+// for the customEvtStream and why this is done.
+func actionQuit(ctx *context.AppContext) {
+	os.Exit(0)
 }
 
 func actionInsertMode(ctx *context.AppContext) {
