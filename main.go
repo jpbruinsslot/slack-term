@@ -65,6 +65,15 @@ func main() {
 	}
 	defer termui.Close()
 
+	// Create custom event stream for termui because
+	// termui's one has data race conditions with its
+	// event handling. We're circumventing it here until
+	// it has been fix.
+	customEvtStream := &termui.EvtStream{
+		Handlers: make(map[string]func(termui.Event)),
+	}
+	termui.DefaultEvtStream = customEvtStream
+
 	// Create context
 	ctx := context.CreateAppContext(flgConfig)
 
