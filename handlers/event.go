@@ -86,7 +86,6 @@ func incomingMessageHandler(ctx *context.AppContext) {
 			case msg := <-ctx.Service.RTM.IncomingEvents:
 				switch ev := msg.Data.(type) {
 				case *slack.MessageEvent:
-
 					// Construct message
 					msg := ctx.Service.CreateMessageFromMessageEvent(ev)
 
@@ -113,6 +112,8 @@ func incomingMessageHandler(ctx *context.AppContext) {
 					if ev.User != ctx.Service.CurrentUserID {
 						actionNewMessage(ctx, ev.Channel)
 					}
+				case *slack.PresenceChangeEvent:
+					actionSetPresence(ctx, ev.User, ev.Presence)
 				}
 			}
 		}
@@ -267,7 +268,12 @@ func actionChangeChannel(ctx *context.AppContext) {
 }
 
 func actionNewMessage(ctx *context.AppContext, channelID string) {
-	ctx.View.Channels.NewMessage(ctx.Service, channelID)
+	ctx.View.Channels.SetNotification(ctx.Service, channelID)
+	termui.Render(ctx.View.Channels)
+}
+
+func actionSetPresence(ctx *context.AppContext, channelID string, presence string) {
+	ctx.View.Channels.SetPresence(ctx.Service, channelID, presence)
 	termui.Render(ctx.View.Channels)
 }
 

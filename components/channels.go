@@ -9,6 +9,18 @@ import (
 	"github.com/erroneousboat/slack-term/service"
 )
 
+const (
+	IconOnline       = "●"
+	IconOffline      = "○"
+	IconChannel      = "#"
+	IconGroup        = "☰"
+	IconIM           = "●"
+	IconNotification = "🞷"
+
+	PresenceAway   = "away"
+	PresenceActive = "active"
+)
+
 // Channels is the definition of a Channels component
 type Channels struct {
 	List            *termui.List
@@ -31,6 +43,7 @@ func CreateChannels(svc *service.SlackService, inputHeight int) *Channels {
 	channels.CursorPosition = channels.List.InnerBounds().Min.Y
 
 	channels.GetChannels(svc)
+	channels.SetPresenceForIMChannels(svc)
 
 	return channels
 }
@@ -115,7 +128,23 @@ func (c *Channels) SetY(y int) {
 // GetChannels will get all available channels from the SlackService
 func (c *Channels) GetChannels(svc *service.SlackService) {
 	for _, slackChan := range svc.GetChannels() {
-		c.List.Items = append(c.List.Items, fmt.Sprintf("  %s", slackChan.Name))
+		label := setChannelLabel(slackChan, false)
+		c.List.Items = append(c.List.Items, label)
+
+	}
+}
+
+// SetPresenceForIMChannels this will set the correct icon for
+// IM channels for when they're online of away
+func (c *Channels) SetPresenceForIMChannels(svc *service.SlackService) {
+	for _, slackChan := range svc.GetChannels() {
+		if slackChan.Type == service.ChannelTypeIM {
+			presence, err := svc.GetUserPresence(slackChan.UserID)
+			if err != nil {
+				continue
+			}
+			c.SetPresence(svc, slackChan.UserID, presence)
+		}
 	}
 }
 
@@ -186,12 +215,11 @@ func (c *Channels) ScrollDown() {
 	}
 }
 
-// NewMessage will be called when a new message arrives and will
-// render an asterisk in front of the channel name
-func (c *Channels) NewMessage(svc *service.SlackService, channelID string) {
-	var index int
-
+// SetNotification will be called when a new message arrives and will
+// render an notification icon in front of the channel name
+func (c *Channels) SetNotification(svc *service.SlackService, channelID string) {
 	// Get the correct Channel from svc.Channels
+	var index int
 	for i, channel := range svc.Channels {
 		if channelID == channel.ID {
 			index = i
@@ -199,21 +227,27 @@ func (c *Channels) NewMessage(svc *service.SlackService, channelID string) {
 		}
 	}
 
-	if !strings.Contains(c.List.Items[index], "*") {
+	if !strings.Contains(c.List.Items[index], IconNotification) {
 		// The order of svc.Channels relates to the order of
 		// List.Items, index will be the index of the channel
-		c.List.Items[index] = fmt.Sprintf("* %s", strings.TrimSpace(c.List.Items[index]))
+		c.List.Items[index] = fmt.Sprintf(
+			"%s %s", IconNotification, strings.TrimSpace(c.List.Items[index]),
+		)
 	}
 
 	// Play terminal bell sound
 	fmt.Print("\a")
 }
 
-// ClearNewMessageIndicator will remove the asterisk in front of a channel that
-// received a new message. This will happen as one will move up or down the
-// cursor for Channels
+// ClearNewMessageIndicator will remove the notification icon in front of
+// a channel that received a new message. This will happen as one will
+// move up or down the cursor for Channels
 func (c *Channels) ClearNewMessageIndicator() {
-	channelName := strings.Split(c.List.Items[c.SelectedChannel], "* ")
+	channelName := strings.Split(
+		c.List.Items[c.SelectedChannel],
+		fmt.Sprintf("%s ", IconNotification),
+	)
+
 	if len(channelName) > 1 {
 		c.List.Items[c.SelectedChannel] = fmt.Sprintf("  %s", channelName[1])
 	} else {
@@ -221,6 +255,59 @@ func (c *Channels) ClearNewMessageIndicator() {
 	}
 }
 
+// SetReadMark will send the ReadMark event on the service
 func (c *Channels) SetReadMark(svc *service.SlackService) {
 	svc.SetChannelReadMark(svc.SlackChannels[c.SelectedChannel])
+}
+
+// SetPresence will set the correct icon for a IM Channel
+func (c *Channels) SetPresence(svc *service.SlackService, userID string, presence string) {
+	// Get the correct Channel from svc.Channels
+	var index int
+	for i, channel := range svc.Channels {
+		if userID == channel.UserID {
+			index = i
+			break
+		}
+	}
+
+	switch presence {
+	case PresenceActive:
+		c.List.Items[index] = strings.Replace(
+			c.List.Items[index], IconOffline, IconOnline, 1,
+		)
+	case PresenceAway:
+		c.List.Items[index] = strings.Replace(
+			c.List.Items[index], IconOnline, IconOffline, 1,
+		)
+	default:
+		c.List.Items[index] = strings.Replace(
+			c.List.Items[index], IconOnline, IconOffline, 1,
+		)
+	}
+
+}
+
+// setChannelLabel will set the label of the channel, meaning, how it
+// is displayed on screen. Based on the type, different icons are
+// shown, as well as an optional notification icon.
+func setChannelLabel(channel service.Channel, notification bool) string {
+	var prefix string
+	if notification {
+		prefix = IconNotification
+	} else {
+		prefix = " "
+	}
+
+	var label string
+	switch channel.Type {
+	case service.ChannelTypeChannel:
+		label = fmt.Sprintf("%s %s %s", prefix, IconChannel, channel.Name)
+	case service.ChannelTypeGroup:
+		label = fmt.Sprintf("%s %s %s", prefix, IconGroup, channel.Name)
+	case service.ChannelTypeIM:
+		label = fmt.Sprintf("%s %s %s", prefix, IconIM, channel.Name)
+	}
+
+	return label
 }
