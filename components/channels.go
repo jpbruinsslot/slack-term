@@ -195,6 +195,7 @@ func (c *Channels) MoveCursorBottom() {
 
 // ScrollUp enables us to scroll through the channel list when it overflows
 func (c *Channels) ScrollUp() {
+	// Is cursor at the top of the channel view?
 	if c.CursorPosition == c.List.InnerBounds().Min.Y {
 		if c.Offset > 0 {
 			c.Offset--
@@ -206,12 +207,52 @@ func (c *Channels) ScrollUp() {
 
 // ScrollDown enables us to scroll through the channel list when it overflows
 func (c *Channels) ScrollDown() {
+	// Is the cursor at the bottom of the channel view?
 	if c.CursorPosition == c.List.InnerBounds().Max.Y-1 {
 		if c.Offset < len(c.List.Items)-1 {
 			c.Offset++
 		}
 	} else {
 		c.CursorPosition++
+	}
+}
+
+// Search will search through the channels to find a channel,
+// when a match has been found the selected channel will then
+// be the channel that has been found
+func (c *Channels) Search(term string) {
+	for i, item := range c.List.Items {
+		if strings.Contains(item, term) {
+
+			// The new position
+			newPos := i
+
+			// Is the new position in range of the current view?
+			minRange := c.Offset
+			maxRange := c.Offset + c.List.InnerBounds().Max.Y - 1
+
+			if newPos < minRange {
+				// newPos is above, we need to scroll up.
+				c.SetSelectedChannel(i)
+
+				// How much do we need to scroll to get it into range?
+				c.Offset = c.Offset - (minRange - newPos)
+			} else if newPos > maxRange {
+				// newPos is below, we need to scroll down
+				c.SetSelectedChannel(i)
+
+				// How much do we need to scroll to get it into range?
+				c.Offset = c.Offset + (newPos - maxRange) + 1
+			} else {
+				// newPos is inside range
+				c.SetSelectedChannel(i)
+			}
+
+			// Set cursor to correct position
+			c.CursorPosition = (newPos - minRange) + 1
+
+			break
+		}
 	}
 }
 
