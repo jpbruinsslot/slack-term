@@ -9,6 +9,12 @@ import (
 	"github.com/nlopes/slack"
 )
 
+const (
+	ChannelTypeChannel = "channel"
+	ChannelTypeGroup   = "group"
+	ChannelTypeIM      = "im"
+)
+
 type SlackService struct {
 	Client        *slack.Client
 	RTM           *slack.RTM
@@ -19,9 +25,11 @@ type SlackService struct {
 }
 
 type Channel struct {
-	ID    string
-	Name  string
-	Topic string
+	ID     string
+	Name   string
+	Topic  string
+	Type   string
+	UserID string
 }
 
 // NewSlackService is the constructor for the SlackService and will initialize
@@ -72,7 +80,15 @@ func (s *SlackService) GetChannels() []Channel {
 	}
 	for _, chn := range slackChans {
 		s.SlackChannels = append(s.SlackChannels, chn)
-		chans = append(chans, Channel{chn.ID, chn.Name, chn.Topic.Value})
+		chans = append(
+			chans, Channel{
+				ID:     chn.ID,
+				Name:   chn.Name,
+				Topic:  chn.Topic.Value,
+				Type:   ChannelTypeChannel,
+				UserID: "",
+			},
+		)
 	}
 
 	// Groups
@@ -82,7 +98,15 @@ func (s *SlackService) GetChannels() []Channel {
 	}
 	for _, grp := range slackGroups {
 		s.SlackChannels = append(s.SlackChannels, grp)
-		chans = append(chans, Channel{grp.ID, grp.Name, grp.Topic.Value})
+		chans = append(
+			chans, Channel{
+				ID:     grp.ID,
+				Name:   grp.Name,
+				Topic:  grp.Topic.Value,
+				Type:   ChannelTypeGroup,
+				UserID: "",
+			},
+		)
 	}
 
 	// IM
@@ -94,11 +118,21 @@ func (s *SlackService) GetChannels() []Channel {
 
 		// Uncover name, when we can't uncover name for
 		// IM channel this is then probably a deleted
-		// user, because we wont add deleted users
+		// user, because we won't add deleted users
 		// to the UserCache, so we skip it
 		name, ok := s.UserCache[im.User]
+
 		if ok {
-			chans = append(chans, Channel{im.ID, name, ""})
+			chans = append(
+				chans,
+				Channel{
+					ID:     im.ID,
+					Name:   name,
+					Topic:  "",
+					Type:   ChannelTypeIM,
+					UserID: im.User,
+				},
+			)
 			s.SlackChannels = append(s.SlackChannels, im)
 		}
 	}
@@ -106,6 +140,16 @@ func (s *SlackService) GetChannels() []Channel {
 	s.Channels = chans
 
 	return chans
+}
+
+// GetUserPresence will get the presence of a specific user
+func (s *SlackService) GetUserPresence(userID string) (string, error) {
+	presence, err := s.Client.GetUserPresence(userID)
+	if err != nil {
+		return "", err
+	}
+
+	return presence.Presence, nil
 }
 
 // SetChannelReadMark will set the read mark for a channel, group, and im
