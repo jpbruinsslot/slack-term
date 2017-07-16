@@ -59,6 +59,16 @@ Getting started
                 "C-8":         "backspace",
                 "<delete>":    "delete",
                 "<space>":     "space"
+            },
+            "search": {
+                "<left>":      "cursor-left",
+                "<right>":     "cursor-right",
+                "<escape>":    "clear-input",
+                "<enter>":     "clear-input",
+                "<backspace>": "backspace",
+                "C-8":         "backspace",
+                "<delete>":    "delete",
+                "<space>":     "space"
             }
         }
     }
@@ -79,6 +89,7 @@ Default Key Mapping
 | mode    | key       | action                     |
 |---------|-----------|----------------------------|
 | command | `i`       | insert mode                |
+| command | `/`       | search mode                |
 | command | `k`       | move channel cursor up     |
 | command | `j`       | move channel cursor down   |
 | command | `g`       | move channel cursor top    |
@@ -95,3 +106,5 @@ Default Key Mapping
 | insert  | `right`   | move input cursor right    |
 | insert  | `enter`   | send message               |
 | insert  | `esc`     | command mode               |
+| search  | `esc`     | command mode               |
+| search  | `enter`   | command mode               |
