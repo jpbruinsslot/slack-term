@@ -28,6 +28,8 @@ var actionMap = map[string]func(*context.AppContext){
 	"quit":           actionQuit,
 	"mode-insert":    actionInsertMode,
 	"mode-command":   actionCommandMode,
+	"mode-search":    actionSearchMode,
+	"clear-input":    actionClearInput,
 	"channel-up":     actionMoveCursorUpChannels,
 	"channel-down":   actionMoveCursorDownChannels,
 	"channel-top":    actionMoveCursorTopChannels,
@@ -67,6 +69,8 @@ func anyKeyHandler(ctx *context.AppContext) {
 			} else {
 				if ctx.Mode == context.InsertMode && ev.Ch != 0 {
 					actionInput(ctx.View, ev.Ch)
+				} else if ctx.Mode == context.SearchMode && ev.Ch != 0 {
+					actionSearch(ctx, ev.Ch)
 				}
 			}
 		}
@@ -133,6 +137,15 @@ func actionInput(view *views.View, key rune) {
 	termui.Render(view.Input)
 }
 
+func actionClearInput(ctx *context.AppContext) {
+	// Clear input
+	ctx.View.Input.Clear()
+	ctx.View.Refresh()
+
+	// Set command mode
+	actionCommandMode(ctx)
+}
+
 func actionSpace(ctx *context.AppContext) {
 	actionInput(ctx.View, ' ')
 }
@@ -174,6 +187,23 @@ func actionSend(ctx *context.AppContext) {
 	}
 }
 
+func actionSearch(ctx *context.AppContext, key rune) {
+	go func() {
+		if timer != nil {
+			timer.Stop()
+		}
+
+		actionInput(ctx.View, key)
+
+		timer = time.NewTimer(time.Second / 4)
+		<-timer.C
+
+		term := ctx.View.Input.GetText()
+		ctx.View.Channels.Search(term)
+		actionChangeChannel(ctx)
+	}()
+}
+
 // actionQuit will exit the program by using os.Exit, this is
 // done because we are using a custom termui EvtStream. Which
 // we won't be able to call termui.StopLoop() on. See main.go
@@ -191,6 +221,12 @@ func actionInsertMode(ctx *context.AppContext) {
 func actionCommandMode(ctx *context.AppContext) {
 	ctx.Mode = context.CommandMode
 	ctx.View.Mode.Par.Text = "NORMAL"
+	termui.Render(ctx.View.Mode)
+}
+
+func actionSearchMode(ctx *context.AppContext) {
+	ctx.Mode = context.SearchMode
+	ctx.View.Mode.Par.Text = "SEARCH"
 	termui.Render(ctx.View.Mode)
 }
 
