@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	VERSION = "v0.2.1"
+	VERSION = "v0.2.2"
 	USAGE   = `NAME:
     slack-term - slack client for your terminal
 
