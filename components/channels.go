@@ -229,7 +229,7 @@ func (c *Channels) Search(term string) {
 
 			// Is the new position in range of the current view?
 			minRange := c.Offset
-			maxRange := c.Offset + c.List.InnerBounds().Max.Y - 1
+			maxRange := c.Offset + (c.List.InnerBounds().Max.Y - 2)
 
 			if newPos < minRange {
 				// newPos is above, we need to scroll up.
@@ -242,14 +242,14 @@ func (c *Channels) Search(term string) {
 				c.SetSelectedChannel(i)
 
 				// How much do we need to scroll to get it into range?
-				c.Offset = c.Offset + (newPos - maxRange) + 1
+				c.Offset = c.Offset + (newPos - maxRange)
 			} else {
 				// newPos is inside range
 				c.SetSelectedChannel(i)
 			}
 
 			// Set cursor to correct position
-			c.CursorPosition = (newPos - minRange) + 1
+			c.CursorPosition = (newPos - c.Offset) + 1
 
 			break
 		}
