@@ -3,10 +3,13 @@ package service
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/nlopes/slack"
+
+	"github.com/erroneousboat/slack-term/config"
 )
 
 const (
@@ -291,7 +294,7 @@ func (s *SlackService) CreateMessage(message slack.Message) []string {
 		"[%s] <%s> %s",
 		time.Unix(intTime, 0).Format("15:04"),
 		name,
-		message.Text,
+		parseEmoji(message.Text),
 	)
 
 	msgs = append(msgs, msg)
@@ -357,7 +360,7 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 		"[%s] <%s> %s",
 		time.Unix(intTime, 0).Format("15:04"),
 		name,
-		message.Text,
+		parseEmoji(message.Text),
 	)
 
 	msgs = append(msgs, msg)
@@ -390,4 +393,20 @@ func createMessageFromAttachments(atts []slack.Attachment) []string {
 	}
 
 	return msgs
+}
+
+// parseEmoji will try to find emoji placeholders in the message
+// string and replace them with the correct unicode equivalent
+func parseEmoji(msg string) string {
+	r := regexp.MustCompile("(:\\w+:)")
+
+	return r.ReplaceAllStringFunc(
+		msg, func(str string) string {
+			code, ok := config.EmojiCodemap[str]
+			if !ok {
+				return str
+			}
+			return code
+		},
+	)
 }
