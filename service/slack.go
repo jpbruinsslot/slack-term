@@ -5,6 +5,7 @@ import (
 	"log"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/nlopes/slack"
@@ -294,7 +295,7 @@ func (s *SlackService) CreateMessage(message slack.Message) []string {
 		"[%s] <%s> %s",
 		time.Unix(intTime, 0).Format("15:04"),
 		name,
-		parseEmoji(message.Text),
+		parseMessage(s, message.Text),
 	)
 
 	msgs = append(msgs, msg)
@@ -360,12 +361,81 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 		"[%s] <%s> %s",
 		time.Unix(intTime, 0).Format("15:04"),
 		name,
-		parseEmoji(message.Text),
+		parseMessage(s, message.Text),
 	)
 
 	msgs = append(msgs, msg)
 
 	return msgs
+}
+
+// parseMessage will parse a message string and find and replace:
+//   - emoji's
+//   - mentions
+func parseMessage(s *SlackService, msg string) string {
+	msg = parseEmoji(msg)
+	msg = parseMentions(s, msg)
+
+	return msg
+}
+
+// parseMentions will try to find mention placeholders in the message
+// string and replace them with the correct username with and @ symbol
+func parseMentions(s *SlackService, msg string) string {
+	// Mentions have the following format:
+	// <@U12345|erroneousboat>
+	// <@U12345>
+	r := regexp.MustCompile(`\<@(\w+\|*\w+)\>`)
+	rs := r.FindStringSubmatch(msg)
+	if len(rs) < 1 {
+		return msg
+	}
+
+	return r.ReplaceAllStringFunc(
+		msg, func(str string) string {
+			var userID string
+			split := strings.Split(rs[1], "|")
+			if len(split) > 0 {
+				userID = split[0]
+			} else {
+				userID = rs[1]
+			}
+
+			name, ok := s.UserCache[userID]
+			if !ok {
+				user, err := s.Client.GetUserInfo(userID)
+				if err != nil {
+					name = "unknown"
+					s.UserCache[userID] = name
+				} else {
+					name = user.Name
+					s.UserCache[userID] = user.Name
+				}
+			}
+
+			if name == "" {
+				name = "unknown"
+			}
+
+			return "@" + name
+		},
+	)
+}
+
+// parseEmoji will try to find emoji placeholders in the message
+// string and replace them with the correct unicode equivalent
+func parseEmoji(msg string) string {
+	r := regexp.MustCompile("(:\\w+:)")
+
+	return r.ReplaceAllStringFunc(
+		msg, func(str string) string {
+			code, ok := config.EmojiCodemap[str]
+			if !ok {
+				return str
+			}
+			return code
+		},
+	)
 }
 
 // createMessageFromAttachments will construct a array of string of the Field
@@ -393,20 +463,4 @@ func createMessageFromAttachments(atts []slack.Attachment) []string {
 	}
 
 	return msgs
-}
-
-// parseEmoji will try to find emoji placeholders in the message
-// string and replace them with the correct unicode equivalent
-func parseEmoji(msg string) string {
-	r := regexp.MustCompile("(:\\w+:)")
-
-	return r.ReplaceAllStringFunc(
-		msg, func(str string) string {
-			code, ok := config.EmojiCodemap[str]
-			if !ok {
-				return str
-			}
-			return code
-		},
-	)
 }
