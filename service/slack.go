@@ -370,10 +370,13 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 }
 
 // parseMessage will parse a message string and find and replace:
-//   - emoji's
-//   - mentions
+//	- emoji's
+//	- mentions
 func parseMessage(s *SlackService, msg string) string {
-	msg = parseEmoji(msg)
+	// NOTE: Commented out because rendering of the emoji's
+	// create artifacts from the last view because of
+	// double width emoji's
+	// msg = parseEmoji(msg)
 	msg = parseMentions(s, msg)
 
 	return msg
@@ -381,10 +384,11 @@ func parseMessage(s *SlackService, msg string) string {
 
 // parseMentions will try to find mention placeholders in the message
 // string and replace them with the correct username with and @ symbol
+//
+// Mentions have the following format:
+//	<@U12345|erroneousboat>
+// 	<@U12345>
 func parseMentions(s *SlackService, msg string) string {
-	// Mentions have the following format:
-	// <@U12345|erroneousboat>
-	// <@U12345>
 	r := regexp.MustCompile(`\<@(\w+\|*\w+)\>`)
 	rs := r.FindStringSubmatch(msg)
 	if len(rs) < 1 {
