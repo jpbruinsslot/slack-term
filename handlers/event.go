@@ -40,47 +40,29 @@ var actionMap = map[string]func(*context.AppContext){
 }
 
 func RegisterEventHandlers(ctx *context.AppContext) {
-	anyKeyHandler(ctx)
+	eventHandler(ctx)
 	incomingMessageHandler(ctx)
-	termui.Handle("/sys/wnd/resize", resizeHandler(ctx))
 }
 
-func anyKeyHandler(ctx *context.AppContext) {
+func eventHandler(ctx *context.AppContext) {
+	go func() {
+		for {
+			ctx.EventQueue <- termbox.PollEvent()
+		}
+	}()
+
 	go func() {
 		for {
 			ev := <-ctx.EventQueue
 
-			if ev.Type != termbox.EventKey {
-				continue
-			}
-
-			keyStr := getKeyString(ev)
-
-			// Get the action name (actionStr) from the key that
-			// has been pressed. If this is found try to uncover
-			// the associated function with this key and execute
-			// it.
-			actionStr, ok := ctx.Config.KeyMap[ctx.Mode][keyStr]
-			if ok {
-				action, ok := actionMap[actionStr]
-				if ok {
-					action(ctx)
-				}
-			} else {
-				if ctx.Mode == context.InsertMode && ev.Ch != 0 {
-					actionInput(ctx.View, ev.Ch)
-				} else if ctx.Mode == context.SearchMode && ev.Ch != 0 {
-					actionSearch(ctx, ev.Ch)
-				}
+			switch ev.Type {
+			case termbox.EventKey:
+				actionKeyEvent(ctx, ev)
+			case termbox.EventResize:
+				actionResizeEvent(ctx, ev)
 			}
 		}
 	}()
-}
-
-func resizeHandler(ctx *context.AppContext) func(termui.Event) {
-	return func(e termui.Event) {
-		actionResize(ctx)
-	}
 }
 
 func incomingMessageHandler(ctx *context.AppContext) {
@@ -124,9 +106,30 @@ func incomingMessageHandler(ctx *context.AppContext) {
 	}()
 }
 
-// FIXME: resize only seems to work for width and resizing it too small
-// will cause termui to panic
-func actionResize(ctx *context.AppContext) {
+func actionKeyEvent(ctx *context.AppContext, ev termbox.Event) {
+
+	keyStr := getKeyString(ev)
+
+	// Get the action name (actionStr) from the key that
+	// has been pressed. If this is found try to uncover
+	// the associated function with this key and execute
+	// it.
+	actionStr, ok := ctx.Config.KeyMap[ctx.Mode][keyStr]
+	if ok {
+		action, ok := actionMap[actionStr]
+		if ok {
+			action(ctx)
+		}
+	} else {
+		if ctx.Mode == context.InsertMode && ev.Ch != 0 {
+			actionInput(ctx.View, ev.Ch)
+		} else if ctx.Mode == context.SearchMode && ev.Ch != 0 {
+			actionSearch(ctx, ev.Ch)
+		}
+	}
+}
+
+func actionResizeEvent(ctx *context.AppContext, ev termbox.Event) {
 	termui.Body.Width = termui.TermWidth()
 	termui.Body.Align()
 	termui.Render(termui.Body)
@@ -209,6 +212,7 @@ func actionSearch(ctx *context.AppContext, key rune) {
 // we won't be able to call termui.StopLoop() on. See main.go
 // for the customEvtStream and why this is done.
 func actionQuit(ctx *context.AppContext) {
+	termbox.Close()
 	os.Exit(0)
 }
 
