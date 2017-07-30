@@ -9,7 +9,6 @@ import (
 
 	"github.com/erroneousboat/slack-term/context"
 	"github.com/erroneousboat/slack-term/handlers"
-	termbox "github.com/nsf/termbox-go"
 
 	"github.com/gizak/termui"
 )
@@ -68,7 +67,7 @@ func main() {
 	// Create custom event stream for termui because
 	// termui's one has data race conditions with its
 	// event handling. We're circumventing it here until
-	// it has been fix.
+	// it has been fixed.
 	customEvtStream := &termui.EvtStream{
 		Handlers: make(map[string]func(termui.Event)),
 	}
@@ -96,12 +95,6 @@ func main() {
 
 	// Register handlers
 	handlers.RegisterEventHandlers(ctx)
-
-	go func() {
-		for {
-			ctx.EventQueue <- termbox.PollEvent()
-		}
-	}()
 
 	termui.Loop()
 }
