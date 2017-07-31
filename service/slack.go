@@ -3,10 +3,20 @@ package service
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/nlopes/slack"
+
+	"github.com/erroneousboat/slack-term/config"
+)
+
+const (
+	ChannelTypeChannel = "channel"
+	ChannelTypeGroup   = "group"
+	ChannelTypeIM      = "im"
 )
 
 type SlackService struct {
@@ -19,9 +29,11 @@ type SlackService struct {
 }
 
 type Channel struct {
-	ID    string
-	Name  string
-	Topic string
+	ID     string
+	Name   string
+	Topic  string
+	Type   string
+	UserID string
 }
 
 // NewSlackService is the constructor for the SlackService and will initialize
@@ -72,7 +84,15 @@ func (s *SlackService) GetChannels() []Channel {
 	}
 	for _, chn := range slackChans {
 		s.SlackChannels = append(s.SlackChannels, chn)
-		chans = append(chans, Channel{chn.ID, chn.Name, chn.Topic.Value})
+		chans = append(
+			chans, Channel{
+				ID:     chn.ID,
+				Name:   chn.Name,
+				Topic:  chn.Topic.Value,
+				Type:   ChannelTypeChannel,
+				UserID: "",
+			},
+		)
 	}
 
 	// Groups
@@ -82,7 +102,15 @@ func (s *SlackService) GetChannels() []Channel {
 	}
 	for _, grp := range slackGroups {
 		s.SlackChannels = append(s.SlackChannels, grp)
-		chans = append(chans, Channel{grp.ID, grp.Name, grp.Topic.Value})
+		chans = append(
+			chans, Channel{
+				ID:     grp.ID,
+				Name:   grp.Name,
+				Topic:  grp.Topic.Value,
+				Type:   ChannelTypeGroup,
+				UserID: "",
+			},
+		)
 	}
 
 	// IM
@@ -94,11 +122,21 @@ func (s *SlackService) GetChannels() []Channel {
 
 		// Uncover name, when we can't uncover name for
 		// IM channel this is then probably a deleted
-		// user, because we wont add deleted users
+		// user, because we won't add deleted users
 		// to the UserCache, so we skip it
 		name, ok := s.UserCache[im.User]
+
 		if ok {
-			chans = append(chans, Channel{im.ID, name, ""})
+			chans = append(
+				chans,
+				Channel{
+					ID:     im.ID,
+					Name:   name,
+					Topic:  "",
+					Type:   ChannelTypeIM,
+					UserID: im.User,
+				},
+			)
 			s.SlackChannels = append(s.SlackChannels, im)
 		}
 	}
@@ -106,6 +144,16 @@ func (s *SlackService) GetChannels() []Channel {
 	s.Channels = chans
 
 	return chans
+}
+
+// GetUserPresence will get the presence of a specific user
+func (s *SlackService) GetUserPresence(userID string) (string, error) {
+	presence, err := s.Client.GetUserPresence(userID)
+	if err != nil {
+		return "", err
+	}
+
+	return presence.Presence, nil
 }
 
 // SetChannelReadMark will set the read mark for a channel, group, and im
@@ -247,7 +295,7 @@ func (s *SlackService) CreateMessage(message slack.Message) []string {
 		"[%s] <%s> %s",
 		time.Unix(intTime, 0).Format("15:04"),
 		name,
-		message.Text,
+		parseMessage(s, message.Text),
 	)
 
 	msgs = append(msgs, msg)
@@ -313,12 +361,86 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 		"[%s] <%s> %s",
 		time.Unix(intTime, 0).Format("15:04"),
 		name,
-		message.Text,
+		parseMessage(s, message.Text),
 	)
 
 	msgs = append(msgs, msg)
 
 	return msgs
+}
+
+// parseMessage will parse a message string and find and replace:
+//	- emoji's
+//	- mentions
+func parseMessage(s *SlackService, msg string) string {
+	// NOTE: Commented out because rendering of the emoji's
+	// creates artifacts from the last view because of
+	// double width emoji's
+	// msg = parseEmoji(msg)
+
+	msg = parseMentions(s, msg)
+
+	return msg
+}
+
+// parseMentions will try to find mention placeholders in the message
+// string and replace them with the correct username with and @ symbol
+//
+// Mentions have the following format:
+//	<@U12345|erroneousboat>
+// 	<@U12345>
+func parseMentions(s *SlackService, msg string) string {
+	r := regexp.MustCompile(`\<@(\w+\|*\w+)\>`)
+	rs := r.FindStringSubmatch(msg)
+	if len(rs) < 1 {
+		return msg
+	}
+
+	return r.ReplaceAllStringFunc(
+		msg, func(str string) string {
+			var userID string
+			split := strings.Split(rs[1], "|")
+			if len(split) > 0 {
+				userID = split[0]
+			} else {
+				userID = rs[1]
+			}
+
+			name, ok := s.UserCache[userID]
+			if !ok {
+				user, err := s.Client.GetUserInfo(userID)
+				if err != nil {
+					name = "unknown"
+					s.UserCache[userID] = name
+				} else {
+					name = user.Name
+					s.UserCache[userID] = user.Name
+				}
+			}
+
+			if name == "" {
+				name = "unknown"
+			}
+
+			return "@" + name
+		},
+	)
+}
+
+// parseEmoji will try to find emoji placeholders in the message
+// string and replace them with the correct unicode equivalent
+func parseEmoji(msg string) string {
+	r := regexp.MustCompile("(:\\w+:)")
+
+	return r.ReplaceAllStringFunc(
+		msg, func(str string) string {
+			code, ok := config.EmojiCodemap[str]
+			if !ok {
+				return str
+			}
+			return code
+		},
+	)
 }
 
 // createMessageFromAttachments will construct a array of string of the Field
