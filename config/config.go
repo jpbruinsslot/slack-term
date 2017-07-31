@@ -28,6 +28,7 @@ func NewConfig(filepath string) (*Config, error) {
 		KeyMap: map[string]keyMapping{
 			"command": {
 				"i":          "mode-insert",
+				"/":          "mode-search",
 				"k":          "channel-up",
 				"j":          "channel-down",
 				"g":          "channel-top",
@@ -46,6 +47,16 @@ func NewConfig(filepath string) (*Config, error) {
 				"<right>":     "cursor-right",
 				"<enter>":     "send",
 				"<escape>":    "mode-command",
+				"<backspace>": "backspace",
+				"C-8":         "backspace",
+				"<delete>":    "delete",
+				"<space>":     "space",
+			},
+			"search": {
+				"<left>":      "cursor-left",
+				"<right>":     "cursor-right",
+				"<escape>":    "clear-input",
+				"<enter>":     "clear-input",
 				"<backspace>": "backspace",
 				"C-8":         "backspace",
 				"<delete>":    "delete",

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"os"
 	"strconv"
 	"time"
 
@@ -27,6 +28,8 @@ var actionMap = map[string]func(*context.AppContext){
 	"quit":           actionQuit,
 	"mode-insert":    actionInsertMode,
 	"mode-command":   actionCommandMode,
+	"mode-search":    actionSearchMode,
+	"clear-input":    actionClearInput,
 	"channel-up":     actionMoveCursorUpChannels,
 	"channel-down":   actionMoveCursorDownChannels,
 	"channel-top":    actionMoveCursorTopChannels,
@@ -37,45 +40,29 @@ var actionMap = map[string]func(*context.AppContext){
 }
 
 func RegisterEventHandlers(ctx *context.AppContext) {
-	anyKeyHandler(ctx)
+	eventHandler(ctx)
 	incomingMessageHandler(ctx)
-	termui.Handle("/sys/wnd/resize", resizeHandler(ctx))
 }
 
-func anyKeyHandler(ctx *context.AppContext) {
+func eventHandler(ctx *context.AppContext) {
+	go func() {
+		for {
+			ctx.EventQueue <- termbox.PollEvent()
+		}
+	}()
+
 	go func() {
 		for {
 			ev := <-ctx.EventQueue
 
-			if ev.Type != termbox.EventKey {
-				continue
-			}
-
-			keyStr := getKeyString(ev)
-
-			// Get the action name (actionStr) from the key that
-			// has been pressed. If this is found try to uncover
-			// the associated function with this key and execute
-			// it.
-			actionStr, ok := ctx.Config.KeyMap[ctx.Mode][keyStr]
-			if ok {
-				action, ok := actionMap[actionStr]
-				if ok {
-					action(ctx)
-				}
-			} else {
-				if ctx.Mode == context.InsertMode && ev.Ch != 0 {
-					actionInput(ctx.View, ev.Ch)
-				}
+			switch ev.Type {
+			case termbox.EventKey:
+				actionKeyEvent(ctx, ev)
+			case termbox.EventResize:
+				actionResizeEvent(ctx, ev)
 			}
 		}
 	}()
-}
-
-func resizeHandler(ctx *context.AppContext) func(termui.Event) {
-	return func(e termui.Event) {
-		actionResize(ctx)
-	}
 }
 
 func incomingMessageHandler(ctx *context.AppContext) {
@@ -85,7 +72,6 @@ func incomingMessageHandler(ctx *context.AppContext) {
 			case msg := <-ctx.Service.RTM.IncomingEvents:
 				switch ev := msg.Data.(type) {
 				case *slack.MessageEvent:
-
 					// Construct message
 					msg := ctx.Service.CreateMessageFromMessageEvent(ev)
 
@@ -112,15 +98,38 @@ func incomingMessageHandler(ctx *context.AppContext) {
 					if ev.User != ctx.Service.CurrentUserID {
 						actionNewMessage(ctx, ev.Channel)
 					}
+				case *slack.PresenceChangeEvent:
+					actionSetPresence(ctx, ev.User, ev.Presence)
 				}
 			}
 		}
 	}()
 }
 
-// FIXME: resize only seems to work for width and resizing it too small
-// will cause termui to panic
-func actionResize(ctx *context.AppContext) {
+func actionKeyEvent(ctx *context.AppContext, ev termbox.Event) {
+
+	keyStr := getKeyString(ev)
+
+	// Get the action name (actionStr) from the key that
+	// has been pressed. If this is found try to uncover
+	// the associated function with this key and execute
+	// it.
+	actionStr, ok := ctx.Config.KeyMap[ctx.Mode][keyStr]
+	if ok {
+		action, ok := actionMap[actionStr]
+		if ok {
+			action(ctx)
+		}
+	} else {
+		if ctx.Mode == context.InsertMode && ev.Ch != 0 {
+			actionInput(ctx.View, ev.Ch)
+		} else if ctx.Mode == context.SearchMode && ev.Ch != 0 {
+			actionSearch(ctx, ev.Ch)
+		}
+	}
+}
+
+func actionResizeEvent(ctx *context.AppContext, ev termbox.Event) {
 	termui.Body.Width = termui.TermWidth()
 	termui.Body.Align()
 	termui.Render(termui.Body)
@@ -129,6 +138,15 @@ func actionResize(ctx *context.AppContext) {
 func actionInput(view *views.View, key rune) {
 	view.Input.Insert(key)
 	termui.Render(view.Input)
+}
+
+func actionClearInput(ctx *context.AppContext) {
+	// Clear input
+	ctx.View.Input.Clear()
+	ctx.View.Refresh()
+
+	// Set command mode
+	actionCommandMode(ctx)
 }
 
 func actionSpace(ctx *context.AppContext) {
@@ -172,8 +190,30 @@ func actionSend(ctx *context.AppContext) {
 	}
 }
 
-func actionQuit(*context.AppContext) {
-	termui.StopLoop()
+func actionSearch(ctx *context.AppContext, key rune) {
+	go func() {
+		if timer != nil {
+			timer.Stop()
+		}
+
+		actionInput(ctx.View, key)
+
+		timer = time.NewTimer(time.Second / 4)
+		<-timer.C
+
+		term := ctx.View.Input.GetText()
+		ctx.View.Channels.Search(term)
+		actionChangeChannel(ctx)
+	}()
+}
+
+// actionQuit will exit the program by using os.Exit, this is
+// done because we are using a custom termui EvtStream. Which
+// we won't be able to call termui.StopLoop() on. See main.go
+// for the customEvtStream and why this is done.
+func actionQuit(ctx *context.AppContext) {
+	termbox.Close()
+	os.Exit(0)
 }
 
 func actionInsertMode(ctx *context.AppContext) {
@@ -185,6 +225,12 @@ func actionInsertMode(ctx *context.AppContext) {
 func actionCommandMode(ctx *context.AppContext) {
 	ctx.Mode = context.CommandMode
 	ctx.View.Mode.Par.Text = "NORMAL"
+	termui.Render(ctx.View.Mode)
+}
+
+func actionSearchMode(ctx *context.AppContext) {
+	ctx.Mode = context.SearchMode
+	ctx.View.Mode.Par.Text = "SEARCH"
 	termui.Render(ctx.View.Mode)
 }
 
@@ -262,7 +308,12 @@ func actionChangeChannel(ctx *context.AppContext) {
 }
 
 func actionNewMessage(ctx *context.AppContext, channelID string) {
-	ctx.View.Channels.NewMessage(ctx.Service, channelID)
+	ctx.View.Channels.SetNotification(ctx.Service, channelID)
+	termui.Render(ctx.View.Channels)
+}
+
+func actionSetPresence(ctx *context.AppContext, channelID string, presence string) {
+	ctx.View.Channels.SetPresence(ctx.Service, channelID, presence)
 	termui.Render(ctx.View.Channels)
 }
 

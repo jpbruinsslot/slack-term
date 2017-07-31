@@ -14,6 +14,7 @@ import (
 const (
 	CommandMode = "command"
 	InsertMode  = "insert"
+	SearchMode  = "search"
 )
 
 type AppContext struct {
