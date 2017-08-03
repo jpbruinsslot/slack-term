@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"regexp"
@@ -185,8 +186,25 @@ func (s *SlackService) SendMessage(channel string, message string) {
 		AsUser: true,
 	}
 
-	// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
-	s.Client.PostMessage(channel, message, postParams)
+	if strings.HasPrefix(message, "/") {
+		var args string
+		msgParts := strings.Split(message, " ")
+		if len(msgParts) > 1 {
+			args = strings.Join(msgParts[1:], " ")
+		}
+
+		// https://godoc.org/github.com/nlopes/slack#Client.SendMessageContext
+		s.Client.SendMessageContext(
+			context.Background(),
+			channel,
+			slack.MsgOptionCommand(msgParts[0], args),
+			slack.MsgOptionPostMessageParameters(postParams),
+		)
+	} else {
+		// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
+		s.Client.PostMessage(channel, message, postParams)
+	}
+
 }
 
 // GetMessages will get messages for a channel, group or im channel delimited
