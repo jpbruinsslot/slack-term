@@ -4,11 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"os/user"
 	"path"
 
 	"github.com/erroneousboat/slack-term/context"
 	"github.com/erroneousboat/slack-term/handlers"
+	termbox "github.com/nsf/termbox-go"
 
 	"github.com/gizak/termui"
 )
@@ -74,7 +76,12 @@ func main() {
 	termui.DefaultEvtStream = customEvtStream
 
 	// Create context
-	ctx := context.CreateAppContext(flgConfig)
+	ctx, err := context.CreateAppContext(flgConfig)
+	if err != nil {
+		termbox.Close()
+		log.Println(err)
+		os.Exit(0)
+	}
 
 	// Setup body
 	termui.Body.AddRows(
