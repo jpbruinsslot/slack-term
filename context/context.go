@@ -1,8 +1,6 @@
 package context
 
 import (
-	"log"
-
 	"github.com/gizak/termui"
 	termbox "github.com/nsf/termbox-go"
 
@@ -28,11 +26,11 @@ type AppContext struct {
 
 // CreateAppContext creates an application context which can be passed
 // and referenced througout the application
-func CreateAppContext(flgConfig string) *AppContext {
+func CreateAppContext(flgConfig string) (*AppContext, error) {
 	// Load config
 	config, err := config.NewConfig(flgConfig)
 	if err != nil {
-		log.Fatalf("ERROR: not able to load config file (%s): %s", flgConfig, err)
+		return nil, err
 	}
 
 	// Create Service
@@ -47,5 +45,5 @@ func CreateAppContext(flgConfig string) *AppContext {
 		View:       view,
 		Config:     config,
 		Mode:       CommandMode,
-	}
+	}, nil
 }
