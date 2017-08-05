@@ -3,22 +3,22 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "QU7qDysp2ueUh0UVa9CCxfmXN6I=",
+			"checksumSHA1": "En911lu7f/u83ScLGxAaTM2SJVE=",
 			"path": "github.com/gizak/termui",
-			"revision": "991cd3d3809135dc24daf6188dc6edcaf3d7d2d9",
-			"revisionTime": "2017-01-17T22:23:42Z"
+			"revision": "72304ddb9b4e9838426a021aad64a5a860e98324",
+			"revisionTime": "2017-05-02T14:12:00Z"
 		},
 		{
 			"checksumSHA1": "7hln62oZPZmyqEmgXaybf9WxQ7A=",
 			"path": "github.com/maruel/panicparse/stack",
-			"revision": "25bcac0d793cf4109483505a0d66e066a3a90a80",
-			"revisionTime": "2017-02-27T22:23:42Z"
+			"revision": "868abbf1ebac0fb2760cd9a410a5bd2f5afb2f76",
+			"revisionTime": "2017-07-16T23:31:26Z"
 		},
 		{
-			"checksumSHA1": "MNkKJyk2TazKMJYbal5wFHybpyA=",
+			"checksumSHA1": "cJE7dphDlam/i7PhnsyosNWtbd4=",
 			"path": "github.com/mattn/go-runewidth",
-			"revision": "14207d285c6c197daabb5c9793d63e7af9ab2d50",
-			"revisionTime": "2017-02-01T02:35:40Z"
+			"revision": "97311d9f7767e3d6f422ea06661bc2c7a19e8a5d",
+			"revisionTime": "2017-05-10T07:48:58Z"
 		},
 		{
 			"checksumSHA1": "L3leymg2RT8hFl5uL+5KP/LpBkg=",
@@ -27,22 +27,22 @@
 			"revisionTime": "2015-03-14T17:03:34Z"
 		},
 		{
-			"checksumSHA1": "oNrSJkPTYsPtwH9/pUXOTIjVuks=",
+			"checksumSHA1": "HYgTWn4FgVbvSBYVO4DxUPWfCz0=",
 			"path": "github.com/nlopes/slack",
-			"revision": "6519657c021b7add19c4ef48220140cca0b1657b",
-			"revisionTime": "2017-02-11T11:26:27Z"
+			"revision": "5cde21b8b96a43fc3435a1f514123d14fd7eabdc",
+			"revisionTime": "2017-07-25T12:17:30Z"
 		},
 		{
-			"checksumSHA1": "gOW8c+HcxvtRV/i75SxwLILC+9g=",
+			"checksumSHA1": "lqSuR5kZpYqI18/Hfhh3t/SYzPA=",
 			"path": "github.com/nsf/termbox-go",
-			"revision": "91bae1bb5fa9ee504905ecbe7043fa30e92feaa3",
-			"revisionTime": "2017-03-01T01:43:43Z"
+			"revision": "4ed959e0540971545eddb8c75514973d670cf739",
+			"revisionTime": "2017-07-10T10:34:07Z"
 		},
 		{
 			"checksumSHA1": "7EZyXN0EmZLgGxZxK01IJua4c8o=",
 			"path": "golang.org/x/net/websocket",
-			"revision": "906cda9512f77671ab44f8c8563b13a8e707b230",
-			"revisionTime": "2017-02-18T20:36:51Z"
+			"revision": "f5079bd7f6f74e23c4d65efa0f4ce14cbd6a3c0f",
+			"revisionTime": "2017-07-19T21:11:51Z"
 		}
 	],
 	"rootPath": "github.com/erroneousboat/slack-term"
