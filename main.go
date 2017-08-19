@@ -4,15 +4,12 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
 	"os/user"
 	"path"
 
-	"github.com/erroneousboat/slack-term/context"
-	"github.com/erroneousboat/slack-term/handlers"
-	termbox "github.com/nsf/termbox-go"
+	"github.com/jroimartin/gocui"
 
-	"github.com/gizak/termui"
+	"github.com/erroneousboat/slack-term/context"
 )
 
 const (
@@ -59,49 +56,24 @@ func init() {
 }
 
 func main() {
-	// Start terminal user interface
-	err := termui.Init()
+	// Create context
+	appCTX, err := context.CreateAppContext(flgConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer termui.Close()
+	defer appCTX.View.GUI.Close()
 
-	// Create custom event stream for termui because
-	// termui's one has data race conditions with its
-	// event handling. We're circumventing it here until
-	// it has been fixed.
-	customEvtStream := &termui.EvtStream{
-		Handlers: make(map[string]func(termui.Event)),
-	}
-	termui.DefaultEvtStream = customEvtStream
-
-	// Create context
-	ctx, err := context.CreateAppContext(flgConfig)
-	if err != nil {
-		termbox.Close()
-		log.Println(err)
-		os.Exit(0)
-	}
-
-	// Setup body
-	termui.Body.AddRows(
-		termui.NewRow(
-			termui.NewCol(ctx.Config.SidebarWidth, 0, ctx.View.Channels),
-			termui.NewCol(ctx.Config.MainWidth, 0, ctx.View.Chat),
-		),
-		termui.NewRow(
-			termui.NewCol(ctx.Config.SidebarWidth, 0, ctx.View.Mode),
-			termui.NewCol(ctx.Config.MainWidth, 0, ctx.View.Input),
-		),
-	)
-	termui.Body.Align()
-	termui.Render(termui.Body)
-
-	// Set body in context
-	ctx.Body = termui.Body
+	// Create the view
+	// view, err := views.CreateView(ctx)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer view.Close()
 
 	// Register handlers
-	handlers.RegisterEventHandlers(ctx)
+	// handlers.RegisterEventHandlers(app)
 
-	termui.Loop()
+	if err := appCTX.View.GUI.MainLoop(); err != nil && err != gocui.ErrQuit {
+		log.Fatal(err)
+	}
 }
