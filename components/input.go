@@ -74,8 +74,11 @@ func (i *Input) SendMessage(svc *service.SlackService, channel string, message s
 func (i *Input) Insert(key rune) {
 	if len(i.Text) < i.Par.InnerBounds().Dx()-1 {
 
-		first := append(i.Text[0:i.CursorPosition], key)
-		i.Text = append(first, i.Text[i.CursorPosition:]...)
+		left := make([]rune, len(i.Text[0:i.CursorPosition]))
+		copy(left, i.Text[0:i.CursorPosition])
+		left = append(left, key)
+
+		i.Text = append(left, i.Text[i.CursorPosition:]...)
 
 		i.Par.Text = string(i.Text)
 		i.MoveCursorRight()
