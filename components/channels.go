@@ -22,7 +22,7 @@ const (
 )
 
 // Channels is the definition of a Channels component
-type Channels struct {
+type ChannelsBKP struct {
 	List            *termui.List
 	SelectedChannel int // index of which channel is selected from the List
 	Offset          int // from what offset are channels rendered
@@ -30,8 +30,8 @@ type Channels struct {
 }
 
 // CreateChannels is the constructor for the Channels component
-func CreateChannels(svc *service.SlackService, inputHeight int) *Channels {
-	channels := &Channels{
+func CreateChannels(svc *service.SlackService, inputHeight int) *ChannelsBKP {
+	channels := &ChannelsBKP{
 		List: termui.NewList(),
 	}
 
@@ -49,7 +49,7 @@ func CreateChannels(svc *service.SlackService, inputHeight int) *Channels {
 }
 
 // Buffer implements interface termui.Bufferer
-func (c *Channels) Buffer() termui.Buffer {
+func (c *ChannelsBKP) Buffer() termui.Buffer {
 	buf := c.List.Buffer()
 
 	for i, item := range c.List.Items[c.Offset:] {
@@ -106,27 +106,27 @@ func (c *Channels) Buffer() termui.Buffer {
 }
 
 // GetHeight implements interface termui.GridBufferer
-func (c *Channels) GetHeight() int {
+func (c *ChannelsBKP) GetHeight() int {
 	return c.List.Block.GetHeight()
 }
 
 // SetWidth implements interface termui.GridBufferer
-func (c *Channels) SetWidth(w int) {
+func (c *ChannelsBKP) SetWidth(w int) {
 	c.List.SetWidth(w)
 }
 
 // SetX implements interface termui.GridBufferer
-func (c *Channels) SetX(x int) {
+func (c *ChannelsBKP) SetX(x int) {
 	c.List.SetX(x)
 }
 
 // SetY implements interface termui.GridBufferer
-func (c *Channels) SetY(y int) {
+func (c *ChannelsBKP) SetY(y int) {
 	c.List.SetY(y)
 }
 
 // GetChannels will get all available channels from the SlackService
-func (c *Channels) GetChannels(svc *service.SlackService) {
+func (c *ChannelsBKP) GetChannels(svc *service.SlackService) {
 	for _, slackChan := range svc.GetChannels() {
 		label := setChannelLabel(slackChan, false)
 		c.List.Items = append(c.List.Items, label)
@@ -136,7 +136,7 @@ func (c *Channels) GetChannels(svc *service.SlackService) {
 
 // SetPresenceForIMChannels this will set the correct icon for
 // IM channels for when they're online of away
-func (c *Channels) SetPresenceForIMChannels(svc *service.SlackService) {
+func (c *ChannelsBKP) SetPresenceForIMChannels(svc *service.SlackService) {
 	for _, slackChan := range svc.GetChannels() {
 		if slackChan.Type == service.ChannelTypeIM {
 			presence, err := svc.GetUserPresence(slackChan.UserID)
@@ -149,12 +149,12 @@ func (c *Channels) SetPresenceForIMChannels(svc *service.SlackService) {
 }
 
 // SetSelectedChannel sets the SelectedChannel given the index
-func (c *Channels) SetSelectedChannel(index int) {
+func (c *ChannelsBKP) SetSelectedChannel(index int) {
 	c.SelectedChannel = index
 }
 
 // MoveCursorUp will decrease the SelectedChannel by 1
-func (c *Channels) MoveCursorUp() {
+func (c *ChannelsBKP) MoveCursorUp() {
 	if c.SelectedChannel > 0 {
 		c.SetSelectedChannel(c.SelectedChannel - 1)
 		c.ScrollUp()
@@ -163,7 +163,7 @@ func (c *Channels) MoveCursorUp() {
 }
 
 // MoveCursorDown will increase the SelectedChannel by 1
-func (c *Channels) MoveCursorDown() {
+func (c *ChannelsBKP) MoveCursorDown() {
 	if c.SelectedChannel < len(c.List.Items)-1 {
 		c.SetSelectedChannel(c.SelectedChannel + 1)
 		c.ScrollDown()
@@ -172,14 +172,14 @@ func (c *Channels) MoveCursorDown() {
 }
 
 // MoveCursorTop will move the cursor to the top of the channels
-func (c *Channels) MoveCursorTop() {
+func (c *ChannelsBKP) MoveCursorTop() {
 	c.SetSelectedChannel(0)
 	c.CursorPosition = c.List.InnerBounds().Min.Y
 	c.Offset = 0
 }
 
 // MoveCursorBottom will move the cursor to the bottom of the channels
-func (c *Channels) MoveCursorBottom() {
+func (c *ChannelsBKP) MoveCursorBottom() {
 	c.SetSelectedChannel(len(c.List.Items) - 1)
 
 	offset := len(c.List.Items) - (c.List.InnerBounds().Max.Y - 1)
@@ -194,7 +194,7 @@ func (c *Channels) MoveCursorBottom() {
 }
 
 // ScrollUp enables us to scroll through the channel list when it overflows
-func (c *Channels) ScrollUp() {
+func (c *ChannelsBKP) ScrollUp() {
 	// Is cursor at the top of the channel view?
 	if c.CursorPosition == c.List.InnerBounds().Min.Y {
 		if c.Offset > 0 {
@@ -206,7 +206,7 @@ func (c *Channels) ScrollUp() {
 }
 
 // ScrollDown enables us to scroll through the channel list when it overflows
-func (c *Channels) ScrollDown() {
+func (c *ChannelsBKP) ScrollDown() {
 	// Is the cursor at the bottom of the channel view?
 	if c.CursorPosition == c.List.InnerBounds().Max.Y-1 {
 		if c.Offset < len(c.List.Items)-1 {
@@ -220,7 +220,7 @@ func (c *Channels) ScrollDown() {
 // Search will search through the channels to find a channel,
 // when a match has been found the selected channel will then
 // be the channel that has been found
-func (c *Channels) Search(term string) {
+func (c *ChannelsBKP) Search(term string) {
 	for i, item := range c.List.Items {
 		if strings.Contains(item, term) {
 
@@ -258,7 +258,7 @@ func (c *Channels) Search(term string) {
 
 // SetNotification will be called when a new message arrives and will
 // render an notification icon in front of the channel name
-func (c *Channels) SetNotification(svc *service.SlackService, channelID string) {
+func (c *ChannelsBKP) SetNotification(svc *service.SlackService, channelID string) {
 	// Get the correct Channel from svc.Channels
 	var index int
 	for i, channel := range svc.Channels {
@@ -283,7 +283,7 @@ func (c *Channels) SetNotification(svc *service.SlackService, channelID string) 
 // ClearNewMessageIndicator will remove the notification icon in front of
 // a channel that received a new message. This will happen as one will
 // move up or down the cursor for Channels
-func (c *Channels) ClearNewMessageIndicator() {
+func (c *ChannelsBKP) ClearNewMessageIndicator() {
 	channelName := strings.Split(
 		c.List.Items[c.SelectedChannel],
 		fmt.Sprintf("%s ", IconNotification),
@@ -297,12 +297,12 @@ func (c *Channels) ClearNewMessageIndicator() {
 }
 
 // SetReadMark will send the ReadMark event on the service
-func (c *Channels) SetReadMark(svc *service.SlackService) {
+func (c *ChannelsBKP) SetReadMark(svc *service.SlackService) {
 	svc.SetChannelReadMark(svc.SlackChannels[c.SelectedChannel])
 }
 
 // SetPresence will set the correct icon for a IM Channel
-func (c *Channels) SetPresence(svc *service.SlackService, userID string, presence string) {
+func (c *ChannelsBKP) SetPresence(svc *service.SlackService, userID string, presence string) {
 	// Get the correct Channel from svc.Channels
 	var index int
 	for i, channel := range svc.Channels {

@@ -29,11 +29,12 @@ type SlackService struct {
 }
 
 type Channel struct {
-	ID     string
-	Name   string
-	Topic  string
-	Type   string
-	UserID string
+	ID       string
+	Name     string
+	Topic    string
+	Type     string
+	UserID   string
+	Presence string
 }
 
 // NewSlackService is the constructor for the SlackService and will initialize
@@ -127,14 +128,18 @@ func (s *SlackService) GetChannels() []Channel {
 		name, ok := s.UserCache[im.User]
 
 		if ok {
+			// FIXME err
+			presence, _ := s.GetUserPresence(im.User)
+
 			chans = append(
 				chans,
 				Channel{
-					ID:     im.ID,
-					Name:   name,
-					Topic:  "",
-					Type:   ChannelTypeIM,
-					UserID: im.User,
+					ID:       im.ID,
+					Name:     name,
+					Topic:    "",
+					Type:     ChannelTypeIM,
+					UserID:   im.User,
+					Presence: presence,
 				},
 			)
 			s.SlackChannels = append(s.SlackChannels, im)

@@ -19,6 +19,15 @@ type View struct {
 	GUI      *gocui.Gui
 }
 
+type ViewBKP struct {
+	Input    *components.Input
+	Chat     *components.Chat
+	Channels *components.ChannelsBKP
+	Mode     *components.Mode
+	Debug    *components.Debug
+	GUI      *gocui.Gui
+}
+
 func CreateChatView(svc *service.SlackService) *View {
 	g, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
@@ -31,9 +40,17 @@ func CreateChatView(svc *service.SlackService) *View {
 
 	_, maxY := g.Size()
 
-	// Channels component
+	// Create Channels component
 	channels := components.CreateChannelsComponent(0, 0, 10, maxY-1)
-	// view.Channels = channels
+
+	// Fill Channels component
+	slackChans := svc.GetChannels()
+	channels.SetChannels(slackChans)
+	channels.SetPresenceChannels(slackChans)
+
+	// Render Channels Component
+	g.SetManager(channels)
+	view.Channels = channels
 
 	// TODO Input component
 
@@ -43,8 +60,6 @@ func CreateChatView(svc *service.SlackService) *View {
 
 	// TODO Debug
 
-	g.SetManager(channels)
-
 	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
 		log.Fatal(err)
 	}
@@ -53,15 +68,11 @@ func CreateChatView(svc *service.SlackService) *View {
 
 }
 
-func CreateChatViewBKP(svc *service.SlackService) *View {
+func CreateChatViewBKP(svc *service.SlackService) *ViewBKP {
 	input := components.CreateInput()
 
 	channels := components.CreateChannels(svc, input.Par.Height)
 
-	// svc.GetChannels
-	// channels.SetChannels
-
-	// TODO pass through svc.GetMessages, not svc
 	chat := components.CreateChat(
 		svc,
 		input.Par.Height,
@@ -71,7 +82,7 @@ func CreateChatViewBKP(svc *service.SlackService) *View {
 
 	mode := components.CreateMode()
 
-	view := &View{
+	view := &ViewBKP{
 		Input:    input,
 		Channels: channels,
 		Chat:     chat,
@@ -81,7 +92,7 @@ func CreateChatViewBKP(svc *service.SlackService) *View {
 	return view
 }
 
-func (v *View) Refresh() {
+func (v *ViewBKP) RefreshBKP() {
 	termui.Render(
 		v.Input,
 		v.Chat,
