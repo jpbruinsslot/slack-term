@@ -3,7 +3,7 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "QU7qDysp2ueUh0UVa9CCxfmXN6I=",
+			"checksumSHA1": "0orwvPL96wFckVJyPl39fz2QsgA=",
 			"path": "github.com/gizak/termui",
 			"revision": "991cd3d3809135dc24daf6188dc6edcaf3d7d2d9",
 			"revisionTime": "2017-01-17T22:23:42Z"
@@ -33,7 +33,7 @@
 			"revisionTime": "2017-02-11T11:26:27Z"
 		},
 		{
-			"checksumSHA1": "gOW8c+HcxvtRV/i75SxwLILC+9g=",
+			"checksumSHA1": "2si62NpJ4Rw8vVb7+LOfnKJ3y2Q=",
 			"path": "github.com/nsf/termbox-go",
 			"revision": "91bae1bb5fa9ee504905ecbe7043fa30e92feaa3",
 			"revisionTime": "2017-03-01T01:43:43Z"
