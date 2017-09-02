@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	VERSION = "v0.2.3"
+	VERSION = "v2.0.0"
 	USAGE   = `NAME:
     slack-term - slack client for your terminal
 
@@ -71,7 +71,7 @@ func main() {
 	// defer view.Close()
 
 	// Register handlers
-	// handlers.RegisterEventHandlers(app)
+	// handlers.RegisterEventHandlers(appCTX)
 
 	if err := appCTX.View.GUI.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Fatal(err)

@@ -34,6 +34,8 @@ func CreateChatView(svc *service.SlackService) *View {
 		log.Fatal(err)
 	}
 
+	g.Cursor = true
+
 	view := &View{
 		GUI: g,
 	}
@@ -60,12 +62,27 @@ func CreateChatView(svc *service.SlackService) *View {
 
 	// TODO Debug
 
-	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
-		log.Fatal(err)
-	}
+	// Initialize keybindings
+	initKeyBindings(view)
 
 	return view
 
+}
+
+func initKeyBindings(view *View) {
+	if err := view.GUI.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
+		log.Fatal(err)
+	}
+	if err := view.GUI.SetKeybinding("", gocui.KeyArrowDown, gocui.ModNone, view.Channels.MoveCursorDown); err != nil {
+		log.Fatal(err)
+	}
+	if err := view.GUI.SetKeybinding("", gocui.KeyArrowUp, gocui.ModNone, view.Channels.MoveCursorUp); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func quit(g *gocui.Gui, v *gocui.View) error {
+	return gocui.ErrQuit
 }
 
 func CreateChatViewBKP(svc *service.SlackService) *ViewBKP {
@@ -99,8 +116,4 @@ func (v *ViewBKP) RefreshBKP() {
 		v.Channels,
 		v.Mode,
 	)
-}
-
-func quit(g *gocui.Gui, v *gocui.View) error {
-	return gocui.ErrQuit
 }
