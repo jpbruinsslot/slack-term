@@ -40,19 +40,16 @@ func CreateChatView(svc *service.SlackService) *View {
 		GUI: g,
 	}
 
-	_, maxY := g.Size()
+	maxX, maxY := g.Size()
 
 	// Create Channels component
 	channels := components.CreateChannelsComponent(0, 0, 10, maxY-1)
+	view.Channels = channels
 
 	// Fill Channels component
 	slackChans := svc.GetChannels()
 	channels.SetChannels(slackChans)
 	channels.SetPresenceChannels(slackChans)
-
-	// Render Channels Component
-	g.SetManager(channels)
-	view.Channels = channels
 
 	// TODO Input component
 
@@ -60,7 +57,12 @@ func CreateChatView(svc *service.SlackService) *View {
 
 	// TODO Chat component
 
-	// TODO Debug
+	// Create Debug component
+	debug := components.CreateDebugComponent(maxX-51, 0, 50, 10)
+	view.Debug = debug
+
+	// Render the components
+	g.SetManager(debug, channels)
 
 	// Initialize keybindings
 	initKeyBindings(view)

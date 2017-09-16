@@ -35,6 +35,8 @@ type Channels struct {
 func CreateChannelsComponent(x, y, w, h int) *Channels {
 	channels := &Channels{}
 	channels.Name = "channels"
+	channels.Y = y
+	channels.X = x
 	channels.Width = w
 	channels.Height = h
 
