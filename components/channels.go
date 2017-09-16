@@ -114,14 +114,7 @@ func (c *Channels) SetSelectedChannel(index int) {
 func (c *Channels) MoveCursorUp(g *gocui.Gui, v *gocui.View) error {
 	if c.SelectedChannel > 0 {
 		c.SetSelectedChannel(c.SelectedChannel - 1)
-		// c.ScrollUp()
-
-		cursorX, cursorY := c.View.Cursor()
-		c.View.SetCursor(cursorX, cursorY-1)
-
-		originX, originY := c.View.Origin()
-		c.View.SetOrigin(originX, originY-1)
-
+		c.ScrollUp()
 		c.MarkAsRead()
 	}
 	return nil
@@ -132,13 +125,6 @@ func (c *Channels) MoveCursorDown(g *gocui.Gui, v *gocui.View) error {
 	if c.SelectedChannel < len(c.Items)-1 {
 		c.SetSelectedChannel(c.SelectedChannel + 1)
 		c.ScrollDown()
-
-		// cursorX, cursorY := c.View.Cursor()
-		// c.View.SetCursor(cursorX, cursorY+1)
-		//
-		// originX, originY := c.View.Origin()
-		// c.View.SetOrigin(originX, originY+1)
-
 		c.MarkAsRead()
 	}
 	return nil
@@ -167,23 +153,26 @@ func (c *Channels) MoveCursorDown(g *gocui.Gui, v *gocui.View) error {
 // }
 
 // ScrollUp enables us to scroll through the channel list when it overflows
-// func (c *Channels) ScrollUp() {
-// 	// Is cursor at the top of the channel view?
-// 	if c.CursorPosition == c.List.InnerBounds().Min.Y { // FIXME
-// 		if c.Offset > 0 {
-// 			c.Offset--
-// 		}
-// 	} else {
-// 		c.CursorPosition--
-// 	}
-// }
+func (c *Channels) ScrollUp() {
+	originX, originY := c.View.Origin()
+	cursorX, cursorY := c.View.Cursor()
+
+	// When cursor is at the beginning of the view then decrease
+	// the origin of the view
+	if cursorY-1 < 0 {
+		c.View.SetOrigin(originX, originY-1)
+	}
+
+	c.View.SetCursor(cursorX, cursorY-1)
+}
 
 // ScrollDown enables us to scroll through the channel list when it overflows
 func (c *Channels) ScrollDown() {
-	// _, y := c.View.Size()
 	originX, originY := c.View.Origin()
 	cursorX, cursorY := c.View.Cursor()
-	// fmt.Println(c.Height, cursorY)
+
+	// When cursor is at the end of the view then increase
+	// the origin of the view
 	if cursorY+1 > c.Height-2 {
 		c.View.SetOrigin(originX, originY+1)
 	}
