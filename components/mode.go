@@ -1,6 +1,6 @@
 package components
 
-import "github.com/gizak/termui"
+import "github.com/erroneousboat/termui"
 
 // Mode is the definition of Mode component
 type Mode struct {

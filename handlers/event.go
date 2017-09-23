@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gizak/termui"
+	"github.com/erroneousboat/termui"
 	"github.com/nlopes/slack"
 	termbox "github.com/nsf/termbox-go"
 
@@ -74,7 +74,7 @@ func handleTermboxEvents(ctx *context.AppContext, ev termbox.Event) bool {
 func handleMoreTermboxEvents(ctx *context.AppContext, ev termbox.Event) bool {
 	for {
 		select {
-		case ev := <- ctx.EventQueue:
+		case ev := <-ctx.EventQueue:
 			ok := handleTermboxEvents(ctx, ev)
 			if !ok {
 				return false

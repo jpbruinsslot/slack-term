@@ -5,7 +5,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/gizak/termui"
+	"github.com/erroneousboat/termui"
 )
 
 // Config is the definition of a Config struct

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gizak/termui"
+	"github.com/erroneousboat/termui"
 
 	"github.com/erroneousboat/slack-term/service"
 )
