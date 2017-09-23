@@ -41,7 +41,7 @@ var actionMap = map[string]func(*context.AppContext){
 
 func RegisterEventHandlers(ctx *context.AppContext) {
 	eventHandler(ctx)
-	incomingMessageHandler(ctx)
+	messageHandler(ctx)
 }
 
 func eventHandler(ctx *context.AppContext) {
@@ -54,18 +54,38 @@ func eventHandler(ctx *context.AppContext) {
 	go func() {
 		for {
 			ev := <-ctx.EventQueue
-
-			switch ev.Type {
-			case termbox.EventKey:
-				actionKeyEvent(ctx, ev)
-			case termbox.EventResize:
-				actionResizeEvent(ctx, ev)
-			}
+			handleTermboxEvents(ctx, ev)
+			handleMoreTermboxEvents(ctx, ev)
 		}
 	}()
 }
 
-func incomingMessageHandler(ctx *context.AppContext) {
+func handleTermboxEvents(ctx *context.AppContext, ev termbox.Event) bool {
+	switch ev.Type {
+	case termbox.EventKey:
+		actionKeyEvent(ctx, ev)
+	case termbox.EventResize:
+		actionResizeEvent(ctx, ev)
+	}
+
+	return true
+}
+
+func handleMoreTermboxEvents(ctx *context.AppContext, ev termbox.Event) bool {
+	for {
+		select {
+		case ev := <- ctx.EventQueue:
+			ok := handleTermboxEvents(ctx, ev)
+			if !ok {
+				return false
+			}
+		default:
+			return true
+		}
+	}
+}
+
+func messageHandler(ctx *context.AppContext) {
 	go func() {
 		for {
 			select {
