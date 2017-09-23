@@ -151,6 +151,11 @@ func (s *SlackService) GetChannels() []Channel {
 	return chans
 }
 
+// GetSlackChannel returns the representation of a slack channel
+func (s *SlackService) GetSlackChannel(selectedChannel int) interface{} {
+	return s.SlackChannels[selectedChannel]
+}
+
 // GetUserPresence will get the presence of a specific user
 func (s *SlackService) GetUserPresence(userID string) (string, error) {
 	presence, err := s.Client.GetUserPresence(userID)

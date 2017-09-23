@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"log"
+	"os"
 	"strconv"
 	"time"
 
+	"github.com/jroimartin/gocui"
 	termbox "github.com/nsf/termbox-go"
 
 	"github.com/erroneousboat/slack-term/context"
@@ -21,7 +24,7 @@ var actionMap = map[string]func(*context.AppContext){
 	// "cursor-right":   actionMoveCursorRight,
 	// "cursor-left":    actionMoveCursorLeft,
 	// "send":           actionSend,
-	// "quit":           actionQuit,
+	"quit": actionQuit,
 	// "mode-insert":    actionInsertMode,
 	// "mode-command":   actionCommandMode,
 	// "mode-search":    actionSearchMode,
@@ -38,6 +41,18 @@ var actionMap = map[string]func(*context.AppContext){
 func RegisterEventHandlers(ctx *context.AppContext) {
 	eventHandler(ctx)
 	// incomingMessageHandler(ctx)
+}
+
+func RegisterKeyBindings(ctx *context.AppContext) {
+	if err := ctx.View.GUI.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, actionQuit); err != nil {
+		log.Fatal(err)
+	}
+	if err := ctx.View.GUI.SetKeybinding("", gocui.KeyArrowDown, gocui.ModNone, view.Channels.MoveCursorDown); err != nil {
+		log.Fatal(err)
+	}
+	if err := ctx.View.GUI.SetKeybinding("", gocui.KeyArrowUp, gocui.ModNone, view.Channels.MoveCursorUp); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func eventHandler(ctx *context.AppContext) {
@@ -203,14 +218,11 @@ func actionKeyEvent(ctx *context.AppContext, ev termbox.Event) {
 // 	}()
 // }
 
-// actionQuit will exit the program by using os.Exit, this is
-// done because we are using a custom termui EvtStream. Which
-// we won't be able to call termui.StopLoop() on. See main.go
-// for the customEvtStream and why this is done.
-// func actionQuit(ctx *context.AppContext) {
-// 	termbox.Close()
-// 	os.Exit(0)
-// }
+// actionQuit will exit the program
+func actionQuit(ctx *context.AppContext) {
+	termbox.Close()
+	os.Exit(0)
+}
 
 // func actionInsertMode(ctx *context.AppContext) {
 // 	ctx.Mode = context.InsertMode
@@ -246,12 +258,12 @@ func actionMoveCursorUpChannels(ctx *context.AppContext) {
 		}
 
 		ctx.View.Channels.MoveCursorUp()
-		// termui.Render(ctx.View.Channels)
 
+		ctx.View.Debug.SetText("test")
 		timer = time.NewTimer(time.Second / 4)
 		<-timer.C
 
-		// actionChangeChannel(ctx)
+		actionChangeChannel(ctx)
 	}()
 }
 
@@ -262,12 +274,12 @@ func actionMoveCursorDownChannels(ctx *context.AppContext) {
 		}
 
 		ctx.View.Channels.MoveCursorDown()
-		// termui.Render(ctx.View.Channels)
 
+		ctx.View.Debug.SetText("test")
 		timer = time.NewTimer(time.Second / 4)
 		<-timer.C
 
-		// actionChangeChannel(ctx)
+		actionChangeChannel(ctx)
 	}()
 }
 
@@ -281,27 +293,32 @@ func actionMoveCursorDownChannels(ctx *context.AppContext) {
 // 	actionChangeChannel(ctx)
 // }
 
-// func actionChangeChannel(ctx *context.AppContext) {
-// 	// Clear messages from Chat pane
-// 	ctx.View.Chat.ClearMessages()
-//
-// 	// Get message for the new channel
-// 	ctx.View.Chat.GetMessages(
-// 		ctx.Service,
-// 		ctx.Service.SlackChannels[ctx.View.Channels.SelectedChannel],
-// 	)
-//
-// 	// Set channel name for the Chat pane
-// 	ctx.View.Chat.SetBorderLabel(
-// 		ctx.Service.Channels[ctx.View.Channels.SelectedChannel],
-// 	)
-//
-// 	// Set read mark
-// 	ctx.View.Channels.SetReadMark(ctx.Service)
-//
-// 	termui.Render(ctx.View.Channels)
-// 	termui.Render(ctx.View.Chat)
-// }
+func actionChangeChannel(ctx *context.AppContext) {
+	// Clear messages from Chat pane
+	ctx.View.Chat.ClearMessages()
+
+	// TODO: Get the count of message that fit in the pane
+
+	// Get message for the new selected channel
+	messages := ctx.Service.GetMessages(
+		ctx.Service.GetSlackChannel(ctx.View.Channels.SelectedChannel),
+		10,
+	)
+
+	// Set messages for the new channel
+	ctx.View.Chat.SetMessages(messages)
+
+	// Set channel name for the Chat pane
+	// ctx.View.Chat.SetBorderLabel(
+	// 	ctx.Service.Channels[ctx.View.Channels.SelectedChannel],
+	// )
+
+	// Set read mark
+	// ctx.View.Channels.SetReadMark(ctx.Service)
+
+	// Refresh Chat component
+	ctx.View.Chat.Refresh()
+}
 
 // func actionNewMessage(ctx *context.AppContext, channelID string) {
 // 	ctx.View.Channels.SetNotification(ctx.Service, channelID)

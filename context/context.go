@@ -40,7 +40,7 @@ func CreateAppContext(flgConfig string) (*AppContext, error) {
 	view := views.CreateChatView(svc)
 
 	return &AppContext{
-		EventQueue: make(chan termbox.Event, 40),
+		EventQueue: make(chan termbox.Event, 20),
 		Service:    svc,
 		View:       view,
 		Config:     config,

@@ -26,14 +26,16 @@ type Channels struct {
 	View            *gocui.View
 	Items           []string
 	SelectedChannel int // index of which channel is selected from the Items
-	Offset          int // from what offset are channels rendered
+	Offset          int // from what offset are channels rendered, FIXME probably not necessary anymore
 	CursorPosition  int // the y position of the 'cursor'
 	// SelectorBGColor
 	// SelectorFGColor
 }
 
+// Constructor for the Channels component
 func CreateChannelsComponent(x, y, w, h int) *Channels {
 	channels := &Channels{}
+
 	channels.Name = "channels"
 	channels.Y = y
 	channels.X = x
@@ -65,6 +67,9 @@ func (c *Channels) Layout(g *gocui.Gui) error {
 	return nil
 }
 
+// SetChannels will set the channels from the service, passed as an argument
+// to the Items field
+// FIXME: maybe rename to LoadChannels?
 func (c *Channels) SetChannels(channels []service.Channel) {
 	for _, slackChan := range channels {
 		label := setChannelLabel(slackChan, false)
@@ -108,8 +113,13 @@ func (c *Channels) SetPresenceChannel(channels []service.Channel, userID string,
 	}
 }
 
+// TODO: documentation
 func (c *Channels) SetSelectedChannel(index int) {
 	c.SelectedChannel = index
+}
+
+func (c *Channels) GetSelectedChannel() string {
+	return c.Items[c.SelectedChannel]
 }
 
 // MoveCursorUp will decrease the SelectedChannel by 1

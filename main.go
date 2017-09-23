@@ -10,6 +10,7 @@ import (
 	"github.com/jroimartin/gocui"
 
 	"github.com/erroneousboat/slack-term/context"
+	"github.com/erroneousboat/slack-term/handlers"
 )
 
 const (
@@ -71,7 +72,7 @@ func main() {
 	// defer view.Close()
 
 	// Register handlers
-	// handlers.RegisterEventHandlers(appCTX)
+	handlers.RegisterEventHandlers(appCTX)
 
 	if err := appCTX.View.GUI.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Fatal(err)

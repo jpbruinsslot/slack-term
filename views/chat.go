@@ -21,7 +21,7 @@ type View struct {
 
 type ViewBKP struct {
 	Input    *components.Input
-	Chat     *components.Chat
+	Chat     *components.ChatBKP
 	Channels *components.ChannelsBKP
 	Mode     *components.Mode
 	Debug    *components.Debug
@@ -55,20 +55,37 @@ func CreateChatView(svc *service.SlackService) *View {
 
 	// TODO Mode component
 
-	// TODO Chat component
+	// Chat component
+	chat := components.CreateChatComponent(11, 0, maxX-12, maxY-1)
+	view.Chat = chat
+
+	// Fill Chat component
+	slackMsgs := svc.GetMessages(svc.GetSlackChannel(channels.SelectedChannel), 10)
+	chat.SetMessages(slackMsgs)
 
 	// Create Debug component
 	debug := components.CreateDebugComponent(maxX-51, 0, 50, 10)
 	view.Debug = debug
 
 	// Render the components
-	g.SetManager(debug, channels)
+	g.SetManager(channels, chat, debug)
 
 	// Initialize keybindings
-	initKeyBindings(view)
+	// initKeyBindings(view)
 
 	return view
+}
 
+func (v *View) RefreshComponent(name string) {
+	v.GUI.Update(
+		func(g *gocui.Gui) error {
+			_, err := g.View(name)
+			if err != nil {
+				return (err)
+			}
+			return nil
+		},
+	)
 }
 
 func initKeyBindings(view *View) {

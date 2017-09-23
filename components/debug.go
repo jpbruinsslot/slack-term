@@ -31,10 +31,17 @@ func (d *Debug) Layout(g *gocui.Gui) error {
 			return err
 		}
 
+		v.Wrap = true
+		v.Autoscroll = true
+
 		fmt.Fprintln(v, d.Text)
 
 		d.View = v
 
 	}
 	return nil
+}
+
+func (d *Debug) SetText(text string) {
+	fmt.Fprintln(d.View, text)
 }
