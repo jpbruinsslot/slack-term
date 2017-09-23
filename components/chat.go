@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gizak/termui"
+	"github.com/erroneousboat/termui"
 
 	"github.com/erroneousboat/slack-term/config"
 	"github.com/erroneousboat/slack-term/service"

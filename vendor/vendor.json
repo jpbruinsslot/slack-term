@@ -3,10 +3,10 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "0orwvPL96wFckVJyPl39fz2QsgA=",
-			"path": "github.com/gizak/termui",
-			"revision": "72304ddb9b4e9838426a021aad64a5a860e98324",
-			"revisionTime": "2017-05-02T14:12:00Z"
+			"checksumSHA1": "CbpC2ha+GTTuROMyyLVd/L3O+8Y=",
+			"path": "github.com/erroneousboat/termui",
+			"revision": "80f245cdfa0488883a3e8602bf3f0c8a3c889a22",
+			"revisionTime": "2017-09-23T11:51:41Z"
 		},
 		{
 			"checksumSHA1": "7hln62oZPZmyqEmgXaybf9WxQ7A=",

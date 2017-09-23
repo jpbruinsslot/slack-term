@@ -1,7 +1,7 @@
 package components
 
 import (
-	"github.com/gizak/termui"
+	"github.com/erroneousboat/termui"
 
 	"github.com/erroneousboat/slack-term/service"
 )

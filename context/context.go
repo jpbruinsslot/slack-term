@@ -1,7 +1,7 @@
 package context
 
 import (
-	"github.com/gizak/termui"
+	"github.com/erroneousboat/termui"
 	termbox "github.com/nsf/termbox-go"
 
 	"github.com/erroneousboat/slack-term/config"

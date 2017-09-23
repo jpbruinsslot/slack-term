@@ -8,11 +8,11 @@ import (
 	"os/user"
 	"path"
 
-	"github.com/erroneousboat/slack-term/context"
-	"github.com/erroneousboat/slack-term/handlers"
+	"github.com/erroneousboat/termui"
 	termbox "github.com/nsf/termbox-go"
 
-	"github.com/gizak/termui"
+	"github.com/erroneousboat/slack-term/context"
+	"github.com/erroneousboat/slack-term/handlers"
 )
 
 const (

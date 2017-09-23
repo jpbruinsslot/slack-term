@@ -35,7 +35,7 @@ func Init() error {
 	}
 
 	sysEvtChs = make([]chan Event, 0)
-	go hookTermboxEvt()
+	// go hookTermboxEvt()
 
 	renderJobs = make(chan []Bufferer)
 	//renderLock = new(sync.RWMutex)
