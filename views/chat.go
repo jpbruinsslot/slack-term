@@ -3,8 +3,8 @@ package views
 import (
 	"log"
 
+	"github.com/erroneousboat/gocui"
 	"github.com/gizak/termui"
-	"github.com/jroimartin/gocui"
 
 	"github.com/erroneousboat/slack-term/components"
 	"github.com/erroneousboat/slack-term/service"
@@ -88,17 +88,17 @@ func (v *View) RefreshComponent(name string) {
 	)
 }
 
-func initKeyBindings(view *View) {
-	if err := view.GUI.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
-		log.Fatal(err)
-	}
-	if err := view.GUI.SetKeybinding("", gocui.KeyArrowDown, gocui.ModNone, view.Channels.MoveCursorDown); err != nil {
-		log.Fatal(err)
-	}
-	if err := view.GUI.SetKeybinding("", gocui.KeyArrowUp, gocui.ModNone, view.Channels.MoveCursorUp); err != nil {
-		log.Fatal(err)
-	}
-}
+// func initKeyBindings(view *View) {
+// 	if err := view.GUI.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	if err := view.GUI.SetKeybinding("", gocui.KeyArrowDown, gocui.ModNone, view.Channels.MoveCursorDown); err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	if err := view.GUI.SetKeybinding("", gocui.KeyArrowUp, gocui.ModNone, view.Channels.MoveCursorUp); err != nil {
+// 		log.Fatal(err)
+// 	}
+// }
 
 func quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit

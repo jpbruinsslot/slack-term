@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "68RoiZ+7Vw6FkRuV1ZLHJyFRZlU=",
+			"path": "github.com/erroneousboat/gocui",
+			"revision": "0b3eb1f51efeae086da64024a431b69524f67698",
+			"revisionTime": "2017-10-07T12:13:47Z"
+		},
+		{
 			"checksumSHA1": "En911lu7f/u83ScLGxAaTM2SJVE=",
 			"path": "github.com/gizak/termui",
 			"revision": "72304ddb9b4e9838426a021aad64a5a860e98324",
@@ -33,10 +39,10 @@
 			"revisionTime": "2017-07-25T12:17:30Z"
 		},
 		{
-			"checksumSHA1": "lqSuR5kZpYqI18/Hfhh3t/SYzPA=",
+			"checksumSHA1": "GY8G0wn9l4zVTQW9POZCdH+iftM=",
 			"path": "github.com/nsf/termbox-go",
-			"revision": "4ed959e0540971545eddb8c75514973d670cf739",
-			"revisionTime": "2017-07-10T10:34:07Z"
+			"revision": "d51f2f6d6ccb97dd83ed04ae2f79c34234851f39",
+			"revisionTime": "2017-09-30T11:41:06Z"
 		},
 		{
 			"checksumSHA1": "7EZyXN0EmZLgGxZxK01IJua4c8o=",

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jroimartin/gocui"
+	"github.com/erroneousboat/gocui"
 
 	"github.com/erroneousboat/slack-term/service"
 )
@@ -123,7 +123,7 @@ func (c *Channels) GetSelectedChannel() string {
 }
 
 // MoveCursorUp will decrease the SelectedChannel by 1
-func (c *Channels) MoveCursorUp(g *gocui.Gui, v *gocui.View) error {
+func (c *Channels) MoveCursorUp() error {
 	if c.SelectedChannel > 0 {
 		c.SetSelectedChannel(c.SelectedChannel - 1)
 		c.ScrollUp()
@@ -133,7 +133,7 @@ func (c *Channels) MoveCursorUp(g *gocui.Gui, v *gocui.View) error {
 }
 
 // MoveCursorDown will increase the SelectedChannel by 1
-func (c *Channels) MoveCursorDown(g *gocui.Gui, v *gocui.View) error {
+func (c *Channels) MoveCursorDown() error {
 	if c.SelectedChannel < len(c.Items)-1 {
 		c.SetSelectedChannel(c.SelectedChannel + 1)
 		c.ScrollDown()

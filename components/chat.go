@@ -3,7 +3,7 @@ package components
 import (
 	"fmt"
 
-	"github.com/jroimartin/gocui"
+	"github.com/erroneousboat/gocui"
 )
 
 type Chat struct {
@@ -53,7 +53,8 @@ func (c *Chat) Refresh() {
 	}
 }
 
-// FIXME: maybe rename to LoadMessages?
+// SetMessage will put the provided message into the the Items field
+// of the Chat view
 func (c *Chat) SetMessages(messages []string) {
 	for _, msg := range messages {
 		c.Items = append(c.Items, msg)
@@ -63,4 +64,5 @@ func (c *Chat) SetMessages(messages []string) {
 // ClearMessages clear the c.Items
 func (c *Chat) ClearMessages() {
 	c.Items = []string{}
+	c.View.Clear()
 }

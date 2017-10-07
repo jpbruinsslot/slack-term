@@ -3,7 +3,7 @@ package components
 import (
 	"fmt"
 
-	"github.com/jroimartin/gocui"
+	"github.com/erroneousboat/gocui"
 )
 
 type Debug struct {

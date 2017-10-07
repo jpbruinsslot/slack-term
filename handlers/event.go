@@ -1,12 +1,10 @@
 package handlers
 
 import (
-	"log"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/jroimartin/gocui"
 	termbox "github.com/nsf/termbox-go"
 
 	"github.com/erroneousboat/slack-term/context"
@@ -43,18 +41,7 @@ func RegisterEventHandlers(ctx *context.AppContext) {
 	// incomingMessageHandler(ctx)
 }
 
-func RegisterKeyBindings(ctx *context.AppContext) {
-	if err := ctx.View.GUI.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, actionQuit); err != nil {
-		log.Fatal(err)
-	}
-	if err := ctx.View.GUI.SetKeybinding("", gocui.KeyArrowDown, gocui.ModNone, view.Channels.MoveCursorDown); err != nil {
-		log.Fatal(err)
-	}
-	if err := ctx.View.GUI.SetKeybinding("", gocui.KeyArrowUp, gocui.ModNone, view.Channels.MoveCursorUp); err != nil {
-		log.Fatal(err)
-	}
-}
-
+// TODO: add incomingMessageHandler to the select statement
 func eventHandler(ctx *context.AppContext) {
 	go func() {
 		for {
@@ -62,10 +49,12 @@ func eventHandler(ctx *context.AppContext) {
 		}
 	}()
 
-	go func() {
-		for {
-			ev := <-ctx.EventQueue
+	for {
+		ctx.View.GUI.Flush()
 
+		select {
+
+		case ev := <-ctx.EventQueue:
 			switch ev.Type {
 			case termbox.EventKey:
 				actionKeyEvent(ctx, ev)
@@ -73,7 +62,9 @@ func eventHandler(ctx *context.AppContext) {
 				// 	actionResizeEvent(ctx, ev)
 			}
 		}
-	}()
+
+		ctx.View.GUI.Flush()
+	}
 }
 
 // func incomingMessageHandler(ctx *context.AppContext) {
@@ -259,7 +250,6 @@ func actionMoveCursorUpChannels(ctx *context.AppContext) {
 
 		ctx.View.Channels.MoveCursorUp()
 
-		ctx.View.Debug.SetText("test")
 		timer = time.NewTimer(time.Second / 4)
 		<-timer.C
 
@@ -275,7 +265,6 @@ func actionMoveCursorDownChannels(ctx *context.AppContext) {
 
 		ctx.View.Channels.MoveCursorDown()
 
-		ctx.View.Debug.SetText("test")
 		timer = time.NewTimer(time.Second / 4)
 		<-timer.C
 
@@ -315,6 +304,8 @@ func actionChangeChannel(ctx *context.AppContext) {
 
 	// Set read mark
 	// ctx.View.Channels.SetReadMark(ctx.Service)
+
+	ctx.View.Debug.SetText("hello, world")
 
 	// Refresh Chat component
 	ctx.View.Chat.Refresh()

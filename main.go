@@ -4,10 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
+	_ "net/http/pprof"
 	"os/user"
 	"path"
-
-	"github.com/jroimartin/gocui"
 
 	"github.com/erroneousboat/slack-term/context"
 	"github.com/erroneousboat/slack-term/handlers"
@@ -57,6 +57,10 @@ func init() {
 }
 
 func main() {
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+
 	// Create context
 	appCTX, err := context.CreateAppContext(flgConfig)
 	if err != nil {
@@ -64,17 +68,6 @@ func main() {
 	}
 	defer appCTX.View.GUI.Close()
 
-	// Create the view
-	// view, err := views.CreateView(ctx)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer view.Close()
-
 	// Register handlers
 	handlers.RegisterEventHandlers(appCTX)
-
-	if err := appCTX.View.GUI.MainLoop(); err != nil && err != gocui.ErrQuit {
-		log.Fatal(err)
-	}
 }
