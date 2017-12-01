@@ -8,7 +8,7 @@ type Mode struct {
 }
 
 // CreateMode is the constructor of the Mode struct
-func CreateMode() *Mode {
+func CreateModeComponent() *Mode {
 	mode := &Mode{
 		Par: termui.NewPar("NORMAL"),
 	}

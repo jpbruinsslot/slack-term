@@ -255,14 +255,18 @@ func actionSearchMode(ctx *context.AppContext) {
 }
 
 func actionGetMessages(ctx *context.AppContext) {
-	ctx.View.Chat.GetMessages(
-		ctx.Service,
+	messages := ctx.Service.GetMessages(
 		ctx.Service.Channels[ctx.View.Channels.SelectedChannel],
+		ctx.View.Chat.GetMaxItems(),
 	)
+	ctx.View.Chat.SetMessages(messages)
 
 	termui.Render(ctx.View.Chat)
 }
 
+// actionMoveCursorUpChannels will execute the actionChangeChannel
+// function. A time is implemented to support fast scrolling through
+// the list without executing the actionChangeChannel event
 func actionMoveCursorUpChannels(ctx *context.AppContext) {
 	go func() {
 		if timer != nil {
@@ -275,10 +279,14 @@ func actionMoveCursorUpChannels(ctx *context.AppContext) {
 		timer = time.NewTimer(time.Second / 4)
 		<-timer.C
 
+		// Only actually change channel when the timer expires
 		actionChangeChannel(ctx)
 	}()
 }
 
+// actionMoveCursorDownChannels will execute the actionChangeChannel
+// function. A time is implemented to support fast scrolling through
+// the list without executing the actionChangeChannel event
 func actionMoveCursorDownChannels(ctx *context.AppContext) {
 	go func() {
 		if timer != nil {
@@ -291,6 +299,7 @@ func actionMoveCursorDownChannels(ctx *context.AppContext) {
 		timer = time.NewTimer(time.Second / 4)
 		<-timer.C
 
+		// Only actually change channel when the timer expires
 		actionChangeChannel(ctx)
 	}()
 }
@@ -309,31 +318,35 @@ func actionChangeChannel(ctx *context.AppContext) {
 	// Clear messages from Chat pane
 	ctx.View.Chat.ClearMessages()
 
-	// Get message for the new channel
-	ctx.View.Chat.GetMessages(
-		ctx.Service,
-		ctx.Service.SlackChannels[ctx.View.Channels.SelectedChannel],
+	// Get messages of the SelectedChannel, and get the count of messages
+	// that fit into the Chat component
+	messages := ctx.Service.GetMessages(
+		ctx.Service.GetSlackChannel(ctx.View.Channels.SelectedChannel),
+		ctx.View.Chat.GetMaxItems(),
 	)
+
+	// Set messages for the channel
+	ctx.View.Chat.SetMessages(messages)
 
 	// Set channel name for the Chat pane
 	ctx.View.Chat.SetBorderLabel(
 		ctx.Service.Channels[ctx.View.Channels.SelectedChannel],
 	)
 
-	// Set read mark
-	ctx.View.Channels.SetReadMark(ctx.Service)
+	// Clear notification icon if there is any
+	ctx.View.Channels.MarkAsRead()
 
 	termui.Render(ctx.View.Channels)
 	termui.Render(ctx.View.Chat)
 }
 
 func actionNewMessage(ctx *context.AppContext, channelID string) {
-	ctx.View.Channels.SetNotification(ctx.Service, channelID)
+	ctx.View.Channels.MarkAsUnread(ctx.Service.Channels, channelID)
 	termui.Render(ctx.View.Channels)
 }
 
 func actionSetPresence(ctx *context.AppContext, channelID string, presence string) {
-	ctx.View.Channels.SetPresence(ctx.Service, channelID, presence)
+	ctx.View.Channels.SetPresenceChannel(ctx.Service.Channels, channelID, presence)
 	termui.Render(ctx.View.Channels)
 }
 

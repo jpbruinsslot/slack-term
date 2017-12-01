@@ -14,7 +14,7 @@ type Input struct {
 }
 
 // CreateInput is the constructor of the Input struct
-func CreateInput() *Input {
+func CreateInputComponent() *Input {
 	input := &Input{
 		Par:            termui.NewPar(""),
 		Text:           make([]rune, 0),

@@ -30,7 +30,7 @@ type Channels struct {
 }
 
 // CreateChannels is the constructor for the Channels component
-func CreateChannels(svc *service.SlackService, inputHeight int) *Channels {
+func CreateChannelsComponent(inputHeight int) *Channels {
 	channels := &Channels{
 		List: termui.NewList(),
 	}
@@ -41,9 +41,6 @@ func CreateChannels(svc *service.SlackService, inputHeight int) *Channels {
 	channels.SelectedChannel = 0
 	channels.Offset = 0
 	channels.CursorPosition = channels.List.InnerBounds().Min.Y
-
-	channels.GetChannels(svc)
-	channels.SetPresenceForIMChannels(svc)
 
 	return channels
 }
@@ -125,26 +122,48 @@ func (c *Channels) SetY(y int) {
 	c.List.SetY(y)
 }
 
-// GetChannels will get all available channels from the SlackService
-func (c *Channels) GetChannels(svc *service.SlackService) {
-	for _, slackChan := range svc.GetChannels() {
+// SetChannels will set the channels from the service, to the
+// Items field
+func (c *Channels) SetChannels(channels []service.Channel) {
+	for _, slackChan := range channels {
 		label := setChannelLabel(slackChan, false)
 		c.List.Items = append(c.List.Items, label)
-
 	}
 }
 
-// SetPresenceForIMChannels this will set the correct icon for
-// IM channels for when they're online of away
-func (c *Channels) SetPresenceForIMChannels(svc *service.SlackService) {
-	for _, slackChan := range svc.GetChannels() {
+// SetPresenceChannels will set the icon for all the IM channels
+func (c *Channels) SetPresenceChannels(channels []service.Channel) {
+	for _, slackChan := range channels {
 		if slackChan.Type == service.ChannelTypeIM {
-			presence, err := svc.GetUserPresence(slackChan.UserID)
-			if err != nil {
-				continue
-			}
-			c.SetPresence(svc, slackChan.UserID, presence)
+			c.SetPresenceChannel(channels, slackChan.UserID, slackChan.Presence)
 		}
+	}
+}
+
+// SetPresenceChannel will set the correct icon for one IM channel
+func (c *Channels) SetPresenceChannel(channels []service.Channel, userID string, presence string) {
+	// Get the correct Channel from svc.Channels
+	var index int
+	for i, channel := range channels {
+		if userID == channel.UserID {
+			index = i
+			break
+		}
+	}
+
+	switch presence {
+	case PresenceActive:
+		c.List.Items[index] = strings.Replace(
+			c.List.Items[index], IconOffline, IconOnline, 1,
+		)
+	case PresenceAway:
+		c.List.Items[index] = strings.Replace(
+			c.List.Items[index], IconOnline, IconOffline, 1,
+		)
+	default:
+		c.List.Items[index] = strings.Replace(
+			c.List.Items[index], IconOnline, IconOffline, 1,
+		)
 	}
 }
 
@@ -153,12 +172,17 @@ func (c *Channels) SetSelectedChannel(index int) {
 	c.SelectedChannel = index
 }
 
+// GetSelectedChannel returns the SelectedChannel
+func (c *Channels) GetSelectedChannel() string {
+	return c.List.Items[c.SelectedChannel]
+}
+
 // MoveCursorUp will decrease the SelectedChannel by 1
 func (c *Channels) MoveCursorUp() {
 	if c.SelectedChannel > 0 {
 		c.SetSelectedChannel(c.SelectedChannel - 1)
 		c.ScrollUp()
-		c.ClearNewMessageIndicator()
+		c.MarkAsRead()
 	}
 }
 
@@ -167,7 +191,7 @@ func (c *Channels) MoveCursorDown() {
 	if c.SelectedChannel < len(c.List.Items)-1 {
 		c.SetSelectedChannel(c.SelectedChannel + 1)
 		c.ScrollDown()
-		c.ClearNewMessageIndicator()
+		c.MarkAsRead()
 	}
 }
 
@@ -256,12 +280,12 @@ func (c *Channels) Search(term string) {
 	}
 }
 
-// SetNotification will be called when a new message arrives and will
+// MarkAsUnread will be called when a new message arrives and will
 // render an notification icon in front of the channel name
-func (c *Channels) SetNotification(svc *service.SlackService, channelID string) {
+func (c *Channels) MarkAsUnread(channels []service.Channel, channelID string) {
 	// Get the correct Channel from svc.Channels
 	var index int
-	for i, channel := range svc.Channels {
+	for i, channel := range channels {
 		if channelID == channel.ID {
 			index = i
 			break
@@ -280,10 +304,10 @@ func (c *Channels) SetNotification(svc *service.SlackService, channelID string) 
 	fmt.Print("\a")
 }
 
-// ClearNewMessageIndicator will remove the notification icon in front of
-// a channel that received a new message. This will happen as one will
-// move up or down the cursor for Channels
-func (c *Channels) ClearNewMessageIndicator() {
+// MarkAsRead will remove the notification icon in front of a channel that
+// received a new message. This will happen as one will move up or down the
+// cursor for Channels
+func (c *Channels) MarkAsRead() {
 	channelName := strings.Split(
 		c.List.Items[c.SelectedChannel],
 		fmt.Sprintf("%s ", IconNotification),
@@ -294,39 +318,6 @@ func (c *Channels) ClearNewMessageIndicator() {
 	} else {
 		c.List.Items[c.SelectedChannel] = channelName[0]
 	}
-}
-
-// SetReadMark will send the ReadMark event on the service
-func (c *Channels) SetReadMark(svc *service.SlackService) {
-	svc.SetChannelReadMark(svc.SlackChannels[c.SelectedChannel])
-}
-
-// SetPresence will set the correct icon for a IM Channel
-func (c *Channels) SetPresence(svc *service.SlackService, userID string, presence string) {
-	// Get the correct Channel from svc.Channels
-	var index int
-	for i, channel := range svc.Channels {
-		if userID == channel.UserID {
-			index = i
-			break
-		}
-	}
-
-	switch presence {
-	case PresenceActive:
-		c.List.Items[index] = strings.Replace(
-			c.List.Items[index], IconOffline, IconOnline, 1,
-		)
-	case PresenceAway:
-		c.List.Items[index] = strings.Replace(
-			c.List.Items[index], IconOnline, IconOffline, 1,
-		)
-	default:
-		c.List.Items[index] = strings.Replace(
-			c.List.Items[index], IconOnline, IconOffline, 1,
-		)
-	}
-
 }
 
 // setChannelLabel will set the label of the channel, meaning, how it
