@@ -403,13 +403,14 @@ func parseMessage(s *SlackService, msg string) string {
 // 	<@U12345>
 func parseMentions(s *SlackService, msg string) string {
 	r := regexp.MustCompile(`\<@(\w+\|*\w+)\>`)
-	rs := r.FindStringSubmatch(msg)
-	if len(rs) < 1 {
-		return msg
-	}
 
 	return r.ReplaceAllStringFunc(
 		msg, func(str string) string {
+			rs := r.FindStringSubmatch(str)
+			if len(rs) < 1 {
+				return str
+			}
+
 			var userID string
 			split := strings.Split(rs[1], "|")
 			if len(split) > 0 {
