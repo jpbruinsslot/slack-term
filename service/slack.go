@@ -21,12 +21,13 @@ const (
 )
 
 type SlackService struct {
-	Client        *slack.Client
-	RTM           *slack.RTM
-	SlackChannels []interface{}
-	Channels      []Channel
-	UserCache     map[string]string
-	CurrentUserID string
+	Client          *slack.Client
+	RTM             *slack.RTM
+	SlackChannels   []interface{}
+	Channels        []Channel
+	UserCache       map[string]string
+	CurrentUserID   string
+	CurrentUsername string
 }
 
 type Channel struct {
@@ -67,6 +68,13 @@ func NewSlackService(token string) (*SlackService, error) {
 			svc.UserCache[user.ID] = user.Name
 		}
 	}
+
+	// Get name of current user
+	currentUser, err := svc.Client.GetUserInfo(svc.CurrentUserID)
+	if err != nil {
+		svc.CurrentUsername = "slack-term"
+	}
+	svc.CurrentUsername = currentUser.Name
 
 	return svc, nil
 }
@@ -185,7 +193,8 @@ func (s *SlackService) SetChannelReadMark(channel interface{}) {
 func (s *SlackService) SendMessage(channel string, message string) {
 	// https://godoc.org/github.com/nlopes/slack#PostMessageParameters
 	postParams := slack.PostMessageParameters{
-		AsUser: true,
+		AsUser:   true,
+		Username: s.CurrentUsername,
 	}
 
 	// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
