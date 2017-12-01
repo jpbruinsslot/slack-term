@@ -23,7 +23,6 @@ const (
 
 type Channels struct {
 	Component
-	View            *gocui.View
 	Items           []string
 	SelectedChannel int // index of which channel is selected from the Items
 	Offset          int // from what offset are channels rendered, FIXME probably not necessary anymore

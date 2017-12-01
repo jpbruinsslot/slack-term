@@ -20,7 +20,7 @@ type View struct {
 }
 
 type ViewBKP struct {
-	Input    *components.Input
+	Input    *components.InputBKP
 	Chat     *components.ChatBKP
 	Channels *components.ChannelsBKP
 	Mode     *components.Mode
@@ -51,11 +51,13 @@ func CreateChatView(svc *service.SlackService) *View {
 	channels.SetChannels(slackChans)
 	channels.SetPresenceChannels(slackChans)
 
-	// TODO Input component
+	// Create Input component
+	input := components.CreateInputComponent(11, maxY-11, maxX-12, 5)
+	view.Input = input
 
 	// TODO Mode component
 
-	// Chat component
+	// Create Chat component
 	chat := components.CreateChatComponent(11, 0, maxX-12, maxY-1)
 	view.Chat = chat
 

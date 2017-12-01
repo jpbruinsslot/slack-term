@@ -8,7 +8,6 @@ import (
 
 type Chat struct {
 	Component
-	View  *gocui.View
 	Items []string
 }
 

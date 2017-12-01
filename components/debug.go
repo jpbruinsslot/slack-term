@@ -14,7 +14,6 @@ import (
 // 	ctx.View.Debug.SetText("debugging statement")
 type Debug struct {
 	Component
-	View *gocui.View
 	Text string
 }
 
