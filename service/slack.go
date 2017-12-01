@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -38,7 +39,7 @@ type Channel struct {
 
 // NewSlackService is the constructor for the SlackService and will initialize
 // the RTM and a Client
-func NewSlackService(token string) *SlackService {
+func NewSlackService(token string) (*SlackService, error) {
 	svc := &SlackService{
 		Client:    slack.New(token),
 		UserCache: make(map[string]string),
@@ -49,7 +50,7 @@ func NewSlackService(token string) *SlackService {
 	// arrives
 	authTest, err := svc.Client.AuthTest()
 	if err != nil {
-		log.Fatal("ERROR: not able to authorize client, check your connection and/or slack-token")
+		return nil, errors.New("not able to authorize client, check your connection and or slack-token")
 	}
 	svc.CurrentUserID = authTest.UserID
 
@@ -67,7 +68,7 @@ func NewSlackService(token string) *SlackService {
 		}
 	}
 
-	return svc
+	return svc, nil
 }
 
 // GetChannels will retrieve all available channels, groups, and im channels.
