@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -20,12 +21,13 @@ const (
 )
 
 type SlackService struct {
-	Client        *slack.Client
-	RTM           *slack.RTM
-	SlackChannels []interface{}
-	Channels      []Channel
-	UserCache     map[string]string
-	CurrentUserID string
+	Client          *slack.Client
+	RTM             *slack.RTM
+	SlackChannels   []interface{}
+	Channels        []Channel
+	UserCache       map[string]string
+	CurrentUserID   string
+	CurrentUsername string
 }
 
 type Channel struct {
@@ -39,7 +41,7 @@ type Channel struct {
 
 // NewSlackService is the constructor for the SlackService and will initialize
 // the RTM and a Client
-func NewSlackService(token string) *SlackService {
+func NewSlackService(token string) (*SlackService, error) {
 	svc := &SlackService{
 		Client:    slack.New(token),
 		UserCache: make(map[string]string),
@@ -50,7 +52,7 @@ func NewSlackService(token string) *SlackService {
 	// arrives
 	authTest, err := svc.Client.AuthTest()
 	if err != nil {
-		log.Fatal("ERROR: not able to authorize client, check your connection and/or slack-token")
+		return nil, errors.New("not able to authorize client, check your connection and/or slack-token")
 	}
 	svc.CurrentUserID = authTest.UserID
 
@@ -68,7 +70,14 @@ func NewSlackService(token string) *SlackService {
 		}
 	}
 
-	return svc
+	// Get name of current user
+	currentUser, err := svc.Client.GetUserInfo(svc.CurrentUserID)
+	if err != nil {
+		svc.CurrentUsername = "slack-term"
+	}
+	svc.CurrentUsername = currentUser.Name
+
+	return svc, nil
 }
 
 // GetChannels will retrieve all available channels, groups, and im channels.
@@ -84,16 +93,18 @@ func (s *SlackService) GetChannels() []Channel {
 		chans = append(chans, Channel{})
 	}
 	for _, chn := range slackChans {
-		s.SlackChannels = append(s.SlackChannels, chn)
-		chans = append(
-			chans, Channel{
-				ID:     chn.ID,
-				Name:   chn.Name,
-				Topic:  chn.Topic.Value,
-				Type:   ChannelTypeChannel,
-				UserID: "",
-			},
-		)
+		if chn.IsMember {
+			s.SlackChannels = append(s.SlackChannels, chn)
+			chans = append(
+				chans, Channel{
+					ID:     chn.ID,
+					Name:   chn.Name,
+					Topic:  chn.Topic.Value,
+					Type:   ChannelTypeChannel,
+					UserID: "",
+				},
+			)
+		}
 	}
 
 	// Groups
@@ -192,7 +203,8 @@ func (s *SlackService) SetChannelReadMark(channel interface{}) {
 func (s *SlackService) SendMessage(channel string, message string) {
 	// https://godoc.org/github.com/nlopes/slack#PostMessageParameters
 	postParams := slack.PostMessageParameters{
-		AsUser: true,
+		AsUser:   true,
+		Username: s.CurrentUsername,
 	}
 
 	// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
@@ -401,14 +413,15 @@ func parseMessage(s *SlackService, msg string) string {
 // 	<@U12345>
 func parseMentions(s *SlackService, msg string) string {
 	r := regexp.MustCompile(`\<@(\w+\|*\w+)\>`)
-	rs := r.FindStringSubmatch(msg)
-	if len(rs) < 1 {
-		return msg
-	}
 
 	return r.ReplaceAllStringFunc(
 		msg, func(str string) string {
 			var userID string
+			rs := r.FindStringSubmatch(str)
+			if len(rs) < 1 {
+				return str
+			}
+
 			split := strings.Split(rs[1], "|")
 			if len(split) > 0 {
 				userID = split[0]

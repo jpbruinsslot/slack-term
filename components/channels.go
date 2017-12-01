@@ -15,7 +15,7 @@ const (
 	IconChannel      = "#"
 	IconGroup        = "☰"
 	IconIM           = "●"
-	IconNotification = "🞷"
+	IconNotification = "*"
 
 	PresenceAway   = "away"
 	PresenceActive = "active"
@@ -118,6 +118,7 @@ func (c *Channels) SetSelectedChannel(index int) {
 	c.SelectedChannel = index
 }
 
+// TODO: documentation
 func (c *Channels) GetSelectedChannel() string {
 	return c.Items[c.SelectedChannel]
 }

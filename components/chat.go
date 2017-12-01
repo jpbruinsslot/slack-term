@@ -47,6 +47,7 @@ func (c *Chat) Layout(g *gocui.Gui) error {
 	return nil
 }
 
+// FIXME: maybe not necessary
 func (c *Chat) Refresh() {
 	for _, msg := range c.Items {
 		fmt.Fprintln(c.View, msg)

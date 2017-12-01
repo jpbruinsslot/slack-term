@@ -6,6 +6,12 @@ import (
 	"github.com/erroneousboat/gocui"
 )
 
+// Debug component gives the possibility to print
+// debugging statements in the GUI.
+//
+// Usage:
+//
+// 	ctx.View.Debug.SetText("debugging statement")
 type Debug struct {
 	Component
 	View *gocui.View
@@ -42,6 +48,7 @@ func (d *Debug) Layout(g *gocui.Gui) error {
 	return nil
 }
 
+// SetText will set the text of the Debug component
 func (d *Debug) SetText(text string) {
 	fmt.Fprintln(d.View, text)
 }

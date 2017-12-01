@@ -15,10 +15,10 @@
 			"revisionTime": "2017-05-02T14:12:00Z"
 		},
 		{
-			"checksumSHA1": "7hln62oZPZmyqEmgXaybf9WxQ7A=",
+			"checksumSHA1": "zpFCi2nWiwR5F2INAJOvQqsj7lY=",
 			"path": "github.com/maruel/panicparse/stack",
-			"revision": "868abbf1ebac0fb2760cd9a410a5bd2f5afb2f76",
-			"revisionTime": "2017-07-16T23:31:26Z"
+			"revision": "766956aceb8ff49664065ae50bef0ae8a0a83ec4",
+			"revisionTime": "2017-11-29T15:16:18Z"
 		},
 		{
 			"checksumSHA1": "cJE7dphDlam/i7PhnsyosNWtbd4=",
@@ -39,16 +39,16 @@
 			"revisionTime": "2017-07-25T12:17:30Z"
 		},
 		{
-			"checksumSHA1": "GY8G0wn9l4zVTQW9POZCdH+iftM=",
+			"checksumSHA1": "Zi8hWUMkKtii1fc6YaGgoYAssIw=",
 			"path": "github.com/nsf/termbox-go",
-			"revision": "d51f2f6d6ccb97dd83ed04ae2f79c34234851f39",
-			"revisionTime": "2017-09-30T11:41:06Z"
+			"revision": "aa4a75b1c20a2b03751b1a9f7e41d58bd6f71c43",
+			"revisionTime": "2017-11-04T16:23:16Z"
 		},
 		{
 			"checksumSHA1": "7EZyXN0EmZLgGxZxK01IJua4c8o=",
 			"path": "golang.org/x/net/websocket",
-			"revision": "f5079bd7f6f74e23c4d65efa0f4ce14cbd6a3c0f",
-			"revisionTime": "2017-07-19T21:11:51Z"
+			"revision": "a8b9294777976932365dabb6640cf1468d95c70f",
+			"revisionTime": "2017-11-29T19:21:16Z"
 		}
 	],
 	"rootPath": "github.com/erroneousboat/slack-term"

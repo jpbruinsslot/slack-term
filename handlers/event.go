@@ -50,7 +50,6 @@ func eventHandler(ctx *context.AppContext) {
 	}()
 
 	for {
-		ctx.View.GUI.Flush()
 
 		select {
 
@@ -242,6 +241,9 @@ func actionQuit(ctx *context.AppContext) {
 // 	termui.Render(ctx.View.Chat)
 // }
 
+// actionMoveCursorUpChannels will execute the actionChangeChannel
+// function. A timer is implemented to support fast scrolling through
+// the list without executing the actionChangeChannel event.
 func actionMoveCursorUpChannels(ctx *context.AppContext) {
 	go func() {
 		if timer != nil {
@@ -253,10 +255,17 @@ func actionMoveCursorUpChannels(ctx *context.AppContext) {
 		timer = time.NewTimer(time.Second / 4)
 		<-timer.C
 
+		// Only actually change channel when timer expired
 		actionChangeChannel(ctx)
+
+		// Flush, because this is run in a goroutine
+		ctx.View.GUI.Flush()
 	}()
 }
 
+// actionMoveCursorDownChannels will execute the actionChangeChannel
+// function. A timer is implemented to support fast scrolling through
+// the list without executing the actionChangeChannel event.
 func actionMoveCursorDownChannels(ctx *context.AppContext) {
 	go func() {
 		if timer != nil {
@@ -268,7 +277,11 @@ func actionMoveCursorDownChannels(ctx *context.AppContext) {
 		timer = time.NewTimer(time.Second / 4)
 		<-timer.C
 
+		// Only actually change channel when timer expired
 		actionChangeChannel(ctx)
+
+		// Flush, because this is run in a goroutine
+		ctx.View.GUI.Flush()
 	}()
 }
 
@@ -297,16 +310,17 @@ func actionChangeChannel(ctx *context.AppContext) {
 	// Set messages for the new channel
 	ctx.View.Chat.SetMessages(messages)
 
+	// TODO
 	// Set channel name for the Chat pane
 	// ctx.View.Chat.SetBorderLabel(
 	// 	ctx.Service.Channels[ctx.View.Channels.SelectedChannel],
 	// )
 
+	// TODO
 	// Set read mark
 	// ctx.View.Channels.SetReadMark(ctx.Service)
 
-	ctx.View.Debug.SetText("hello, world")
-
+	// FIXME: maybe not necessary
 	// Refresh Chat component
 	ctx.View.Chat.Refresh()
 }

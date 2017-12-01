@@ -73,6 +73,8 @@ func CreateChatView(svc *service.SlackService) *View {
 	// Initialize keybindings
 	// initKeyBindings(view)
 
+	view.GUI.Flush()
+
 	return view
 }
 
