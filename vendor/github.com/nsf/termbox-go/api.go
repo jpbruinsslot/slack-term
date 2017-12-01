@@ -418,12 +418,12 @@ func SetInputMode(mode InputMode) InputMode {
 //
 // 3. Output216 => [1..216]
 //    This mode supports the 3rd range of the 256 mode only.
-//    But you dont need to provide an offset.
+//    But you don't need to provide an offset.
 //
 // 4. OutputGrayscale => [1..26]
 //    This mode supports the 4th range of the 256 mode
 //    and black and white colors from 3th range of the 256 mode
-//    But you dont need to provide an offset.
+//    But you don't need to provide an offset.
 //
 // In all modes, 0x00 represents the default color.
 //

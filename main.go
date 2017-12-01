@@ -33,6 +33,7 @@ GLOBAL OPTIONS:
 
 var (
 	flgConfig string
+	flgDebug  bool
 	flgUsage  bool
 )
 
@@ -49,6 +50,13 @@ func init() {
 		"config",
 		path.Join(usr.HomeDir, "slack-term.json"),
 		"location of config file",
+	)
+
+	flag.BoolVar(
+		&flgDebug,
+		"debug",
+		false,
+		"turn on debugging",
 	)
 
 	flag.Usage = func() {
@@ -76,29 +84,12 @@ func main() {
 	termui.DefaultEvtStream = customEvtStream
 
 	// Create context
-	ctx, err := context.CreateAppContext(flgConfig)
+	ctx, err := context.CreateAppContext(flgConfig, flgDebug)
 	if err != nil {
 		termbox.Close()
 		log.Println(err)
 		os.Exit(0)
 	}
-
-	// Setup body
-	termui.Body.AddRows(
-		termui.NewRow(
-			termui.NewCol(ctx.Config.SidebarWidth, 0, ctx.View.Channels),
-			termui.NewCol(ctx.Config.MainWidth, 0, ctx.View.Chat),
-		),
-		termui.NewRow(
-			termui.NewCol(ctx.Config.SidebarWidth, 0, ctx.View.Mode),
-			termui.NewCol(ctx.Config.MainWidth, 0, ctx.View.Input),
-		),
-	)
-	termui.Body.Align()
-	termui.Render(termui.Body)
-
-	// Set body in context
-	ctx.Body = termui.Body
 
 	// Register handlers
 	handlers.RegisterEventHandlers(ctx)

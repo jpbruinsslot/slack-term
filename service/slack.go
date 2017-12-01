@@ -31,11 +31,12 @@ type SlackService struct {
 }
 
 type Channel struct {
-	ID     string
-	Name   string
-	Topic  string
-	Type   string
-	UserID string
+	ID       string
+	Name     string
+	Topic    string
+	Type     string
+	UserID   string
+	Presence string
 }
 
 // NewSlackService is the constructor for the SlackService and will initialize
@@ -131,6 +132,9 @@ func (s *SlackService) GetChannels() []Channel {
 	}
 	for _, im := range slackIM {
 
+		// FIXME: err
+		presence, _ := s.GetUserPresence(im.User)
+
 		// Uncover name, when we can't uncover name for
 		// IM channel this is then probably a deleted
 		// user, because we won't add deleted users
@@ -141,11 +145,12 @@ func (s *SlackService) GetChannels() []Channel {
 			chans = append(
 				chans,
 				Channel{
-					ID:     im.ID,
-					Name:   name,
-					Topic:  "",
-					Type:   ChannelTypeIM,
-					UserID: im.User,
+					ID:       im.ID,
+					Name:     name,
+					Topic:    "",
+					Type:     ChannelTypeIM,
+					UserID:   im.User,
+					Presence: presence,
 				},
 			)
 			s.SlackChannels = append(s.SlackChannels, im)
@@ -155,6 +160,11 @@ func (s *SlackService) GetChannels() []Channel {
 	s.Channels = chans
 
 	return chans
+}
+
+// GetSlackChannel returns the representation of a slack channel
+func (s *SlackService) GetSlackChannel(selectedChannel int) interface{} {
+	return s.SlackChannels[selectedChannel]
 }
 
 // GetUserPresence will get the presence of a specific user
