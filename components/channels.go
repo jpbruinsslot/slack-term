@@ -15,7 +15,7 @@ const (
 	IconChannel      = "#"
 	IconGroup        = "☰"
 	IconIM           = "●"
-	IconNotification = "🞷"
+	IconNotification = "*"
 
 	PresenceAway   = "away"
 	PresenceActive = "active"

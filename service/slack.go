@@ -83,16 +83,18 @@ func (s *SlackService) GetChannels() []Channel {
 		chans = append(chans, Channel{})
 	}
 	for _, chn := range slackChans {
-		s.SlackChannels = append(s.SlackChannels, chn)
-		chans = append(
-			chans, Channel{
-				ID:     chn.ID,
-				Name:   chn.Name,
-				Topic:  chn.Topic.Value,
-				Type:   ChannelTypeChannel,
-				UserID: "",
-			},
-		)
+		if chn.IsMember {
+			s.SlackChannels = append(s.SlackChannels, chn)
+			chans = append(
+				chans, Channel{
+					ID:     chn.ID,
+					Name:   chn.Name,
+					Topic:  chn.Topic.Value,
+					Type:   ChannelTypeChannel,
+					UserID: "",
+				},
+			)
+		}
 	}
 
 	// Groups
