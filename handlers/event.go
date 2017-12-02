@@ -238,20 +238,17 @@ func actionQuit(ctx *context.AppContext) {
 
 func actionInsertMode(ctx *context.AppContext) {
 	ctx.Mode = context.InsertMode
-	ctx.View.Mode.Par.Text = "INSERT"
-	termui.Render(ctx.View.Mode)
+	ctx.View.Mode.SetInsertMode()
 }
 
 func actionCommandMode(ctx *context.AppContext) {
 	ctx.Mode = context.CommandMode
-	ctx.View.Mode.Par.Text = "NORMAL"
-	termui.Render(ctx.View.Mode)
+	ctx.View.Mode.SetCommandMode()
 }
 
 func actionSearchMode(ctx *context.AppContext) {
 	ctx.Mode = context.SearchMode
-	ctx.View.Mode.Par.Text = "SEARCH"
-	termui.Render(ctx.View.Mode)
+	ctx.View.Mode.SetSearchMode()
 }
 
 func actionGetMessages(ctx *context.AppContext) {

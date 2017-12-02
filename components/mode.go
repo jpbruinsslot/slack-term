@@ -80,3 +80,18 @@ func (m *Mode) SetX(x int) {
 func (m *Mode) SetY(y int) {
 	m.Par.SetY(y)
 }
+
+func (m *Mode) SetInsertMode() {
+	m.Par.Text = "INSERT"
+	termui.Render(m)
+}
+
+func (m *Mode) SetCommandMode() {
+	m.Par.Text = "NORMAL"
+	termui.Render(m)
+}
+
+func (m *Mode) SetSearchMode() {
+	m.Par.Text = "SEARCH"
+	termui.Render(m)
+}

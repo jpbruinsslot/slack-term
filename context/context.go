@@ -48,12 +48,12 @@ func CreateAppContext(flgConfig string, flgDebug bool) (*AppContext, error) {
 		termui.Body.AddRows(
 			termui.NewRow(
 				termui.NewCol(config.SidebarWidth, 0, view.Channels),
-				termui.NewCol(config.MainWidth, 0, view.Chat),
+				termui.NewCol(config.MainWidth-5, 0, view.Chat),
+				termui.NewCol(config.MainWidth-6, 0, view.Debug),
 			),
 			termui.NewRow(
 				termui.NewCol(config.SidebarWidth, 0, view.Mode),
-				termui.NewCol(config.MainWidth-1, 0, view.Input),
-				termui.NewCol(1, 0, view.Debug),
+				termui.NewCol(config.MainWidth, 0, view.Input),
 			),
 		)
 	} else {

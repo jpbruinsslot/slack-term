@@ -38,7 +38,7 @@ func CreateView(svc *service.SlackService) *View {
 	chat.SetMessages(slackMsgs)
 
 	// Debug: create the component
-	debug := components.CreateDebugComponent()
+	debug := components.CreateDebugComponent(input.Par.Height)
 
 	// Mode: create the component
 	mode := components.CreateModeComponent()
