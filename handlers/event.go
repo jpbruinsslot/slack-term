@@ -348,7 +348,7 @@ func actionNewMessage(ctx *context.AppContext, channelID string) {
 }
 
 func actionSetPresence(ctx *context.AppContext, channelID string, presence string) {
-	ctx.View.Channels.SetPresenceChannel(ctx.Service.Channels, channelID, presence)
+	ctx.View.Channels.SetPresenceChannelEvent(ctx.Service.Channels, channelID, presence)
 	termui.Render(ctx.View.Channels)
 }
 
