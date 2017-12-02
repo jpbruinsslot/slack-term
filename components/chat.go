@@ -211,8 +211,8 @@ func (c *Chat) SetBorderLabel(channel service.Channel) {
 	var channelName string
 	if channel.Topic != "" {
 		channelName = fmt.Sprintf("%s - %s",
-			channel.Name,
-			channel.Topic,
+			html.UnescapeString(channel.Name),
+			html.UnescapeString(channel.Topic),
 		)
 	} else {
 		channelName = channel.Name
