@@ -2,6 +2,8 @@ package components
 
 import "github.com/erroneousboat/termui"
 
+// Debug can be used to relay debugging information in the Debug component,
+// see event.go on how to use it
 type Debug struct {
 	Par  *termui.Par
 	List *termui.List
@@ -46,5 +48,11 @@ func (d *Debug) SetY(y int) {
 // Println will add the text to the Debug component
 func (d *Debug) Println(text string) {
 	d.List.Items = append(d.List.Items, text)
+
+	// When at the end remove first item
+	if len(d.List.Items) > d.List.InnerBounds().Max.Y-1 {
+		d.List.Items = d.List.Items[1:]
+	}
+
 	termui.Render(d)
 }
