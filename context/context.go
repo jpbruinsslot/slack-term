@@ -1,6 +1,9 @@
 package context
 
 import (
+	"net/http"
+	_ "net/http/pprof"
+
 	"github.com/erroneousboat/termui"
 	termbox "github.com/nsf/termbox-go"
 
@@ -28,6 +31,12 @@ type AppContext struct {
 // CreateAppContext creates an application context which can be passed
 // and referenced througout the application
 func CreateAppContext(flgConfig string, flgDebug bool) (*AppContext, error) {
+	if flgDebug {
+		go func() {
+			http.ListenAndServe(":6060", nil)
+		}()
+	}
+
 	// Load config
 	config, err := config.NewConfig(flgConfig)
 	if err != nil {
