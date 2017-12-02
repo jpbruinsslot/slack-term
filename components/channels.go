@@ -3,6 +3,7 @@ package components
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/erroneousboat/termui"
 
@@ -125,23 +126,36 @@ func (c *Channels) SetY(y int) {
 // SetChannels will set the channels from the service, to the
 // Items field
 func (c *Channels) SetChannels(channels []service.Channel) {
-	for _, slackChan := range channels {
-		label := setChannelLabel(slackChan, false)
-		c.List.Items = append(c.List.Items, label)
+	c.List.Items = make([]string, len(channels))
+
+	// WaitGroup needed, else SetPresenceChannels will start
+	// too early
+	var wg sync.WaitGroup
+	for i, slackChan := range channels {
+		wg.Add(1)
+		go func(i int, slackChan service.Channel) {
+			label := setChannelLabel(slackChan, false)
+			c.List.Items[i] = label
+			wg.Done()
+		}(i, slackChan)
 	}
+	wg.Wait()
 }
 
 // SetPresenceChannels will set the icon for all the IM channels
 func (c *Channels) SetPresenceChannels(channels []service.Channel) {
-	for _, slackChan := range channels {
-		if slackChan.Type == service.ChannelTypeIM {
-			c.SetPresenceChannel(channels, slackChan.UserID, slackChan.Presence)
-		}
+	for i, slackChan := range channels {
+		go func(i int, slackChan service.Channel) {
+			if slackChan.Type == service.ChannelTypeIM {
+				c.SetPresenceChannel(i, slackChan.Presence)
+			}
+		}(i, slackChan)
 	}
 }
 
-// SetPresenceChannel will set the correct icon for one IM channel
-func (c *Channels) SetPresenceChannel(channels []service.Channel, userID string, presence string) {
+// SetPresenceChannel will set the correct icon for one IM channel, on
+// a Presence change event
+func (c *Channels) SetPresenceChannelEvent(channels []service.Channel, userID string, presence string) {
 	// Get the correct Channel from svc.Channels
 	var index int
 	for i, channel := range channels {
@@ -151,18 +165,23 @@ func (c *Channels) SetPresenceChannel(channels []service.Channel, userID string,
 		}
 	}
 
+	c.SetPresenceChannel(index, presence)
+}
+
+// SetPresenceChannel will set the correct icon for one IM channel
+func (c *Channels) SetPresenceChannel(i int, presence string) {
 	switch presence {
 	case PresenceActive:
-		c.List.Items[index] = strings.Replace(
-			c.List.Items[index], IconOffline, IconOnline, 1,
+		c.List.Items[i] = strings.Replace(
+			c.List.Items[i], IconOffline, IconOnline, 1,
 		)
 	case PresenceAway:
-		c.List.Items[index] = strings.Replace(
-			c.List.Items[index], IconOnline, IconOffline, 1,
+		c.List.Items[i] = strings.Replace(
+			c.List.Items[i], IconOnline, IconOffline, 1,
 		)
 	default:
-		c.List.Items[index] = strings.Replace(
-			c.List.Items[index], IconOnline, IconOffline, 1,
+		c.List.Items[i] = strings.Replace(
+			c.List.Items[i], IconOnline, IconOffline, 1,
 		)
 	}
 }
