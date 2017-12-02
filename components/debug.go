@@ -3,45 +3,48 @@ package components
 import "github.com/erroneousboat/termui"
 
 type Debug struct {
-	Par *termui.Par
+	Par  *termui.Par
+	List *termui.List
 }
 
-func CreateDebugComponent() *Debug {
+func CreateDebugComponent(inputHeight int) *Debug {
 	debug := &Debug{
-		Par: termui.NewPar(""),
+		List: termui.NewList(),
 	}
 
-	debug.Par.Height = 3
+	debug.List.BorderLabel = "Debug"
+	debug.List.Height = termui.TermHeight() - inputHeight
 
 	return debug
 }
 
 // Buffer implements interface termui.Bufferer
 func (d *Debug) Buffer() termui.Buffer {
-	return d.Par.Buffer()
+	return d.List.Buffer()
 }
 
 // GetHeight implements interface termui.GridBufferer
 func (d *Debug) GetHeight() int {
-	return d.Par.Block.GetHeight()
+	return d.List.Block.GetHeight()
 }
 
 // SetWidth implements interface termui.GridBufferer
 func (d *Debug) SetWidth(w int) {
-	d.Par.SetWidth(w)
+	d.List.SetWidth(w)
 }
 
 // SetX implements interface termui.GridBufferer
 func (d *Debug) SetX(x int) {
-	d.Par.SetX(x)
+	d.List.SetX(x)
 }
 
 // SetY implements interface termui.GridBufferer
 func (d *Debug) SetY(y int) {
-	d.Par.SetY(y)
+	d.List.SetY(y)
 }
 
-// SetText will set the text of the Debug component
-func (d *Debug) SetText(text string) {
-	d.Par.Text = text
+// Println will add the text to the Debug component
+func (d *Debug) Println(text string) {
+	d.List.Items = append(d.List.Items, text)
+	termui.Render(d)
 }
