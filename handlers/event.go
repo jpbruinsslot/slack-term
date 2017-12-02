@@ -56,6 +56,11 @@ func eventHandler(ctx *context.AppContext) {
 			ev := <-ctx.EventQueue
 			handleTermboxEvents(ctx, ev)
 			handleMoreTermboxEvents(ctx, ev)
+
+			// Place your debugging statements here
+			if ctx.Debug {
+				ctx.View.Debug.Println("hello world")
+			}
 		}
 	}()
 }
