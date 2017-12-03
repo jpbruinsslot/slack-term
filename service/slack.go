@@ -11,6 +11,7 @@ import (
 
 	"github.com/nlopes/slack"
 
+	"github.com/erroneousboat/slack-term/components"
 	"github.com/erroneousboat/slack-term/config"
 )
 
@@ -28,15 +29,6 @@ type SlackService struct {
 	UserCache       map[string]string
 	CurrentUserID   string
 	CurrentUsername string
-}
-
-type Channel struct {
-	ID       string
-	Name     string
-	Topic    string
-	Type     string
-	UserID   string
-	Presence string
 }
 
 // NewSlackService is the constructor for the SlackService and will initialize
@@ -84,7 +76,7 @@ func NewSlackService(token string) (*SlackService, error) {
 // Because the channels are of different types, we will append them to
 // an []interface as well as to a []Channel which will give us easy access
 // to the id and name of the Channel.
-func (s *SlackService) GetChannels() []Channel {
+func (s *SlackService) GetChannels() []string {
 	var chans []Channel
 
 	// Channel
@@ -159,7 +151,33 @@ func (s *SlackService) GetChannels() []Channel {
 
 	s.Channels = chans
 
-	return chans
+	var channels []string
+	for _, chn := range s.Channels {
+		channels = append(channels, chn.ToString())
+	}
+	return channels
+}
+
+// ChannelsToString will relay the string representation for a channel
+func (s *SlackService) ChannelsToString() []string {
+	var channels []string
+	for _, chn := range s.Channels {
+		channels = append(channels, chn.ToString())
+	}
+	return channels
+}
+
+// SetPresenceChannelEvent will set the presence of a IM channel
+func (s *SlackService) SetPresenceChannelEvent(userID string, presence string) {
+	// Get the correct Channel from svc.Channels
+	var index int
+	for i, channel := range s.Channels {
+		if userID == channel.UserID {
+			index = i
+			break
+		}
+	}
+	s.Channels[index].Presence = presence
 }
 
 // GetSlackChannel returns the representation of a slack channel
@@ -199,8 +217,45 @@ func (s *SlackService) SetChannelReadMark(channel interface{}) {
 	}
 }
 
+// MarkAsRead will set the channel as read
+func (s *SlackService) MarkAsRead(channelID int) {
+	channel := s.Channels[channelID]
+
+	if channel.Notification {
+		channel.Notification = false
+
+		switch channel.Type {
+		case ChannelTypeChannel:
+			s.Client.SetChannelReadMark(
+				channel.ID, fmt.Sprintf("%f",
+					float64(time.Now().Unix())),
+			)
+		case ChannelTypeGroup:
+			s.Client.SetGroupReadMark(
+				channel.ID, fmt.Sprintf("%f",
+					float64(time.Now().Unix())),
+			)
+		case ChannelTypeIM:
+			s.Client.MarkIMChannel(
+				channel.ID, fmt.Sprintf("%f",
+					float64(time.Now().Unix())),
+			)
+		}
+	}
+}
+
+// MarkAsUnread will set the channel as unread
+func (s *SlackService) MarkAsUnread(channelID int) {
+	channel := s.Channels[channelID]
+
+	if !channel.Notification {
+		channel.Notification = true
+	}
+}
+
 // SendMessage will send a message to a particular channel
-func (s *SlackService) SendMessage(channel string, message string) {
+func (s *SlackService) SendMessage(channelID int, message string) {
+
 	// https://godoc.org/github.com/nlopes/slack#PostMessageParameters
 	postParams := slack.PostMessageParameters{
 		AsUser:   true,
@@ -208,7 +263,7 @@ func (s *SlackService) SendMessage(channel string, message string) {
 	}
 
 	// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
-	s.Client.PostMessage(channel, message, postParams)
+	s.Client.PostMessage(s.Channels[channelID].ID, message, postParams)
 }
 
 // GetMessages will get messages for a channel, group or im channel delimited
@@ -313,14 +368,13 @@ func (s *SlackService) CreateMessage(message slack.Message) []string {
 	intTime := int64(floatTime)
 
 	// Format message
-	msg := fmt.Sprintf(
-		"[%s] <%s> %s",
-		time.Unix(intTime, 0).Format("15:04"),
-		name,
-		parseMessage(s, message.Text),
-	)
+	msg := components.Message{
+		Time:    time.Unix(intTime, 0),
+		Name:    name,
+		Content: parseMessage(s, message.Text),
+	}
 
-	msgs = append(msgs, msg)
+	msgs = append(msgs, msg.ToString())
 
 	return msgs
 }
@@ -379,14 +433,13 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 	intTime := int64(floatTime)
 
 	// Format message
-	msg := fmt.Sprintf(
-		"[%s] <%s> %s",
-		time.Unix(intTime, 0).Format("15:04"),
-		name,
-		parseMessage(s, message.Text),
-	)
+	msg := components.Message{
+		Time:    time.Unix(intTime, 0),
+		Name:    name,
+		Content: parseMessage(s, message.Text),
+	}
 
-	msgs = append(msgs, msg)
+	msgs = append(msgs, msg.ToString())
 
 	return msgs
 }

@@ -5,12 +5,29 @@ import (
 	"html"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/erroneousboat/termui"
 
 	"github.com/erroneousboat/slack-term/config"
-	"github.com/erroneousboat/slack-term/service"
 )
+
+type Message struct {
+	Time    time.Time
+	Name    string
+	Content string
+}
+
+func (m Message) ToString() string {
+	return html.UnescapeString(
+		fmt.Sprintf(
+			"[%s] <%s> %s",
+			m.Time.Format("15:04"),
+			m.Name,
+			m.Content,
+		),
+	)
+}
 
 // Chat is the definition of a Chat component
 type Chat struct {
@@ -207,16 +224,7 @@ func (c *Chat) ScrollDown() {
 }
 
 // SetBorderLabel will set Label of the Chat pane to the specified string
-func (c *Chat) SetBorderLabel(channel service.Channel) {
-	var channelName string
-	if channel.Topic != "" {
-		channelName = fmt.Sprintf("%s - %s",
-			html.UnescapeString(channel.Name),
-			html.UnescapeString(channel.Topic),
-		)
-	} else {
-		channelName = channel.Name
-	}
+func (c *Chat) SetBorderLabel(channelName string) {
 	c.List.BorderLabel = channelName
 }
 

@@ -1,13 +1,9 @@
 package components
 
 import (
-	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/erroneousboat/termui"
-
-	"github.com/erroneousboat/slack-term/service"
 )
 
 const (
@@ -17,9 +13,6 @@ const (
 	IconGroup        = "☰"
 	IconIM           = "●"
 	IconNotification = "*"
-
-	PresenceAway   = "away"
-	PresenceActive = "active"
 )
 
 // Channels is the definition of a Channels component
@@ -123,67 +116,8 @@ func (c *Channels) SetY(y int) {
 	c.List.SetY(y)
 }
 
-// SetChannels will set the channels from the service, to the
-// Items field
-func (c *Channels) SetChannels(channels []service.Channel) {
-	c.List.Items = make([]string, len(channels))
-
-	// WaitGroup needed, else SetPresenceChannels will start
-	// too early
-	var wg sync.WaitGroup
-	for i, slackChan := range channels {
-		wg.Add(1)
-		go func(i int, slackChan service.Channel) {
-			label := setChannelLabel(slackChan, false)
-			c.List.Items[i] = label
-			wg.Done()
-		}(i, slackChan)
-	}
-	wg.Wait()
-}
-
-// SetPresenceChannels will set the icon for all the IM channels
-func (c *Channels) SetPresenceChannels(channels []service.Channel) {
-	for i, slackChan := range channels {
-		go func(i int, slackChan service.Channel) {
-			if slackChan.Type == service.ChannelTypeIM {
-				c.SetPresenceChannel(i, slackChan.Presence)
-			}
-		}(i, slackChan)
-	}
-}
-
-// SetPresenceChannel will set the correct icon for one IM channel, on
-// a Presence change event
-func (c *Channels) SetPresenceChannelEvent(channels []service.Channel, userID string, presence string) {
-	// Get the correct Channel from svc.Channels
-	var index int
-	for i, channel := range channels {
-		if userID == channel.UserID {
-			index = i
-			break
-		}
-	}
-
-	c.SetPresenceChannel(index, presence)
-}
-
-// SetPresenceChannel will set the correct icon for one IM channel
-func (c *Channels) SetPresenceChannel(i int, presence string) {
-	switch presence {
-	case PresenceActive:
-		c.List.Items[i] = strings.Replace(
-			c.List.Items[i], IconOffline, IconOnline, 1,
-		)
-	case PresenceAway:
-		c.List.Items[i] = strings.Replace(
-			c.List.Items[i], IconOnline, IconOffline, 1,
-		)
-	default:
-		c.List.Items[i] = strings.Replace(
-			c.List.Items[i], IconOnline, IconOffline, 1,
-		)
-	}
+func (c *Channels) SetChannels(channels []string) {
+	c.List.Items = channels
 }
 
 // SetSelectedChannel sets the SelectedChannel given the index
@@ -201,7 +135,6 @@ func (c *Channels) MoveCursorUp() {
 	if c.SelectedChannel > 0 {
 		c.SetSelectedChannel(c.SelectedChannel - 1)
 		c.ScrollUp()
-		c.MarkAsRead()
 	}
 }
 
@@ -210,7 +143,6 @@ func (c *Channels) MoveCursorDown() {
 	if c.SelectedChannel < len(c.List.Items)-1 {
 		c.SetSelectedChannel(c.SelectedChannel + 1)
 		c.ScrollDown()
-		c.MarkAsRead()
 	}
 }
 
@@ -297,68 +229,4 @@ func (c *Channels) Search(term string) {
 			break
 		}
 	}
-}
-
-// MarkAsUnread will be called when a new message arrives and will
-// render an notification icon in front of the channel name
-func (c *Channels) MarkAsUnread(channels []service.Channel, channelID string) {
-	// Get the correct Channel from svc.Channels
-	var index int
-	for i, channel := range channels {
-		if channelID == channel.ID {
-			index = i
-			break
-		}
-	}
-
-	if !strings.Contains(c.List.Items[index], IconNotification) {
-		// The order of svc.Channels relates to the order of
-		// List.Items, index will be the index of the channel
-		c.List.Items[index] = fmt.Sprintf(
-			"%s %s", IconNotification, strings.TrimSpace(c.List.Items[index]),
-		)
-	}
-
-	// Play terminal bell sound
-	fmt.Print("\a")
-}
-
-// MarkAsRead will remove the notification icon in front of a channel that
-// received a new message. This will happen as one will move up or down the
-// cursor for Channels
-func (c *Channels) MarkAsRead() {
-	channelName := strings.Split(
-		c.List.Items[c.SelectedChannel],
-		fmt.Sprintf("%s ", IconNotification),
-	)
-
-	if len(channelName) > 1 {
-		c.List.Items[c.SelectedChannel] = fmt.Sprintf("  %s", channelName[1])
-	} else {
-		c.List.Items[c.SelectedChannel] = channelName[0]
-	}
-}
-
-// setChannelLabel will set the label of the channel, meaning, how it
-// is displayed on screen. Based on the type, different icons are
-// shown, as well as an optional notification icon.
-func setChannelLabel(channel service.Channel, notification bool) string {
-	var prefix string
-	if notification {
-		prefix = IconNotification
-	} else {
-		prefix = " "
-	}
-
-	var label string
-	switch channel.Type {
-	case service.ChannelTypeChannel:
-		label = fmt.Sprintf("%s %s %s", prefix, IconChannel, channel.Name)
-	case service.ChannelTypeGroup:
-		label = fmt.Sprintf("%s %s %s", prefix, IconGroup, channel.Name)
-	case service.ChannelTypeIM:
-		label = fmt.Sprintf("%s %s %s", prefix, IconIM, channel.Name)
-	}
-
-	return label
 }
