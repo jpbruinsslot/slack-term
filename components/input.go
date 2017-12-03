@@ -3,8 +3,6 @@ package components
 import (
 	"github.com/erroneousboat/termui"
 	runewidth "github.com/mattn/go-runewidth"
-
-	"github.com/erroneousboat/slack-term/service"
 )
 
 // Input is the definition of an Input component
@@ -69,11 +67,6 @@ func (i *Input) SetX(x int) {
 // SetY implements interface termui.GridBufferer
 func (i *Input) SetY(y int) {
 	i.Par.SetY(y)
-}
-
-// SendMessage send the input text through the SlackService
-func (i *Input) SendMessage(svc *service.SlackService, channel string, message string) {
-	svc.SendMessage(channel, message)
 }
 
 // Insert will insert a given key at the place of the current CursorPositionText

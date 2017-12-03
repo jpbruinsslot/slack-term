@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -59,7 +60,7 @@ func eventHandler(ctx *context.AppContext) {
 
 			// Place your debugging statements here
 			if ctx.Debug {
-				ctx.View.Debug.Println("hello world")
+				ctx.View.Debug.Println("event received")
 			}
 		}
 	}()
@@ -207,9 +208,8 @@ func actionSend(ctx *context.AppContext) {
 		ctx.View.Input.Clear()
 		ctx.View.Refresh()
 
-		ctx.View.Input.SendMessage(
-			ctx.Service,
-			ctx.Service.Channels[ctx.View.Channels.SelectedChannel].ID,
+		ctx.Service.SendMessage(
+			ctx.View.Channels.SelectedChannel,
 			message,
 		)
 	}
@@ -330,25 +330,30 @@ func actionChangeChannel(ctx *context.AppContext) {
 	// Set messages for the channel
 	ctx.View.Chat.SetMessages(messages)
 
+	// FIXME
 	// Set channel name for the Chat pane
 	ctx.View.Chat.SetBorderLabel(
-		ctx.Service.Channels[ctx.View.Channels.SelectedChannel],
+		ctx.Service.Channels[ctx.View.Channels.SelectedChannel].GetChannelName(),
 	)
 
 	// Clear notification icon if there is any
-	ctx.View.Channels.MarkAsRead()
+	ctx.Service.MarkAsRead(ctx.View.Channels.SelectedChannel)
+	ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
 
 	termui.Render(ctx.View.Channels)
 	termui.Render(ctx.View.Chat)
 }
 
 func actionNewMessage(ctx *context.AppContext, channelID string) {
-	ctx.View.Channels.MarkAsUnread(ctx.Service.Channels, channelID)
+	ctx.Service.MarkAsUnread(ctx.View.Channels.SelectedChannel)
+	ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
 	termui.Render(ctx.View.Channels)
+	fmt.Print("\a")
 }
 
 func actionSetPresence(ctx *context.AppContext, channelID string, presence string) {
-	ctx.View.Channels.SetPresenceChannelEvent(ctx.Service.Channels, channelID, presence)
+	ctx.Service.SetPresenceChannelEvent(channelID, presence)
+	ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
 	termui.Render(ctx.View.Channels)
 }
 
