@@ -271,7 +271,7 @@ func (s *SlackService) SendMessage(channelID int, message string) {
 
 // GetMessages will get messages for a channel, group or im channel delimited
 // by a count.
-func (s *SlackService) GetMessages(channel interface{}, count int) []string {
+func (s *SlackService) GetMessages(channel interface{}, count int) []components.Message {
 	// https://api.slack.com/methods/channels.history
 	historyParams := slack.HistoryParameters{
 		Count:     count,
@@ -301,7 +301,7 @@ func (s *SlackService) GetMessages(channel interface{}, count int) []string {
 	}
 
 	// Construct the messages
-	var messages []string
+	var messages []components.Message
 	for _, message := range history.Messages {
 		msg := s.CreateMessage(message)
 		messages = append(messages, msg...)
@@ -309,7 +309,7 @@ func (s *SlackService) GetMessages(channel interface{}, count int) []string {
 
 	// Reverse the order of the messages, we want the newest in
 	// the last place
-	var messagesReversed []string
+	var messagesReversed []components.Message
 	for i := len(messages) - 1; i >= 0; i-- {
 		messagesReversed = append(messagesReversed, messages[i])
 	}
@@ -324,8 +324,8 @@ func (s *SlackService) GetMessages(channel interface{}, count int) []string {
 //
 // This returns an array of string because we will try to uncover attachments
 // associated with messages.
-func (s *SlackService) CreateMessage(message slack.Message) []string {
-	var msgs []string
+func (s *SlackService) CreateMessage(message slack.Message) []components.Message {
+	var msgs []components.Message
 	var name string
 
 	// Get username from cache
@@ -377,14 +377,14 @@ func (s *SlackService) CreateMessage(message slack.Message) []string {
 		Content: parseMessage(s, message.Text),
 	}
 
-	msgs = append(msgs, msg.ToString())
+	msgs = append(msgs, msg)
 
 	return msgs
 }
 
-func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent) []string {
+func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent) []components.Message {
 
-	var msgs []string
+	var msgs []components.Message
 	var name string
 
 	// Append (edited) when an edited message is received
@@ -442,7 +442,7 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 		Content: parseMessage(s, message.Text),
 	}
 
-	msgs = append(msgs, msg.ToString())
+	msgs = append(msgs, msg)
 
 	return msgs
 }
@@ -524,25 +524,32 @@ func parseEmoji(msg string) string {
 
 // createMessageFromAttachments will construct a array of string of the Field
 // values of Attachments from a Message.
-func createMessageFromAttachments(atts []slack.Attachment) []string {
-	var msgs []string
+func createMessageFromAttachments(atts []slack.Attachment) []components.Message {
+	var msgs []components.Message
 	for _, att := range atts {
 		for i := len(att.Fields) - 1; i >= 0; i-- {
-			msgs = append(msgs,
-				fmt.Sprintf(
+			msgs = append(msgs, components.Message{
+				Content: fmt.Sprintf(
 					"%s %s",
 					att.Fields[i].Title,
 					att.Fields[i].Value,
 				),
+			},
 			)
 		}
 
 		if att.Text != "" {
-			msgs = append(msgs, att.Text)
+			msgs = append(
+				msgs,
+				components.Message{Content: fmt.Sprintf("%s", att.Text)},
+			)
 		}
 
 		if att.Title != "" {
-			msgs = append(msgs, att.Title)
+			msgs = append(
+				msgs,
+				components.Message{Content: fmt.Sprintf("%s", att.Title)},
+			)
 		}
 	}
 

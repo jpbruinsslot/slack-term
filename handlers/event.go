@@ -109,7 +109,9 @@ func messageHandler(ctx *context.AppContext) {
 						// reverse order of messages, mainly done
 						// when attachments are added to message
 						for i := len(msg) - 1; i >= 0; i-- {
-							ctx.View.Chat.AddMessage(msg[i])
+							ctx.View.Chat.AddMessage(
+								msg[i].ToString(),
+							)
 						}
 
 						termui.Render(ctx.View.Chat)
@@ -259,11 +261,17 @@ func actionSearchMode(ctx *context.AppContext) {
 }
 
 func actionGetMessages(ctx *context.AppContext) {
-	messages := ctx.Service.GetMessages(
+	msgs := ctx.Service.GetMessages(
 		ctx.Service.Channels[ctx.View.Channels.SelectedChannel],
 		ctx.View.Chat.GetMaxItems(),
 	)
-	ctx.View.Chat.SetMessages(messages)
+
+	var strMsgs []string
+	for _, msg := range msgs {
+		strMsgs = append(strMsgs, msg.ToString())
+	}
+
+	ctx.View.Chat.SetMessages(strMsgs)
 
 	termui.Render(ctx.View.Chat)
 }
@@ -324,13 +332,18 @@ func actionChangeChannel(ctx *context.AppContext) {
 
 	// Get messages of the SelectedChannel, and get the count of messages
 	// that fit into the Chat component
-	messages := ctx.Service.GetMessages(
+	msgs := ctx.Service.GetMessages(
 		ctx.Service.GetSlackChannel(ctx.View.Channels.SelectedChannel),
 		ctx.View.Chat.GetMaxItems(),
 	)
 
+	var strMsgs []string
+	for _, msg := range msgs {
+		strMsgs = append(strMsgs, msg.ToString())
+	}
+
 	// Set messages for the channel
-	ctx.View.Chat.SetMessages(messages)
+	ctx.View.Chat.SetMessages(strMsgs)
 
 	// FIXME
 	// Set channel name for the Chat pane
