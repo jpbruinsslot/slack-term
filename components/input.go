@@ -2,6 +2,7 @@ package components
 
 import (
 	"github.com/erroneousboat/termui"
+	runewidth "github.com/mattn/go-runewidth"
 
 	"github.com/erroneousboat/slack-term/service"
 )
@@ -34,8 +35,9 @@ func CreateInputComponent() *Input {
 func (i *Input) Buffer() termui.Buffer {
 	buf := i.Par.Buffer()
 
-	// Set visible cursor
+	// Set visible cursor, get char at screen cursor position
 	char := buf.At(i.Par.InnerX()+i.CursorPositionScreen, i.Par.Block.InnerY())
+
 	buf.Set(
 		i.Par.InnerX()+i.CursorPositionScreen,
 		i.Par.Block.InnerY(),
@@ -84,16 +86,15 @@ func (i *Input) Insert(key rune) {
 	// Combine left and right side
 	i.Text = append(left, i.Text[i.CursorPositionText:]...)
 
-	// Set visible range of component
 	i.MoveCursorRight()
 }
 
 // Backspace will remove a character in front of the CursorPositionText
 func (i *Input) Backspace() {
 	if i.CursorPositionText > 0 {
-		i.Text = append(i.Text[0:i.CursorPositionText-1], i.Text[i.CursorPositionText:]...)
-		i.Par.Text = string(i.Text[i.Offset:])
 		i.MoveCursorLeft()
+		i.Text = append(i.Text[0:i.CursorPositionText], i.Text[i.CursorPositionText+1:]...)
+		i.Par.Text = string(i.Text[i.Offset:])
 	}
 }
 
@@ -134,7 +135,7 @@ func (i *Input) ScrollLeft() {
 			i.Offset--
 		}
 	} else {
-		i.CursorPositionScreen--
+		i.CursorPositionScreen -= i.GetRuneWidthRight()
 	}
 }
 
@@ -148,8 +149,20 @@ func (i *Input) ScrollRight() {
 			i.Offset++
 		}
 	} else {
-		i.CursorPositionScreen++
+		i.CursorPositionScreen += i.GetRuneWidthLeft()
 	}
+}
+
+// GetRuneWidthLeft will get the width of a rune on the left side
+// of the CursorPositionText
+func (i *Input) GetRuneWidthLeft() int {
+	return runewidth.RuneWidth(i.Text[i.CursorPositionText-1])
+}
+
+// GetRuneWidthLeft will get the width of a rune on the right side
+// of the CursorPositionText
+func (i *Input) GetRuneWidthRight() int {
+	return runewidth.RuneWidth(i.Text[i.CursorPositionText])
 }
 
 // IsEmpty will return true when the input is empty
