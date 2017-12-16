@@ -347,7 +347,7 @@ func actionChangeChannel(ctx *context.AppContext) {
 }
 
 func actionNewMessage(ctx *context.AppContext, channelID string) {
-	ctx.Service.MarkAsUnread(ctx.View.Channels.SelectedChannel)
+	ctx.Service.MarkAsUnread(channelID)
 	ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
 	termui.Render(ctx.View.Channels)
 	fmt.Print("\a")
