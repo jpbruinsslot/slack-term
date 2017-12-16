@@ -22,6 +22,7 @@ const (
 )
 
 type SlackService struct {
+	Config          *config.Config
 	Client          *slack.Client
 	RTM             *slack.RTM
 	SlackChannels   []interface{}
@@ -33,9 +34,10 @@ type SlackService struct {
 
 // NewSlackService is the constructor for the SlackService and will initialize
 // the RTM and a Client
-func NewSlackService(token string) (*SlackService, error) {
+func NewSlackService(config *config.Config) (*SlackService, error) {
 	svc := &SlackService{
-		Client:    slack.New(token),
+		Config:    config,
+		Client:    slack.New(config.SlackToken),
 		UserCache: make(map[string]string),
 	}
 
@@ -153,7 +155,14 @@ func (s *SlackService) GetChannels() []string {
 
 	var channels []string
 	for _, chn := range s.Channels {
-		channels = append(channels, chn.ToString())
+		channels = append(
+			channels,
+			chn.ToString(
+				s.Config.Theme.Channel.Prefix,
+				s.Config.Theme.Channel.Icon,
+				s.Config.Theme.Channel.Name,
+			),
+		)
 	}
 	return channels
 }
@@ -162,7 +171,14 @@ func (s *SlackService) GetChannels() []string {
 func (s *SlackService) ChannelsToString() []string {
 	var channels []string
 	for _, chn := range s.Channels {
-		channels = append(channels, chn.ToString())
+		channels = append(
+			channels,
+			chn.ToString(
+				s.Config.Theme.Channel.Prefix,
+				s.Config.Theme.Channel.Icon,
+				s.Config.Theme.Channel.Name,
+			),
+		)
 	}
 	return channels
 }

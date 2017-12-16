@@ -18,19 +18,23 @@ type Message struct {
 	Content string
 }
 
-func (m Message) ToString(timeAttr string, nameAttr string, contentAttr string) string {
+func (m Message) ToString(stlTime string, stlName string, stlContent string) string {
 	if (m.Time != time.Time{} && m.Name != "") {
+
 		return html.UnescapeString(
 			fmt.Sprintf(
-				"[[%s]](fg-red,fg-bold) [<%s>](fg-blue,fg-bold) %s",
+				"[[%s]](%s) [<%s>](%s) [%s](%s)",
 				m.Time.Format("15:04"),
+				stlTime,
 				m.Name,
+				stlName,
 				m.Content,
+				stlContent,
 			),
 		)
 	} else {
 		return html.UnescapeString(
-			fmt.Sprintf("%s", m.Content),
+			fmt.Sprintf("[%s](%s)", m.Content, stlContent),
 		)
 	}
 }

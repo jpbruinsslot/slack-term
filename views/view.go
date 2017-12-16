@@ -4,10 +4,12 @@ import (
 	"github.com/erroneousboat/termui"
 
 	"github.com/erroneousboat/slack-term/components"
+	"github.com/erroneousboat/slack-term/config"
 	"github.com/erroneousboat/slack-term/service"
 )
 
 type View struct {
+	Config   *config.Config
 	Input    *components.Input
 	Chat     *components.Chat
 	Channels *components.Channels
@@ -15,7 +17,7 @@ type View struct {
 	Debug    *components.Debug
 }
 
-func CreateView(svc *service.SlackService) *View {
+func CreateView(config *config.Config, svc *service.SlackService) *View {
 	// Create Input component
 	input := components.CreateInputComponent()
 
@@ -37,7 +39,14 @@ func CreateView(svc *service.SlackService) *View {
 
 	var strMsgs []string
 	for _, msg := range msgs {
-		strMsgs = append(strMsgs, msg.ToString())
+		strMsgs = append(
+			strMsgs,
+			msg.ToString(
+				config.Theme.Message.Time,
+				config.Theme.Message.Name,
+				config.Theme.Message.Content,
+			),
+		)
 	}
 
 	chat.SetMessages(strMsgs)
@@ -50,6 +59,7 @@ func CreateView(svc *service.SlackService) *View {
 	mode := components.CreateModeComponent()
 
 	view := &View{
+		Config:   config,
 		Input:    input,
 		Channels: channels,
 		Chat:     chat,
