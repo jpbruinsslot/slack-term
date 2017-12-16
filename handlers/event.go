@@ -60,7 +60,9 @@ func eventHandler(ctx *context.AppContext) {
 
 			// Place your debugging statements here
 			if ctx.Debug {
-				ctx.View.Debug.Println("event received")
+				ctx.View.Debug.Println(
+					"event received",
+				)
 			}
 		}
 	}()

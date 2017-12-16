@@ -135,15 +135,37 @@ func (i *Input) ScrollLeft() {
 func (i *Input) ScrollRight() {
 	// Is the cursor at the far right of the Input component, cursor
 	// isn't at the end of the text
-	if i.CursorPositionScreen == i.Par.InnerBounds().Dx()-1 {
+	if (i.CursorPositionScreen + i.GetRuneWidthLeft()) > i.Par.InnerBounds().Dx()-1 {
 
 		// Increase offset to show what is on the right side
 		if i.Offset < len(i.Text) {
-			i.Offset++
+			i.Offset = i.CalculateOffset()
+			i.CursorPositionScreen = i.GetRuneWidthOffsetToCursor()
 		}
 	} else {
 		i.CursorPositionScreen += i.GetRuneWidthLeft()
 	}
+}
+
+// CalculateOffset will, based on the width of the runes on the
+// left of the text cursor, calculate the offset that needs to
+// be used by the Inpute Component
+func (i *Input) CalculateOffset() int {
+	var offset int
+
+	var currentRuneWidth int
+	for j := (i.CursorPositionText - 1); currentRuneWidth < i.GetMaxWidth()-1; j-- {
+		currentRuneWidth += runewidth.RuneWidth(i.Text[j])
+		offset = j
+	}
+
+	return offset
+}
+
+// GetRunWidthOffsetToCursor will get the rune width of all
+// the runes from the offset until the text cursor
+func (i *Input) GetRuneWidthOffsetToCursor() int {
+	return runewidth.StringWidth(string(i.Text[i.Offset:i.CursorPositionText]))
 }
 
 // GetRuneWidthLeft will get the width of a rune on the left side
@@ -177,4 +199,10 @@ func (i *Input) Clear() {
 // GetText returns the text currently in the input
 func (i *Input) GetText() string {
 	return i.Par.Text
+}
+
+// GetMaxWidth returns the maximum number of positions
+// the Input component can display
+func (i *Input) GetMaxWidth() int {
+	return i.Par.InnerBounds().Dx() - 1
 }
