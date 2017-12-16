@@ -4,17 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-
-	"github.com/erroneousboat/termui"
 )
 
 // Config is the definition of a Config struct
 type Config struct {
-	SlackToken   string                `json:"slack_token"`
-	Theme        string                `json:"theme"`
+	SlackToken string `json:"slack_token"`
+	// Theme        string                `json:"theme"`
 	SidebarWidth int                   `json:"sidebar_width"`
 	MainWidth    int                   `json:"-"`
 	KeyMap       map[string]keyMapping `json:"key_map"`
+	Theme        Theme                 `json:"theme"`
 }
 
 type keyMapping map[string]string
@@ -22,7 +21,7 @@ type keyMapping map[string]string
 // NewConfig loads the config file and returns a Config struct
 func NewConfig(filepath string) (*Config, error) {
 	cfg := Config{
-		Theme:        "dark",
+		// Theme:        "dark",
 		SidebarWidth: 1,
 		MainWidth:    11,
 		KeyMap: map[string]keyMapping{
@@ -63,6 +62,18 @@ func NewConfig(filepath string) (*Config, error) {
 				"<space>":     "space",
 			},
 		},
+		Theme: Theme{
+			Message: Message{
+				Time:    "fg-red,fg-bold",
+				Name:    "fg-blue,fg-bold",
+				Content: "",
+			},
+			Channel: Channel{
+				Prefix: "",
+				Icon:   "fg-red",
+				Name:   "",
+			},
+		},
 	}
 
 	file, err := os.Open(filepath)
@@ -84,16 +95,16 @@ func NewConfig(filepath string) (*Config, error) {
 
 	cfg.MainWidth = 12 - cfg.SidebarWidth
 
-	if cfg.Theme == "light" {
-		termui.ColorMap = map[string]termui.Attribute{
-			"fg":           termui.ColorBlack,
-			"bg":           termui.ColorWhite,
-			"border.fg":    termui.ColorBlack,
-			"label.fg":     termui.ColorBlue,
-			"par.fg":       termui.ColorYellow,
-			"par.label.bg": termui.ColorWhite,
-		}
-	}
+	// if cfg.Theme == "light" {
+	// 	termui.ColorMap = map[string]termui.Attribute{
+	// 		"fg":           termui.ColorBlack,
+	// 		"bg":           termui.ColorWhite,
+	// 		"border.fg":    termui.ColorBlack,
+	// 		"label.fg":     termui.ColorBlue,
+	// 		"par.fg":       termui.ColorYellow,
+	// 		"par.label.bg": termui.ColorWhite,
+	// 	}
+	// }
 
 	return &cfg, nil
 }

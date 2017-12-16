@@ -44,13 +44,13 @@ func CreateAppContext(flgConfig string, flgDebug bool) (*AppContext, error) {
 	}
 
 	// Create Service
-	svc, err := service.NewSlackService(config.SlackToken)
+	svc, err := service.NewSlackService(config)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create the main view
-	view := views.CreateView(svc)
+	view := views.CreateView(config, svc)
 
 	// Setup the interface
 	if flgDebug {

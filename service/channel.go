@@ -25,7 +25,7 @@ type Channel struct {
 // ToString will set the label of the channel, how it will be
 // displayed on screen. Based on the type, different icons are
 // shown, as well as an optional notification icon.
-func (c Channel) ToString() string {
+func (c Channel) ToString(stlPrefix string, stlIcon string, stlName string) string {
 	var prefix string
 	if c.Notification {
 		prefix = components.IconNotification
@@ -33,14 +33,13 @@ func (c Channel) ToString() string {
 		prefix = " "
 	}
 
-	var label string
+	var icon string
 	switch c.Type {
 	case ChannelTypeChannel:
-		label = fmt.Sprintf("%s %s %s", prefix, components.IconChannel, c.Name)
+		icon = components.IconChannel
 	case ChannelTypeGroup:
-		label = fmt.Sprintf("%s %s %s", prefix, components.IconGroup, c.Name)
+		icon = components.IconGroup
 	case ChannelTypeIM:
-		var icon string
 		switch c.Presence {
 		case PresenceActive:
 			icon = components.IconOnline
@@ -49,8 +48,14 @@ func (c Channel) ToString() string {
 		default:
 			icon = components.IconIM
 		}
-		label = fmt.Sprintf("%s %s %s", prefix, icon, c.Name)
 	}
+
+	label := fmt.Sprintf(
+		"[%s](%s) [%s](%s) [%s](%s)",
+		prefix, stlPrefix,
+		icon, stlIcon,
+		c.Name, stlName,
+	)
 
 	return label
 }
