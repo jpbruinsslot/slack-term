@@ -11,18 +11,51 @@ import (
 // Config is the definition of a Config struct
 type Config struct {
 	SlackToken   string                `json:"slack_token"`
-	Theme        string                `json:"theme"`
 	SidebarWidth int                   `json:"sidebar_width"`
 	MainWidth    int                   `json:"-"`
 	KeyMap       map[string]keyMapping `json:"key_map"`
+	Theme        Theme                 `json:"theme"`
 }
 
 type keyMapping map[string]string
 
 // NewConfig loads the config file and returns a Config struct
 func NewConfig(filepath string) (*Config, error) {
-	cfg := Config{
-		Theme:        "dark",
+	cfg := getDefaultConfig()
+
+	file, err := os.Open(filepath)
+	if err != nil {
+		return &cfg, err
+	}
+
+	if err := json.NewDecoder(file).Decode(&cfg); err != nil {
+		return &cfg, err
+	}
+
+	if cfg.SlackToken == "" {
+		return &cfg, errors.New("couldn't find 'slack_token' parameter")
+	}
+
+	if cfg.SidebarWidth < 1 || cfg.SidebarWidth > 11 {
+		return &cfg, errors.New("please specify the 'sidebar_width' between 1 and 11")
+	}
+
+	cfg.MainWidth = 12 - cfg.SidebarWidth
+
+	termui.ColorMap = map[string]termui.Attribute{
+		"fg":           termui.StringToAttribute(cfg.Theme.View.Fg),
+		"bg":           termui.StringToAttribute(cfg.Theme.View.Bg),
+		"border.fg":    termui.StringToAttribute(cfg.Theme.View.BorderFg),
+		"label.fg":     termui.StringToAttribute(cfg.Theme.View.LabelFg),
+		"par.fg":       termui.StringToAttribute(cfg.Theme.View.ParFg),
+		"par.label.bg": termui.StringToAttribute(cfg.Theme.View.ParLabelFg),
+	}
+
+	return &cfg, nil
+}
+
+func getDefaultConfig() Config {
+	return Config{
 		SidebarWidth: 1,
 		MainWidth:    11,
 		KeyMap: map[string]keyMapping{
@@ -63,37 +96,25 @@ func NewConfig(filepath string) (*Config, error) {
 				"<space>":     "space",
 			},
 		},
+		Theme: Theme{
+			View: View{
+				Fg:         "white",
+				Bg:         "default",
+				BorderFg:   "white",
+				LabelFg:    "green,bold",
+				ParFg:      "white",
+				ParLabelFg: "white",
+			},
+			Channel: Channel{
+				Prefix: "",
+				Icon:   "fg-green,fg-bold",
+				Text:   "fg-blue,fg-bold",
+			},
+			Message: Message{
+				Time: "fg-red,fg-bold",
+				Name: "fg-blue,fg-bold",
+				Text: "",
+			},
+		},
 	}
-
-	file, err := os.Open(filepath)
-	if err != nil {
-		return &cfg, err
-	}
-
-	if err := json.NewDecoder(file).Decode(&cfg); err != nil {
-		return &cfg, err
-	}
-
-	if cfg.SlackToken == "" {
-		return &cfg, errors.New("couldn't find 'slack_token' parameter")
-	}
-
-	if cfg.SidebarWidth < 1 || cfg.SidebarWidth > 11 {
-		return &cfg, errors.New("please specify the 'sidebar_width' between 1 and 11")
-	}
-
-	cfg.MainWidth = 12 - cfg.SidebarWidth
-
-	if cfg.Theme == "light" {
-		termui.ColorMap = map[string]termui.Attribute{
-			"fg":           termui.ColorBlack,
-			"bg":           termui.ColorWhite,
-			"border.fg":    termui.ColorBlack,
-			"label.fg":     termui.ColorBlue,
-			"par.fg":       termui.ColorYellow,
-			"par.label.bg": termui.ColorWhite,
-		}
-	}
-
-	return &cfg, nil
 }

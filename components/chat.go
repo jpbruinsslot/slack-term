@@ -16,17 +16,31 @@ type Message struct {
 	Time    time.Time
 	Name    string
 	Content string
+
+	StyleTime string
+	StyleName string
+	StyleText string
 }
 
 func (m Message) ToString() string {
-	return html.UnescapeString(
-		fmt.Sprintf(
-			"[%s] <%s> %s",
-			m.Time.Format("15:04"),
-			m.Name,
-			m.Content,
-		),
-	)
+	if (m.Time != time.Time{} && m.Name != "") {
+
+		return html.UnescapeString(
+			fmt.Sprintf(
+				"[[%s]](%s) [<%s>](%s) [%s](%s)",
+				m.Time.Format("15:04"),
+				m.StyleTime,
+				m.Name,
+				m.StyleName,
+				m.Content,
+				m.StyleText,
+			),
+		)
+	} else {
+		return html.UnescapeString(
+			fmt.Sprintf("[%s](%s)", m.Content, m.StyleText),
+		)
+	}
 }
 
 // Chat is the definition of a Chat component
