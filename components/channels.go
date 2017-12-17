@@ -1,8 +1,6 @@
 package components
 
 import (
-	"sort"
-
 	"github.com/erroneousboat/termui"
 	"github.com/renstrom/fuzzysearch/fuzzy"
 )
@@ -202,12 +200,11 @@ func (c *Channels) ScrollDown() {
 func (c *Channels) Search(term string) {
 	c.SearchMatches = make([]int, 0)
 
-	matches := fuzzy.RankFind(term, c.List.Items)
-	sort.Sort(matches)
+	matches := fuzzy.Find(term, c.List.Items)
 
 	for _, m := range matches {
 		for i, item := range c.List.Items {
-			if m.Target == item {
+			if m == item {
 				c.SearchMatches = append(c.SearchMatches, i)
 				break
 			}
