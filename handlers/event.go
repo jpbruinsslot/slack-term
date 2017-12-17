@@ -20,24 +20,26 @@ var timer *time.Timer
 // these action names can then be used to bind them to specific keys
 // in the Config.
 var actionMap = map[string]func(*context.AppContext){
-	"space":          actionSpace,
-	"backspace":      actionBackSpace,
-	"delete":         actionDelete,
-	"cursor-right":   actionMoveCursorRight,
-	"cursor-left":    actionMoveCursorLeft,
-	"send":           actionSend,
-	"quit":           actionQuit,
-	"mode-insert":    actionInsertMode,
-	"mode-command":   actionCommandMode,
-	"mode-search":    actionSearchMode,
-	"clear-input":    actionClearInput,
-	"channel-up":     actionMoveCursorUpChannels,
-	"channel-down":   actionMoveCursorDownChannels,
-	"channel-top":    actionMoveCursorTopChannels,
-	"channel-bottom": actionMoveCursorBottomChannels,
-	"chat-up":        actionScrollUpChat,
-	"chat-down":      actionScrollDownChat,
-	"help":           actionHelp,
+	"space":               actionSpace,
+	"backspace":           actionBackSpace,
+	"delete":              actionDelete,
+	"cursor-right":        actionMoveCursorRight,
+	"cursor-left":         actionMoveCursorLeft,
+	"send":                actionSend,
+	"quit":                actionQuit,
+	"mode-insert":         actionInsertMode,
+	"mode-command":        actionCommandMode,
+	"mode-search":         actionSearchMode,
+	"clear-input":         actionClearInput,
+	"channel-up":          actionMoveCursorUpChannels,
+	"channel-down":        actionMoveCursorDownChannels,
+	"channel-top":         actionMoveCursorTopChannels,
+	"channel-bottom":      actionMoveCursorBottomChannels,
+	"channel-search-next": actionSearchNextChannels,
+	"channel-search-prev": actionSearchPrevChannels,
+	"chat-up":             actionScrollUpChat,
+	"chat-down":           actionScrollDownChat,
+	"help":                actionHelp,
 }
 
 func RegisterEventHandlers(ctx *context.AppContext) {
@@ -323,6 +325,16 @@ func actionMoveCursorTopChannels(ctx *context.AppContext) {
 
 func actionMoveCursorBottomChannels(ctx *context.AppContext) {
 	ctx.View.Channels.MoveCursorBottom()
+	actionChangeChannel(ctx)
+}
+
+func actionSearchNextChannels(ctx *context.AppContext) {
+	ctx.View.Channels.SearchNext()
+	actionChangeChannel(ctx)
+}
+
+func actionSearchPrevChannels(ctx *context.AppContext) {
+	ctx.View.Channels.SearchPrev()
 	actionChangeChannel(ctx)
 }
 
