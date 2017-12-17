@@ -211,8 +211,10 @@ func (c *Channels) Search(term string) {
 		}
 	}
 
-	c.GotoPosition(0)
-	c.SearchPosition = 0
+	if len(c.SearchMatches) > 0 {
+		c.GotoPosition(0)
+		c.SearchPosition = 0
+	}
 }
 
 // GotoPosition is used by the search functionality to automatically
