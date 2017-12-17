@@ -110,11 +110,7 @@ func messageHandler(ctx *context.AppContext) {
 						// when attachments are added to message
 						for i := len(msg) - 1; i >= 0; i-- {
 							ctx.View.Chat.AddMessage(
-								msg[i].ToString(
-									ctx.Config.Theme.Message.Time,
-									ctx.Config.Theme.Message.Name,
-									ctx.Config.Theme.Message.Content,
-								),
+								msg[i].ToString(),
 							)
 						}
 
@@ -272,14 +268,7 @@ func actionGetMessages(ctx *context.AppContext) {
 
 	var strMsgs []string
 	for _, msg := range msgs {
-		strMsgs = append(
-			strMsgs,
-			msg.ToString(
-				ctx.Config.Theme.Message.Time,
-				ctx.Config.Theme.Message.Name,
-				ctx.Config.Theme.Message.Content,
-			),
-		)
+		strMsgs = append(strMsgs, msg.ToString())
 	}
 
 	ctx.View.Chat.SetMessages(strMsgs)
@@ -350,14 +339,7 @@ func actionChangeChannel(ctx *context.AppContext) {
 
 	var strMsgs []string
 	for _, msg := range msgs {
-		strMsgs = append(
-			strMsgs,
-			msg.ToString(
-				ctx.Config.Theme.Message.Time,
-				ctx.Config.Theme.Message.Name,
-				ctx.Config.Theme.Message.Content,
-			),
-		)
+		strMsgs = append(strMsgs, msg.ToString())
 	}
 
 	// Set messages for the channel

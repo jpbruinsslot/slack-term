@@ -1,6 +1,8 @@
 package components
 
 import (
+	"fmt"
+	"html"
 	"strings"
 
 	"github.com/erroneousboat/termui"
@@ -13,7 +15,81 @@ const (
 	IconGroup        = "☰"
 	IconIM           = "●"
 	IconNotification = "*"
+
+	PresenceAway   = "away"
+	PresenceActive = "active"
+
+	ChannelTypeChannel = "channel"
+	ChannelTypeGroup   = "group"
+	ChannelTypeIM      = "im"
 )
+
+type ChannelItem struct {
+	ID           string
+	Name         string
+	Topic        string
+	Type         string
+	UserID       string
+	Presence     string
+	Notification bool
+
+	StylePrefix string
+	StyleIcon   string
+	StyleText   string
+}
+
+// ToString will set the label of the channel, how it will be
+// displayed on screen. Based on the type, different icons are
+// shown, as well as an optional notification icon.
+func (c ChannelItem) ToString() string {
+	var prefix string
+	if c.Notification {
+		prefix = IconNotification
+	} else {
+		prefix = " "
+	}
+
+	var icon string
+	switch c.Type {
+	case ChannelTypeChannel:
+		icon = IconChannel
+	case ChannelTypeGroup:
+		icon = IconGroup
+	case ChannelTypeIM:
+		switch c.Presence {
+		case PresenceActive:
+			icon = IconOnline
+		case PresenceAway:
+			icon = IconOffline
+		default:
+			icon = IconIM
+		}
+	}
+
+	label := fmt.Sprintf(
+		"[%s](%s) [%s](%s) [%s](%s)",
+		prefix, c.StylePrefix,
+		icon, c.StyleIcon,
+		c.Name, c.StyleText,
+	)
+
+	return label
+}
+
+// GetChannelName will return a formatted representation of the
+// name of the channel
+func (c ChannelItem) GetChannelName() string {
+	var channelName string
+	if c.Topic != "" {
+		channelName = fmt.Sprintf("%s - %s",
+			html.UnescapeString(c.Name),
+			html.UnescapeString(c.Topic),
+		)
+	} else {
+		channelName = c.Name
+	}
+	return channelName
+}
 
 // Channels is the definition of a Channels component
 type Channels struct {
@@ -51,6 +127,7 @@ func (c *Channels) Buffer() termui.Buffer {
 			break
 		}
 
+		// Set the visible cursor
 		var cells []termui.Cell
 		if y == c.CursorPosition {
 			cells = termui.DefaultTxBuilder.Build(

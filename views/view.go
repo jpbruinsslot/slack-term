@@ -39,14 +39,7 @@ func CreateView(config *config.Config, svc *service.SlackService) *View {
 
 	var strMsgs []string
 	for _, msg := range msgs {
-		strMsgs = append(
-			strMsgs,
-			msg.ToString(
-				config.Theme.Message.Time,
-				config.Theme.Message.Name,
-				config.Theme.Message.Content,
-			),
-		)
+		strMsgs = append(strMsgs, msg.ToString())
 	}
 
 	chat.SetMessages(strMsgs)

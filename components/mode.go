@@ -1,6 +1,14 @@
 package components
 
-import "github.com/erroneousboat/termui"
+import (
+	"github.com/erroneousboat/termui"
+)
+
+const (
+	CommandMode = "NORMAL"
+	InsertMode  = "INSERT"
+	SearchMode  = "SEARCH"
+)
 
 // Mode is the definition of Mode component
 type Mode struct {
@@ -10,10 +18,11 @@ type Mode struct {
 // CreateMode is the constructor of the Mode struct
 func CreateModeComponent() *Mode {
 	mode := &Mode{
-		Par: termui.NewPar("NORMAL"),
+		Par: termui.NewPar(CommandMode),
 	}
 
 	mode.Par.Height = 3
+	mode.SetCommandMode()
 
 	return mode
 }
@@ -82,16 +91,16 @@ func (m *Mode) SetY(y int) {
 }
 
 func (m *Mode) SetInsertMode() {
-	m.Par.Text = "INSERT"
+	m.Par.Text = InsertMode
 	termui.Render(m)
 }
 
 func (m *Mode) SetCommandMode() {
-	m.Par.Text = "NORMAL"
+	m.Par.Text = CommandMode
 	termui.Render(m)
 }
 
 func (m *Mode) SetSearchMode() {
-	m.Par.Text = "SEARCH"
+	m.Par.Text = SearchMode
 	termui.Render(m)
 }
