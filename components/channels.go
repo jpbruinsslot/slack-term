@@ -3,9 +3,9 @@ package components
 import (
 	"fmt"
 	"html"
-	"strings"
 
 	"github.com/erroneousboat/termui"
+	"github.com/renstrom/fuzzysearch/fuzzy"
 )
 
 const (
@@ -97,6 +97,9 @@ type Channels struct {
 	SelectedChannel int // index of which channel is selected from the List
 	Offset          int // from what offset are channels rendered
 	CursorPosition  int // the y position of the 'cursor'
+
+	SearchMatches  []int // index of the search matches
+	SearchPosition int   // current position of a search match
 }
 
 // CreateChannels is the constructor for the Channels component
@@ -273,37 +276,71 @@ func (c *Channels) ScrollDown() {
 // when a match has been found the selected channel will then
 // be the channel that has been found
 func (c *Channels) Search(term string) {
-	for i, item := range c.List.Items {
-		if strings.Contains(item, term) {
+	c.SearchMatches = make([]int, 0)
 
-			// The new position
-			newPos := i
+	matches := fuzzy.Find(term, c.List.Items)
 
-			// Is the new position in range of the current view?
-			minRange := c.Offset
-			maxRange := c.Offset + (c.List.InnerBounds().Max.Y - 2)
-
-			if newPos < minRange {
-				// newPos is above, we need to scroll up.
-				c.SetSelectedChannel(i)
-
-				// How much do we need to scroll to get it into range?
-				c.Offset = c.Offset - (minRange - newPos)
-			} else if newPos > maxRange {
-				// newPos is below, we need to scroll down
-				c.SetSelectedChannel(i)
-
-				// How much do we need to scroll to get it into range?
-				c.Offset = c.Offset + (newPos - maxRange)
-			} else {
-				// newPos is inside range
-				c.SetSelectedChannel(i)
+	for _, m := range matches {
+		for i, item := range c.List.Items {
+			if m == item {
+				c.SearchMatches = append(c.SearchMatches, i)
+				break
 			}
-
-			// Set cursor to correct position
-			c.CursorPosition = (newPos - c.Offset) + 1
-
-			break
 		}
+	}
+
+	if len(c.SearchMatches) > 0 {
+		c.GotoPosition(0)
+		c.SearchPosition = 0
+	}
+}
+
+// GotoPosition is used by the search functionality to automatically
+// scroll to a specific location in the channels component
+func (c *Channels) GotoPosition(position int) {
+
+	// The new position
+	newPos := c.SearchMatches[position]
+
+	// Is the new position in range of the current view?
+	minRange := c.Offset
+	maxRange := c.Offset + (c.List.InnerBounds().Max.Y - 2)
+
+	if newPos < minRange {
+		// newPos is above, we need to scroll up.
+		c.SetSelectedChannel(newPos)
+
+		// How much do we need to scroll to get it into range?
+		c.Offset = c.Offset - (minRange - newPos)
+	} else if newPos > maxRange {
+		// newPos is below, we need to scroll down
+		c.SetSelectedChannel(newPos)
+
+		// How much do we need to scroll to get it into range?
+		c.Offset = c.Offset + (newPos - maxRange)
+	} else {
+		// newPos is inside range
+		c.SetSelectedChannel(newPos)
+	}
+
+	// Set cursor to correct position
+	c.CursorPosition = (newPos - c.Offset) + 1
+}
+
+// SearchNext allows us to cycle through the c.SearchMatches
+func (c *Channels) SearchNext() {
+	newPosition := c.SearchPosition + 1
+	if newPosition <= len(c.SearchMatches)-1 {
+		c.GotoPosition(newPosition)
+		c.SearchPosition = newPosition
+	}
+}
+
+// SearchPrev allows us to cycle through the c.SearchMatches
+func (c *Channels) SearchPrev() {
+	newPosition := c.SearchPosition - 1
+	if newPosition >= 0 {
+		c.GotoPosition(newPosition)
+		c.SearchPosition = newPosition
 	}
 }
