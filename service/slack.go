@@ -26,7 +26,7 @@ type SlackService struct {
 	Client          *slack.Client
 	RTM             *slack.RTM
 	SlackChannels   []interface{}
-	Channels        []Channel
+	Channels        []components.ChannelItem
 	UserCache       map[string]string
 	CurrentUserID   string
 	CurrentUsername string
@@ -79,23 +79,27 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 // an []interface as well as to a []Channel which will give us easy access
 // to the id and name of the Channel.
 func (s *SlackService) GetChannels() []string {
-	var chans []Channel
+	var chans []components.ChannelItem
 
 	// Channel
 	slackChans, err := s.Client.GetChannels(true)
 	if err != nil {
-		chans = append(chans, Channel{})
+		chans = append(chans, components.ChannelItem{})
 	}
+
 	for _, chn := range slackChans {
 		if chn.IsMember {
 			s.SlackChannels = append(s.SlackChannels, chn)
 			chans = append(
-				chans, Channel{
-					ID:     chn.ID,
-					Name:   chn.Name,
-					Topic:  chn.Topic.Value,
-					Type:   ChannelTypeChannel,
-					UserID: "",
+				chans, components.ChannelItem{
+					ID:          chn.ID,
+					Name:        chn.Name,
+					Topic:       chn.Topic.Value,
+					Type:        components.ChannelTypeChannel,
+					UserID:      "",
+					StylePrefix: s.Config.Theme.Channel.Prefix,
+					StyleIcon:   s.Config.Theme.Channel.Icon,
+					StyleText:   s.Config.Theme.Channel.Text,
 				},
 			)
 		}
@@ -104,17 +108,20 @@ func (s *SlackService) GetChannels() []string {
 	// Groups
 	slackGroups, err := s.Client.GetGroups(true)
 	if err != nil {
-		chans = append(chans, Channel{})
+		chans = append(chans, components.ChannelItem{})
 	}
 	for _, grp := range slackGroups {
 		s.SlackChannels = append(s.SlackChannels, grp)
 		chans = append(
-			chans, Channel{
-				ID:     grp.ID,
-				Name:   grp.Name,
-				Topic:  grp.Topic.Value,
-				Type:   ChannelTypeGroup,
-				UserID: "",
+			chans, components.ChannelItem{
+				ID:          grp.ID,
+				Name:        grp.Name,
+				Topic:       grp.Topic.Value,
+				Type:        components.ChannelTypeGroup,
+				UserID:      "",
+				StylePrefix: s.Config.Theme.Channel.Prefix,
+				StyleIcon:   s.Config.Theme.Channel.Icon,
+				StyleText:   s.Config.Theme.Channel.Text,
 			},
 		)
 	}
@@ -122,7 +129,7 @@ func (s *SlackService) GetChannels() []string {
 	// IM
 	slackIM, err := s.Client.GetIMChannels()
 	if err != nil {
-		chans = append(chans, Channel{})
+		chans = append(chans, components.ChannelItem{})
 	}
 	for _, im := range slackIM {
 
@@ -138,13 +145,16 @@ func (s *SlackService) GetChannels() []string {
 		if ok {
 			chans = append(
 				chans,
-				Channel{
-					ID:       im.ID,
-					Name:     name,
-					Topic:    "",
-					Type:     ChannelTypeIM,
-					UserID:   im.User,
-					Presence: presence,
+				components.ChannelItem{
+					ID:          im.ID,
+					Name:        name,
+					Topic:       "",
+					Type:        components.ChannelTypeIM,
+					UserID:      im.User,
+					Presence:    presence,
+					StylePrefix: s.Config.Theme.Channel.Prefix,
+					StyleIcon:   s.Config.Theme.Channel.Icon,
+					StyleText:   s.Config.Theme.Channel.Text,
 				},
 			)
 			s.SlackChannels = append(s.SlackChannels, im)
@@ -155,14 +165,7 @@ func (s *SlackService) GetChannels() []string {
 
 	var channels []string
 	for _, chn := range s.Channels {
-		channels = append(
-			channels,
-			chn.ToString(
-				s.Config.Theme.Channel.Prefix,
-				s.Config.Theme.Channel.Icon,
-				s.Config.Theme.Channel.Name,
-			),
-		)
+		channels = append(channels, chn.ToString())
 	}
 	return channels
 }
@@ -171,14 +174,7 @@ func (s *SlackService) GetChannels() []string {
 func (s *SlackService) ChannelsToString() []string {
 	var channels []string
 	for _, chn := range s.Channels {
-		channels = append(
-			channels,
-			chn.ToString(
-				s.Config.Theme.Channel.Prefix,
-				s.Config.Theme.Channel.Icon,
-				s.Config.Theme.Channel.Name,
-			),
-		)
+		channels = append(channels, chn.ToString())
 	}
 	return channels
 }
@@ -376,7 +372,7 @@ func (s *SlackService) CreateMessage(message slack.Message) []components.Message
 
 	// When there are attachments append them
 	if len(message.Attachments) > 0 {
-		msgs = append(msgs, createMessageFromAttachments(message.Attachments)...)
+		msgs = append(msgs, s.CreateMessageFromAttachments(message.Attachments)...)
 	}
 
 	// Parse time
@@ -388,9 +384,12 @@ func (s *SlackService) CreateMessage(message slack.Message) []components.Message
 
 	// Format message
 	msg := components.Message{
-		Time:    time.Unix(intTime, 0),
-		Name:    name,
-		Content: parseMessage(s, message.Text),
+		Time:      time.Unix(intTime, 0),
+		Name:      name,
+		Content:   parseMessage(s, message.Text),
+		StyleTime: s.Config.Theme.Message.Time,
+		StyleName: s.Config.Theme.Message.Name,
+		StyleText: s.Config.Theme.Message.Text,
 	}
 
 	msgs = append(msgs, msg)
@@ -441,7 +440,7 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 
 	// When there are attachments append them
 	if len(message.Attachments) > 0 {
-		msgs = append(msgs, createMessageFromAttachments(message.Attachments)...)
+		msgs = append(msgs, s.CreateMessageFromAttachments(message.Attachments)...)
 	}
 
 	// Parse time
@@ -453,9 +452,12 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 
 	// Format message
 	msg := components.Message{
-		Time:    time.Unix(intTime, 0),
-		Name:    name,
-		Content: parseMessage(s, message.Text),
+		Time:      time.Unix(intTime, 0),
+		Name:      name,
+		Content:   parseMessage(s, message.Text),
+		StyleTime: s.Config.Theme.Message.Time,
+		StyleName: s.Config.Theme.Message.Name,
+		StyleText: s.Config.Theme.Message.Text,
 	}
 
 	msgs = append(msgs, msg)
@@ -538,9 +540,9 @@ func parseEmoji(msg string) string {
 	)
 }
 
-// createMessageFromAttachments will construct a array of string of the Field
+// CreateMessageFromAttachments will construct a array of string of the Field
 // values of Attachments from a Message.
-func createMessageFromAttachments(atts []slack.Attachment) []components.Message {
+func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []components.Message {
 	var msgs []components.Message
 	for _, att := range atts {
 		for i := len(att.Fields) - 1; i >= 0; i-- {
@@ -550,6 +552,9 @@ func createMessageFromAttachments(atts []slack.Attachment) []components.Message 
 					att.Fields[i].Title,
 					att.Fields[i].Value,
 				),
+				StyleTime: s.Config.Theme.Message.Time,
+				StyleName: s.Config.Theme.Message.Name,
+				StyleText: s.Config.Theme.Message.Text,
 			},
 			)
 		}
