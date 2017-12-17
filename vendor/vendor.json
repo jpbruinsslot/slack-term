@@ -91,6 +91,12 @@
 			"revisionTime": "2017-11-04T16:23:16Z"
 		},
 		{
+			"checksumSHA1": "DF3jZEw4lCq/SEaC7DIl/R+7S70=",
+			"path": "github.com/renstrom/fuzzysearch/fuzzy",
+			"revision": "2d205ac6ec17a839a94bdbfd16d2fa6c6dada2e0",
+			"revisionTime": "2016-03-31T20:48:55Z"
+		},
+		{
 			"path": "go/ast",
 			"revision": ""
 		},
