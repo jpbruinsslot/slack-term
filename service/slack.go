@@ -234,7 +234,7 @@ func (s *SlackService) MarkAsRead(channelID int) {
 	channel := s.Channels[channelID]
 
 	if channel.Notification {
-		channel.Notification = false
+		s.Channels[channelID].Notification = false
 
 		switch channel.Type {
 		case ChannelTypeChannel:

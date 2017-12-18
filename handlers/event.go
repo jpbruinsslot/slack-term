@@ -357,7 +357,6 @@ func actionChangeChannel(ctx *context.AppContext) {
 	// Set messages for the channel
 	ctx.View.Chat.SetMessages(strMsgs)
 
-	// FIXME
 	// Set channel name for the Chat pane
 	ctx.View.Chat.SetBorderLabel(
 		ctx.Service.Channels[ctx.View.Channels.SelectedChannel].GetChannelName(),
