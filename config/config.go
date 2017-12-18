@@ -108,7 +108,7 @@ func getDefaultConfig() Config {
 				ParLabelFg: "white",
 			},
 			Channel: Channel{
-				Prefix: "",
+				Prefix: "fg-red,fg-bold",
 				Icon:   "fg-green,fg-bold",
 				Text:   "fg-blue,fg-bold",
 			},
