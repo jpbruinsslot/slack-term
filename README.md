@@ -11,7 +11,7 @@ Installation
 #### Binary installation
 
 [Download](https://github.com/erroneousboat/slack-term/releases) a
-compatible binary for your system. For convenience place `slack-term` in a
+compatible binary for your system. For convenience, place `slack-term` in a
 directory where you can access it from the command line. Usually this is
 `/usr/local/bin`.
 
@@ -41,48 +41,70 @@ Setup
 {
     "slack_token": "yourslacktokenhere",
 
-    // OPTIONAL: add the following to use light theme, default is dark
-    "theme": "light",
-
     // OPTIONAL: set the width of the sidebar (between 1 and 11), default is 1
     "sidebar_width": 3,
 
     // OPTIONAL: define custom key mappings, defaults are:
     "key_map": {
         "command": {
-            "i":          "mode-insert",
-            "k":          "channel-up",
-            "j":          "channel-down",
-            "g":          "channel-top",
-            "G":          "channel-bottom",
+            "i": "mode-insert",
+            "k": "channel-up",
+            "j": "channel-down",
+            "g": "channel-top",
+            "G": "channel-bottom",
             "<previous>": "chat-up",
-            "C-b":        "chat-up",
-            "C-u":        "chat-up",
-            "<next>":     "chat-down",
-            "C-f":        "chat-down",
-            "C-d":        "chat-down",
-            "q":          "quit",
-            "<f1>":       "help"
+            "C-b": "chat-up",
+            "C-u": "chat-up",
+            "<next>": "chat-down",
+            "C-f": "chat-down",
+            "C-d": "chat-down",
+            "n": "channel-search-next",
+            "N": "channel-search-previous",
+            "q": "quit",
+            "<f1>": "help"
         },
         "insert": {
-            "<left>":      "cursor-left",
-            "<right>":     "cursor-right",
-            "<enter>":     "send",
-            "<escape>":    "mode-command",
+            "<left>": "cursor-left",
+            "<right>": "cursor-right",
+            "<enter>": "send",
+            "<escape>": "mode-command",
             "<backspace>": "backspace",
-            "C-8":         "backspace",
-            "<delete>":    "delete",
-            "<space>":     "space"
+            "C-8": "backspace",
+            "<delete>": "delete",
+            "<space>": "space"
         },
         "search": {
-            "<left>":      "cursor-left",
-            "<right>":     "cursor-right",
-            "<escape>":    "clear-input",
-            "<enter>":     "clear-input",
+            "<left>": "cursor-left",
+            "<right>": "cursor-right",
+            "<escape>": "clear-input",
+            "<enter>": "clear-input",
             "<backspace>": "backspace",
-            "C-8":         "backspace",
-            "<delete>":    "delete",
-            "<space>":     "space"
+            "C-8": "backspace",
+            "<delete>": "delete",
+            "<space>": "space"
+        }
+    },
+
+    // OPTIONAL: override the default theme (see wiki for more information),
+    // defaults are:
+    "theme": {
+        "view": {
+            "fg": "white",
+            "bg": "default",
+            "border_fg": "white",
+            "border_bg": "white",
+            "par_fg": "white",
+            "par_label_fg": "white"
+        },
+        "channel": {
+            "prefix": "",
+            "icon": "",
+            "text": ""
+        },
+        "message": {
+            "time": "",
+            "name": "",
+            "text": ""
         }
     }
 }
@@ -126,6 +148,8 @@ in your `slack-term.json` file.
 | command | `pg-down` | scroll chat pane down      |
 | command | `ctrl-f`  | scroll chat pane down      |
 | command | `ctrl-d`  | scroll chat pane down      |
+| command | `n`       | next search match          |
+| command | `N`       | previous search match      |
 | command | `q`       | quit                       |
 | command | `f1`      | help                       |
 | insert  | `left`    | move input cursor left     |
