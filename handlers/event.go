@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -19,24 +20,26 @@ var timer *time.Timer
 // these action names can then be used to bind them to specific keys
 // in the Config.
 var actionMap = map[string]func(*context.AppContext){
-	"space":          actionSpace,
-	"backspace":      actionBackSpace,
-	"delete":         actionDelete,
-	"cursor-right":   actionMoveCursorRight,
-	"cursor-left":    actionMoveCursorLeft,
-	"send":           actionSend,
-	"quit":           actionQuit,
-	"mode-insert":    actionInsertMode,
-	"mode-command":   actionCommandMode,
-	"mode-search":    actionSearchMode,
-	"clear-input":    actionClearInput,
-	"channel-up":     actionMoveCursorUpChannels,
-	"channel-down":   actionMoveCursorDownChannels,
-	"channel-top":    actionMoveCursorTopChannels,
-	"channel-bottom": actionMoveCursorBottomChannels,
-	"chat-up":        actionScrollUpChat,
-	"chat-down":      actionScrollDownChat,
-	"help":           actionHelp,
+	"space":               actionSpace,
+	"backspace":           actionBackSpace,
+	"delete":              actionDelete,
+	"cursor-right":        actionMoveCursorRight,
+	"cursor-left":         actionMoveCursorLeft,
+	"send":                actionSend,
+	"quit":                actionQuit,
+	"mode-insert":         actionInsertMode,
+	"mode-command":        actionCommandMode,
+	"mode-search":         actionSearchMode,
+	"clear-input":         actionClearInput,
+	"channel-up":          actionMoveCursorUpChannels,
+	"channel-down":        actionMoveCursorDownChannels,
+	"channel-top":         actionMoveCursorTopChannels,
+	"channel-bottom":      actionMoveCursorBottomChannels,
+	"channel-search-next": actionSearchNextChannels,
+	"channel-search-prev": actionSearchPrevChannels,
+	"chat-up":             actionScrollUpChat,
+	"chat-down":           actionScrollDownChat,
+	"help":                actionHelp,
 }
 
 func RegisterEventHandlers(ctx *context.AppContext) {
@@ -56,6 +59,13 @@ func eventHandler(ctx *context.AppContext) {
 			ev := <-ctx.EventQueue
 			handleTermboxEvents(ctx, ev)
 			handleMoreTermboxEvents(ctx, ev)
+
+			// Place your debugging statements here
+			if ctx.Debug {
+				ctx.View.Debug.Println(
+					"event received",
+				)
+			}
 		}
 	}()
 }
@@ -101,7 +111,9 @@ func messageHandler(ctx *context.AppContext) {
 						// reverse order of messages, mainly done
 						// when attachments are added to message
 						for i := len(msg) - 1; i >= 0; i-- {
-							ctx.View.Chat.AddMessage(msg[i])
+							ctx.View.Chat.AddMessage(
+								msg[i].ToString(),
+							)
 						}
 
 						termui.Render(ctx.View.Chat)
@@ -202,9 +214,8 @@ func actionSend(ctx *context.AppContext) {
 		ctx.View.Input.Clear()
 		ctx.View.Refresh()
 
-		ctx.View.Input.SendMessage(
-			ctx.Service,
-			ctx.Service.Channels[ctx.View.Channels.SelectedChannel].ID,
+		ctx.Service.SendMessage(
+			ctx.View.Channels.SelectedChannel,
 			message,
 		)
 	}
@@ -238,31 +249,38 @@ func actionQuit(ctx *context.AppContext) {
 
 func actionInsertMode(ctx *context.AppContext) {
 	ctx.Mode = context.InsertMode
-	ctx.View.Mode.Par.Text = "INSERT"
-	termui.Render(ctx.View.Mode)
+	ctx.View.Mode.SetInsertMode()
 }
 
 func actionCommandMode(ctx *context.AppContext) {
 	ctx.Mode = context.CommandMode
-	ctx.View.Mode.Par.Text = "NORMAL"
-	termui.Render(ctx.View.Mode)
+	ctx.View.Mode.SetCommandMode()
 }
 
 func actionSearchMode(ctx *context.AppContext) {
 	ctx.Mode = context.SearchMode
-	ctx.View.Mode.Par.Text = "SEARCH"
-	termui.Render(ctx.View.Mode)
+	ctx.View.Mode.SetSearchMode()
 }
 
 func actionGetMessages(ctx *context.AppContext) {
-	ctx.View.Chat.GetMessages(
-		ctx.Service,
+	msgs := ctx.Service.GetMessages(
 		ctx.Service.Channels[ctx.View.Channels.SelectedChannel],
+		ctx.View.Chat.GetMaxItems(),
 	)
+
+	var strMsgs []string
+	for _, msg := range msgs {
+		strMsgs = append(strMsgs, msg.ToString())
+	}
+
+	ctx.View.Chat.SetMessages(strMsgs)
 
 	termui.Render(ctx.View.Chat)
 }
 
+// actionMoveCursorUpChannels will execute the actionChangeChannel
+// function. A time is implemented to support fast scrolling through
+// the list without executing the actionChangeChannel event
 func actionMoveCursorUpChannels(ctx *context.AppContext) {
 	go func() {
 		if timer != nil {
@@ -275,10 +293,14 @@ func actionMoveCursorUpChannels(ctx *context.AppContext) {
 		timer = time.NewTimer(time.Second / 4)
 		<-timer.C
 
+		// Only actually change channel when the timer expires
 		actionChangeChannel(ctx)
 	}()
 }
 
+// actionMoveCursorDownChannels will execute the actionChangeChannel
+// function. A time is implemented to support fast scrolling through
+// the list without executing the actionChangeChannel event
 func actionMoveCursorDownChannels(ctx *context.AppContext) {
 	go func() {
 		if timer != nil {
@@ -291,6 +313,7 @@ func actionMoveCursorDownChannels(ctx *context.AppContext) {
 		timer = time.NewTimer(time.Second / 4)
 		<-timer.C
 
+		// Only actually change channel when the timer expires
 		actionChangeChannel(ctx)
 	}()
 }
@@ -305,35 +328,58 @@ func actionMoveCursorBottomChannels(ctx *context.AppContext) {
 	actionChangeChannel(ctx)
 }
 
+func actionSearchNextChannels(ctx *context.AppContext) {
+	ctx.View.Channels.SearchNext()
+	actionChangeChannel(ctx)
+}
+
+func actionSearchPrevChannels(ctx *context.AppContext) {
+	ctx.View.Channels.SearchPrev()
+	actionChangeChannel(ctx)
+}
+
 func actionChangeChannel(ctx *context.AppContext) {
 	// Clear messages from Chat pane
 	ctx.View.Chat.ClearMessages()
 
-	// Get message for the new channel
-	ctx.View.Chat.GetMessages(
-		ctx.Service,
-		ctx.Service.SlackChannels[ctx.View.Channels.SelectedChannel],
+	// Get messages of the SelectedChannel, and get the count of messages
+	// that fit into the Chat component
+	msgs := ctx.Service.GetMessages(
+		ctx.Service.GetSlackChannel(ctx.View.Channels.SelectedChannel),
+		ctx.View.Chat.GetMaxItems(),
 	)
+
+	var strMsgs []string
+	for _, msg := range msgs {
+		strMsgs = append(strMsgs, msg.ToString())
+	}
+
+	// Set messages for the channel
+	ctx.View.Chat.SetMessages(strMsgs)
 
 	// Set channel name for the Chat pane
 	ctx.View.Chat.SetBorderLabel(
-		ctx.Service.Channels[ctx.View.Channels.SelectedChannel],
+		ctx.Service.Channels[ctx.View.Channels.SelectedChannel].GetChannelName(),
 	)
 
-	// Set read mark
-	ctx.View.Channels.SetReadMark(ctx.Service)
+	// Clear notification icon if there is any
+	ctx.Service.MarkAsRead(ctx.View.Channels.SelectedChannel)
+	ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
 
 	termui.Render(ctx.View.Channels)
 	termui.Render(ctx.View.Chat)
 }
 
 func actionNewMessage(ctx *context.AppContext, channelID string) {
-	ctx.View.Channels.SetNotification(ctx.Service, channelID)
+	ctx.Service.MarkAsUnread(channelID)
+	ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
 	termui.Render(ctx.View.Channels)
+	fmt.Print("\a")
 }
 
 func actionSetPresence(ctx *context.AppContext, channelID string, presence string) {
-	ctx.View.Channels.SetPresence(ctx.Service, channelID, presence)
+	ctx.Service.SetPresenceChannelEvent(channelID, presence)
+	ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
 	termui.Render(ctx.View.Channels)
 }
 

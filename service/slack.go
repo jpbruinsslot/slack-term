@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/nlopes/slack"
 
+	"github.com/erroneousboat/slack-term/components"
 	"github.com/erroneousboat/slack-term/config"
 )
 
@@ -20,27 +22,22 @@ const (
 )
 
 type SlackService struct {
-	Client        *slack.Client
-	RTM           *slack.RTM
-	SlackChannels []interface{}
-	Channels      []Channel
-	UserCache     map[string]string
-	CurrentUserID string
-}
-
-type Channel struct {
-	ID     string
-	Name   string
-	Topic  string
-	Type   string
-	UserID string
+	Config          *config.Config
+	Client          *slack.Client
+	RTM             *slack.RTM
+	SlackChannels   []interface{}
+	Channels        []components.ChannelItem
+	UserCache       map[string]string
+	CurrentUserID   string
+	CurrentUsername string
 }
 
 // NewSlackService is the constructor for the SlackService and will initialize
 // the RTM and a Client
-func NewSlackService(token string) *SlackService {
+func NewSlackService(config *config.Config) (*SlackService, error) {
 	svc := &SlackService{
-		Client:    slack.New(token),
+		Config:    config,
+		Client:    slack.New(config.SlackToken),
 		UserCache: make(map[string]string),
 	}
 
@@ -49,7 +46,7 @@ func NewSlackService(token string) *SlackService {
 	// arrives
 	authTest, err := svc.Client.AuthTest()
 	if err != nil {
-		log.Fatal("ERROR: not able to authorize client, check your connection and/or slack-token")
+		return nil, errors.New("not able to authorize client, check your connection and or slack-token")
 	}
 	svc.CurrentUserID = authTest.UserID
 
@@ -67,48 +64,64 @@ func NewSlackService(token string) *SlackService {
 		}
 	}
 
-	return svc
+	// Get name of current user
+	currentUser, err := svc.Client.GetUserInfo(svc.CurrentUserID)
+	if err != nil {
+		svc.CurrentUsername = "slack-term"
+	}
+	svc.CurrentUsername = currentUser.Name
+
+	return svc, nil
 }
 
 // GetChannels will retrieve all available channels, groups, and im channels.
 // Because the channels are of different types, we will append them to
 // an []interface as well as to a []Channel which will give us easy access
 // to the id and name of the Channel.
-func (s *SlackService) GetChannels() []Channel {
-	var chans []Channel
+func (s *SlackService) GetChannels() []string {
+	var chans []components.ChannelItem
 
 	// Channel
 	slackChans, err := s.Client.GetChannels(true)
 	if err != nil {
-		chans = append(chans, Channel{})
+		chans = append(chans, components.ChannelItem{})
 	}
+
 	for _, chn := range slackChans {
-		s.SlackChannels = append(s.SlackChannels, chn)
-		chans = append(
-			chans, Channel{
-				ID:     chn.ID,
-				Name:   chn.Name,
-				Topic:  chn.Topic.Value,
-				Type:   ChannelTypeChannel,
-				UserID: "",
-			},
-		)
+		if chn.IsMember {
+			s.SlackChannels = append(s.SlackChannels, chn)
+			chans = append(
+				chans, components.ChannelItem{
+					ID:          chn.ID,
+					Name:        chn.Name,
+					Topic:       chn.Topic.Value,
+					Type:        components.ChannelTypeChannel,
+					UserID:      "",
+					StylePrefix: s.Config.Theme.Channel.Prefix,
+					StyleIcon:   s.Config.Theme.Channel.Icon,
+					StyleText:   s.Config.Theme.Channel.Text,
+				},
+			)
+		}
 	}
 
 	// Groups
 	slackGroups, err := s.Client.GetGroups(true)
 	if err != nil {
-		chans = append(chans, Channel{})
+		chans = append(chans, components.ChannelItem{})
 	}
 	for _, grp := range slackGroups {
 		s.SlackChannels = append(s.SlackChannels, grp)
 		chans = append(
-			chans, Channel{
-				ID:     grp.ID,
-				Name:   grp.Name,
-				Topic:  grp.Topic.Value,
-				Type:   ChannelTypeGroup,
-				UserID: "",
+			chans, components.ChannelItem{
+				ID:          grp.ID,
+				Name:        grp.Name,
+				Topic:       grp.Topic.Value,
+				Type:        components.ChannelTypeGroup,
+				UserID:      "",
+				StylePrefix: s.Config.Theme.Channel.Prefix,
+				StyleIcon:   s.Config.Theme.Channel.Icon,
+				StyleText:   s.Config.Theme.Channel.Text,
 			},
 		)
 	}
@@ -116,9 +129,12 @@ func (s *SlackService) GetChannels() []Channel {
 	// IM
 	slackIM, err := s.Client.GetIMChannels()
 	if err != nil {
-		chans = append(chans, Channel{})
+		chans = append(chans, components.ChannelItem{})
 	}
 	for _, im := range slackIM {
+
+		// FIXME: err
+		presence, _ := s.GetUserPresence(im.User)
 
 		// Uncover name, when we can't uncover name for
 		// IM channel this is then probably a deleted
@@ -129,12 +145,16 @@ func (s *SlackService) GetChannels() []Channel {
 		if ok {
 			chans = append(
 				chans,
-				Channel{
-					ID:     im.ID,
-					Name:   name,
-					Topic:  "",
-					Type:   ChannelTypeIM,
-					UserID: im.User,
+				components.ChannelItem{
+					ID:          im.ID,
+					Name:        name,
+					Topic:       "",
+					Type:        components.ChannelTypeIM,
+					UserID:      im.User,
+					Presence:    presence,
+					StylePrefix: s.Config.Theme.Channel.Prefix,
+					StyleIcon:   s.Config.Theme.Channel.Icon,
+					StyleText:   s.Config.Theme.Channel.Text,
 				},
 			)
 			s.SlackChannels = append(s.SlackChannels, im)
@@ -143,7 +163,38 @@ func (s *SlackService) GetChannels() []Channel {
 
 	s.Channels = chans
 
-	return chans
+	var channels []string
+	for _, chn := range s.Channels {
+		channels = append(channels, chn.ToString())
+	}
+	return channels
+}
+
+// ChannelsToString will relay the string representation for a channel
+func (s *SlackService) ChannelsToString() []string {
+	var channels []string
+	for _, chn := range s.Channels {
+		channels = append(channels, chn.ToString())
+	}
+	return channels
+}
+
+// SetPresenceChannelEvent will set the presence of a IM channel
+func (s *SlackService) SetPresenceChannelEvent(userID string, presence string) {
+	// Get the correct Channel from svc.Channels
+	var index int
+	for i, channel := range s.Channels {
+		if userID == channel.UserID {
+			index = i
+			break
+		}
+	}
+	s.Channels[index].Presence = presence
+}
+
+// GetSlackChannel returns the representation of a slack channel
+func (s *SlackService) GetSlackChannel(selectedChannel int) interface{} {
+	return s.SlackChannels[selectedChannel]
 }
 
 // GetUserPresence will get the presence of a specific user
@@ -178,20 +229,61 @@ func (s *SlackService) SetChannelReadMark(channel interface{}) {
 	}
 }
 
+// MarkAsRead will set the channel as read
+func (s *SlackService) MarkAsRead(channelID int) {
+	channel := s.Channels[channelID]
+
+	if channel.Notification {
+		s.Channels[channelID].Notification = false
+
+		switch channel.Type {
+		case ChannelTypeChannel:
+			s.Client.SetChannelReadMark(
+				channel.ID, fmt.Sprintf("%f",
+					float64(time.Now().Unix())),
+			)
+		case ChannelTypeGroup:
+			s.Client.SetGroupReadMark(
+				channel.ID, fmt.Sprintf("%f",
+					float64(time.Now().Unix())),
+			)
+		case ChannelTypeIM:
+			s.Client.MarkIMChannel(
+				channel.ID, fmt.Sprintf("%f",
+					float64(time.Now().Unix())),
+			)
+		}
+	}
+}
+
+// MarkAsUnread will set the channel as unread
+func (s *SlackService) MarkAsUnread(channelID string) {
+	var index int
+	for i, channel := range s.Channels {
+		if channel.ID == channelID {
+			index = i
+			break
+		}
+	}
+	s.Channels[index].Notification = true
+}
+
 // SendMessage will send a message to a particular channel
-func (s *SlackService) SendMessage(channel string, message string) {
+func (s *SlackService) SendMessage(channelID int, message string) {
+
 	// https://godoc.org/github.com/nlopes/slack#PostMessageParameters
 	postParams := slack.PostMessageParameters{
-		AsUser: true,
+		AsUser:   true,
+		Username: s.CurrentUsername,
 	}
 
 	// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
-	s.Client.PostMessage(channel, message, postParams)
+	s.Client.PostMessage(s.Channels[channelID].ID, message, postParams)
 }
 
 // GetMessages will get messages for a channel, group or im channel delimited
 // by a count.
-func (s *SlackService) GetMessages(channel interface{}, count int) []string {
+func (s *SlackService) GetMessages(channel interface{}, count int) []components.Message {
 	// https://api.slack.com/methods/channels.history
 	historyParams := slack.HistoryParameters{
 		Count:     count,
@@ -221,7 +313,7 @@ func (s *SlackService) GetMessages(channel interface{}, count int) []string {
 	}
 
 	// Construct the messages
-	var messages []string
+	var messages []components.Message
 	for _, message := range history.Messages {
 		msg := s.CreateMessage(message)
 		messages = append(messages, msg...)
@@ -229,7 +321,7 @@ func (s *SlackService) GetMessages(channel interface{}, count int) []string {
 
 	// Reverse the order of the messages, we want the newest in
 	// the last place
-	var messagesReversed []string
+	var messagesReversed []components.Message
 	for i := len(messages) - 1; i >= 0; i-- {
 		messagesReversed = append(messagesReversed, messages[i])
 	}
@@ -244,8 +336,8 @@ func (s *SlackService) GetMessages(channel interface{}, count int) []string {
 //
 // This returns an array of string because we will try to uncover attachments
 // associated with messages.
-func (s *SlackService) CreateMessage(message slack.Message) []string {
-	var msgs []string
+func (s *SlackService) CreateMessage(message slack.Message) []components.Message {
+	var msgs []components.Message
 	var name string
 
 	// Get username from cache
@@ -280,7 +372,7 @@ func (s *SlackService) CreateMessage(message slack.Message) []string {
 
 	// When there are attachments append them
 	if len(message.Attachments) > 0 {
-		msgs = append(msgs, createMessageFromAttachments(message.Attachments)...)
+		msgs = append(msgs, s.CreateMessageFromAttachments(message.Attachments)...)
 	}
 
 	// Parse time
@@ -291,21 +383,23 @@ func (s *SlackService) CreateMessage(message slack.Message) []string {
 	intTime := int64(floatTime)
 
 	// Format message
-	msg := fmt.Sprintf(
-		"[%s] <%s> %s",
-		time.Unix(intTime, 0).Format("15:04"),
-		name,
-		parseMessage(s, message.Text),
-	)
+	msg := components.Message{
+		Time:      time.Unix(intTime, 0),
+		Name:      name,
+		Content:   parseMessage(s, message.Text),
+		StyleTime: s.Config.Theme.Message.Time,
+		StyleName: s.Config.Theme.Message.Name,
+		StyleText: s.Config.Theme.Message.Text,
+	}
 
 	msgs = append(msgs, msg)
 
 	return msgs
 }
 
-func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent) []string {
+func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent) []components.Message {
 
-	var msgs []string
+	var msgs []components.Message
 	var name string
 
 	// Append (edited) when an edited message is received
@@ -346,7 +440,7 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 
 	// When there are attachments append them
 	if len(message.Attachments) > 0 {
-		msgs = append(msgs, createMessageFromAttachments(message.Attachments)...)
+		msgs = append(msgs, s.CreateMessageFromAttachments(message.Attachments)...)
 	}
 
 	// Parse time
@@ -357,12 +451,14 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 	intTime := int64(floatTime)
 
 	// Format message
-	msg := fmt.Sprintf(
-		"[%s] <%s> %s",
-		time.Unix(intTime, 0).Format("15:04"),
-		name,
-		parseMessage(s, message.Text),
-	)
+	msg := components.Message{
+		Time:      time.Unix(intTime, 0),
+		Name:      name,
+		Content:   parseMessage(s, message.Text),
+		StyleTime: s.Config.Theme.Message.Time,
+		StyleName: s.Config.Theme.Message.Name,
+		StyleText: s.Config.Theme.Message.Text,
+	}
 
 	msgs = append(msgs, msg)
 
@@ -391,13 +487,14 @@ func parseMessage(s *SlackService, msg string) string {
 // 	<@U12345>
 func parseMentions(s *SlackService, msg string) string {
 	r := regexp.MustCompile(`\<@(\w+\|*\w+)\>`)
-	rs := r.FindStringSubmatch(msg)
-	if len(rs) < 1 {
-		return msg
-	}
 
 	return r.ReplaceAllStringFunc(
 		msg, func(str string) string {
+			rs := r.FindStringSubmatch(str)
+			if len(rs) < 1 {
+				return str
+			}
+
 			var userID string
 			split := strings.Split(rs[1], "|")
 			if len(split) > 0 {
@@ -443,27 +540,37 @@ func parseEmoji(msg string) string {
 	)
 }
 
-// createMessageFromAttachments will construct a array of string of the Field
+// CreateMessageFromAttachments will construct a array of string of the Field
 // values of Attachments from a Message.
-func createMessageFromAttachments(atts []slack.Attachment) []string {
-	var msgs []string
+func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []components.Message {
+	var msgs []components.Message
 	for _, att := range atts {
 		for i := len(att.Fields) - 1; i >= 0; i-- {
-			msgs = append(msgs,
-				fmt.Sprintf(
+			msgs = append(msgs, components.Message{
+				Content: fmt.Sprintf(
 					"%s %s",
 					att.Fields[i].Title,
 					att.Fields[i].Value,
 				),
+				StyleTime: s.Config.Theme.Message.Time,
+				StyleName: s.Config.Theme.Message.Name,
+				StyleText: s.Config.Theme.Message.Text,
+			},
 			)
 		}
 
 		if att.Text != "" {
-			msgs = append(msgs, att.Text)
+			msgs = append(
+				msgs,
+				components.Message{Content: fmt.Sprintf("%s", att.Text)},
+			)
 		}
 
 		if att.Title != "" {
-			msgs = append(msgs, att.Title)
+			msgs = append(
+				msgs,
+				components.Message{Content: fmt.Sprintf("%s", att.Title)},
+			)
 		}
 	}
 
