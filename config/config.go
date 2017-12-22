@@ -108,13 +108,13 @@ func getDefaultConfig() Config {
 				ParLabelFg: "white",
 			},
 			Channel: Channel{
-				Prefix: "fg-red,fg-bold",
-				Icon:   "fg-green,fg-bold",
-				Text:   "fg-blue,fg-bold",
+				Prefix: "",
+				Icon:   "",
+				Text:   "",
 			},
 			Message: Message{
-				Time: "fg-red,fg-bold",
-				Name: "fg-blue,fg-bold",
+				Time: "",
+				Name: "",
 				Text: "",
 			},
 		},
