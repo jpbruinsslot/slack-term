@@ -85,7 +85,8 @@ Setup
         }
     },
 
-    // OPTIONAL: override the default theme, defaults are:
+    // OPTIONAL: override the default theme (see wiki for more information),
+    // defaults are:
     "theme": {
         "view": {
             "fg": "white",
