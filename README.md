@@ -48,6 +48,7 @@ Setup
     "key_map": {
         "command": {
             "i": "mode-insert",
+            "/": "mode-search",
             "k": "channel-up",
             "j": "channel-down",
             "g": "channel-top",
