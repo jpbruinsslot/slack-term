@@ -106,6 +106,10 @@ func (i *Input) MoveCursorRight() {
 		i.ScrollRight()
 	}
 
+	if i.Offset > len(i.Text) {
+		i.Offset = 0
+	}
+
 	i.Par.Text = string(i.Text[i.Offset:])
 }
 

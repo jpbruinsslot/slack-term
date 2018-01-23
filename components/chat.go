@@ -3,6 +3,7 @@ package components
 import (
 	"fmt"
 	"html"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -11,6 +12,8 @@ import (
 
 	"github.com/erroneousboat/slack-term/config"
 )
+
+var stringSanitizerRegEx *regexp.Regexp
 
 type Message struct {
 	Time    time.Time
@@ -22,7 +25,14 @@ type Message struct {
 	StyleText string
 }
 
+func init() {
+	stringSanitizerRegEx = regexp.MustCompile("[\\[\\]]+")
+}
+
 func (m Message) ToString() string {
+
+	sanitizedContent := stringSanitizerRegEx.ReplaceAllString(m.Content, "")
+
 	if (m.Time != time.Time{} && m.Name != "") {
 
 		return html.UnescapeString(
@@ -32,13 +42,13 @@ func (m Message) ToString() string {
 				m.StyleTime,
 				m.Name,
 				m.StyleName,
-				m.Content,
+				sanitizedContent,
 				m.StyleText,
 			),
 		)
 	} else {
 		return html.UnescapeString(
-			fmt.Sprintf("[%s](%s)", m.Content, m.StyleText),
+			fmt.Sprintf("[%s](%s)", sanitizedContent, m.StyleText),
 		)
 	}
 }

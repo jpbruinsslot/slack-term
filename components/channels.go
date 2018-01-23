@@ -12,7 +12,7 @@ const (
 	IconOnline       = "●"
 	IconOffline      = "○"
 	IconChannel      = "#"
-	IconGroup        = "☰"
+	IconGroup        = "="
 	IconIM           = "●"
 	IconNotification = "*"
 
