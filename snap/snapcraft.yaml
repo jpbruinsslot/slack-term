@@ -1,0 +1,28 @@
+name: slack-term
+version: git
+summary: Slack client for your terminal
+description: |
+  A Slack client for your terminal.
+  * Get a slack token from https://api.slack.com/docs/oauth-test-tokens
+  * Create $HOME/snap/slack-term/current/slack-term.json
+  * Contents detailed at https://github.com/erroneousboat/slack-term
+  * slack-term --config $HOME/snap/slack-term/current/slack-term.json
+
+grade: stable
+confinement: strict
+
+apps:
+  slack-term:
+    command: slack-term
+    plugs:
+      - network
+      - home
+
+parts:
+  go:
+    source-tag: go1.7.5
+  slack-term:
+    after: [go]
+    source: https://github.com/erroneousboat/slack-term.git
+    plugin: go
+    go-importpath: github.com/erroneousboat/slack-term
