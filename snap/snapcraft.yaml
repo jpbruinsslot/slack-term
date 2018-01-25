@@ -23,6 +23,6 @@ parts:
     source-tag: go1.7.5
   slack-term:
     after: [go]
-    source: https://github.com/erroneousboat/slack-term.git
+    source: .
     plugin: go
     go-importpath: github.com/erroneousboat/slack-term
