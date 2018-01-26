@@ -214,10 +214,16 @@ func actionSend(ctx *context.AppContext) {
 		ctx.View.Input.Clear()
 		ctx.View.Refresh()
 
+		// Send message
 		ctx.Service.SendMessage(
 			ctx.View.Channels.SelectedChannel,
 			message,
 		)
+
+		// Clear notification icon if there is any
+		ctx.Service.MarkAsRead(ctx.View.Channels.SelectedChannel)
+		ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
+		termui.Render(ctx.View.Channels)
 	}
 }
 
