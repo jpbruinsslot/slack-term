@@ -194,6 +194,7 @@ func (i *Input) Clear() {
 	i.Par.Text = ""
 	i.CursorPositionScreen = 0
 	i.CursorPositionText = 0
+	i.Offset = 0
 }
 
 // GetText returns the text currently in the input
