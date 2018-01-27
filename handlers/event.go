@@ -163,6 +163,12 @@ func actionKeyEvent(ctx *context.AppContext, ev termbox.Event) {
 
 func actionResizeEvent(ctx *context.AppContext, ev termbox.Event) {
 	termui.Body.Width = termui.TermWidth()
+
+	// Vertical resize components
+	ctx.View.Channels.List.Height = termui.TermHeight() - ctx.View.Input.Par.Height
+	ctx.View.Chat.List.Height = termui.TermHeight() - ctx.View.Input.Par.Height
+	ctx.View.Debug.List.Height = termui.TermHeight() - ctx.View.Input.Par.Height
+
 	termui.Body.Align()
 	termui.Render(termui.Body)
 }
