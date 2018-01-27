@@ -163,6 +163,12 @@ func actionKeyEvent(ctx *context.AppContext, ev termbox.Event) {
 
 func actionResizeEvent(ctx *context.AppContext, ev termbox.Event) {
 	termui.Body.Width = termui.TermWidth()
+
+	// Vertical resize components
+	ctx.View.Channels.List.Height = termui.TermHeight() - ctx.View.Input.Par.Height
+	ctx.View.Chat.List.Height = termui.TermHeight() - ctx.View.Input.Par.Height
+	ctx.View.Debug.List.Height = termui.TermHeight() - ctx.View.Input.Par.Height
+
 	termui.Body.Align()
 	termui.Render(termui.Body)
 }
@@ -214,10 +220,16 @@ func actionSend(ctx *context.AppContext) {
 		ctx.View.Input.Clear()
 		ctx.View.Refresh()
 
+		// Send message
 		ctx.Service.SendMessage(
 			ctx.View.Channels.SelectedChannel,
 			message,
 		)
+
+		// Clear notification icon if there is any
+		ctx.Service.MarkAsRead(ctx.View.Channels.SelectedChannel)
+		ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
+		termui.Render(ctx.View.Channels)
 	}
 }
 
