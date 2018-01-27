@@ -199,7 +199,7 @@ func (i *Input) Clear() {
 
 // GetText returns the text currently in the input
 func (i *Input) GetText() string {
-	return i.Par.Text
+	return string(i.Text)
 }
 
 // GetMaxWidth returns the maximum number of positions
