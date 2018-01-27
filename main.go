@@ -26,6 +26,9 @@ USAGE:
 VERSION:
     %s
 
+WEBSITE:
+	https://github.com/erroneousboat/slack-term
+
 GLOBAL OPTIONS:
    --help, -h
 `
