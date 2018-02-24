@@ -81,11 +81,16 @@ func (c *Chat) Buffer() termui.Buffer {
 	lines := []Line{}
 	line := Line{}
 
+	// When we encounter a newline or are at the bounds of the chat view we
+	// stop iterating over the cells and add the line to the line array
 	x := 0
 	for _, cell := range cells {
 
+		// When we encounter a newline we add the line to the array
 		if cell.Ch == '\n' {
 			lines = append(lines, line)
+
+			// Reset for new line
 			line = Line{}
 			x = 0
 			continue
@@ -93,6 +98,8 @@ func (c *Chat) Buffer() termui.Buffer {
 
 		if x+cell.Width() > c.List.InnerBounds().Dx() {
 			lines = append(lines, line)
+
+			// Reset for new line
 			line = Line{}
 			x = 0
 		}
@@ -100,6 +107,9 @@ func (c *Chat) Buffer() termui.Buffer {
 		line.cells = append(line.cells, cell)
 		x++
 	}
+
+	// Append the last line to the array when we didn't encounter any
+	// newlines or were at the bounds of the chat view
 	lines = append(lines, line)
 
 	// We will print lines bottom up, it will loop over the lines
@@ -113,6 +123,7 @@ func (c *Chat) Buffer() termui.Buffer {
 
 	currentY := paneMaxY - 1
 	for i := (linesHeight - 1) - c.Offset; i >= 0; i-- {
+
 		if currentY < paneMinY {
 			break
 		}
@@ -190,6 +201,10 @@ func (c *Chat) GetMaxItems() int {
 // SetMessages will put the provided messages into the Items field of the
 // Chat view
 func (c *Chat) SetMessages(messages []string) {
+	// Reset offset first, when scrolling in view and changing channels we
+	// want the offset to be 0 when loading new messages
+	c.Offset = 0
+
 	for _, msg := range messages {
 		c.List.Items = append(c.List.Items, html.UnescapeString(msg))
 	}
@@ -216,8 +231,8 @@ func (c *Chat) ScrollUp() {
 	c.Offset = c.Offset + 10
 
 	// Protect overscrolling
-	if c.Offset > len(c.List.Items)-1 {
-		c.Offset = len(c.List.Items) - 1
+	if c.Offset > len(c.List.Items) {
+		c.Offset = len(c.List.Items)
 	}
 }
 
