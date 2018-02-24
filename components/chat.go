@@ -81,9 +81,12 @@ func (c *Chat) Buffer() termui.Buffer {
 	lines := []Line{}
 	line := Line{}
 
+	// When we encounter a newline or are at the bounds of the chat view we
+	// stop iterating over the cells and add the line to the line array
 	x := 0
 	for _, cell := range cells {
 
+		// When we encounter a newline we add the line to the array
 		if cell.Ch == '\n' {
 			lines = append(lines, line)
 
@@ -104,6 +107,10 @@ func (c *Chat) Buffer() termui.Buffer {
 		line.cells = append(line.cells, cell)
 		x++
 	}
+
+	// Append the last line to the array when we didn't encounter any
+	// newlines or were at the bounds of the chat view
+	lines = append(lines, line)
 
 	// We will print lines bottom up, it will loop over the lines
 	// backwards and for every line it'll set the cell in that line.
