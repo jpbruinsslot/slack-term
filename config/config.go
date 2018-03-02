@@ -15,6 +15,7 @@ type Config struct {
 	MainWidth    int                   `json:"-"`
 	KeyMap       map[string]keyMapping `json:"key_map"`
 	Theme        Theme                 `json:"theme"`
+	Notify       bool                  `json:"notify"`
 }
 
 type keyMapping map[string]string
@@ -118,5 +119,6 @@ func getDefaultConfig() Config {
 				Text: "",
 			},
 		},
+		Notify: false,
 	}
 }
