@@ -29,7 +29,7 @@ type AppContext struct {
 }
 
 // CreateAppContext creates an application context which can be passed
-// and referenced througout the application
+// and referenced throughout the application
 func CreateAppContext(flgConfig string, flgDebug bool) (*AppContext, error) {
 	if flgDebug {
 		go func() {
