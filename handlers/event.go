@@ -10,6 +10,7 @@ import (
 	"github.com/nlopes/slack"
 	termbox "github.com/nsf/termbox-go"
 
+	"github.com/erroneousboat/slack-term/components"
 	"github.com/erroneousboat/slack-term/context"
 	"github.com/erroneousboat/slack-term/views"
 )
@@ -128,7 +129,7 @@ func messageHandler(ctx *context.AppContext) {
 					// window (tmux). But only create a notification when
 					// it comes from someone else but the current user.
 					if ev.User != ctx.Service.CurrentUserID {
-						actionNewMessage(ctx, ev.Channel)
+						actionNewMessage(ctx, ev.Channel, msg)
 					}
 				case *slack.PresenceChangeEvent:
 					actionSetPresence(ctx, ev.User, ev.Presence)
@@ -382,8 +383,9 @@ func actionChangeChannel(ctx *context.AppContext) {
 	termui.Render(ctx.View.Chat)
 }
 
-func actionNewMessage(ctx *context.AppContext, channelID string) {
+func actionNewMessage(ctx *context.AppContext, channelID string, msgs []components.Message) {
 	ctx.Service.MarkAsUnread(channelID)
+	ctx.Service.NotifyMessages(channelID, msgs)
 	ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
 	termui.Render(ctx.View.Channels)
 	fmt.Print("\a")

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"bytes"
 	"regexp"
 	"strconv"
 	"strings"
@@ -13,12 +14,15 @@ import (
 
 	"github.com/erroneousboat/slack-term/components"
 	"github.com/erroneousboat/slack-term/config"
+
+	"github.com/0xAX/notificator"
 )
 
 const (
 	ChannelTypeChannel = "channel"
 	ChannelTypeGroup   = "group"
 	ChannelTypeIM      = "im"
+	NotifyAppName      = "slack-term"
 )
 
 type SlackService struct {
@@ -30,7 +34,9 @@ type SlackService struct {
 	UserCache       map[string]string
 	CurrentUserID   string
 	CurrentUsername string
+	Notify          *notificator.Notificator
 }
+
 
 // NewSlackService is the constructor for the SlackService and will initialize
 // the RTM and a Client
@@ -71,6 +77,13 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 	}
 	svc.CurrentUsername = currentUser.Name
 
+	// Create the notifier service, if desktop notifications are enabled in the
+	// config
+	if config.Notify {
+		svc.Notify = notificator.New(notificator.Options{
+			AppName: "slack-term",
+		})
+	}
 	return svc, nil
 }
 
@@ -256,16 +269,43 @@ func (s *SlackService) MarkAsRead(channelID int) {
 	}
 }
 
-// MarkAsUnread will set the channel as unread
-func (s *SlackService) MarkAsUnread(channelID string) {
-	var index int
+// Given a channel ID, returns the reference to the channel
+func (s *SlackService) FindChannel(channelID string) *components.ChannelItem {
 	for i, channel := range s.Channels {
 		if channel.ID == channelID {
-			index = i
-			break
+			return &s.Channels[i]
 		}
 	}
-	s.Channels[index].Notification = true
+
+	return nil
+}
+
+// MarkAsUnread will set the channel as unread
+func (s *SlackService) MarkAsUnread(channelID string) {
+	var channel = s.FindChannel(channelID)
+	if channel != nil {
+		channel.Notification = true
+	}
+}
+
+// NotifyMessages will send a desktop notification to the user if desktop
+// notifications are enabled
+func (s *SlackService) NotifyMessages(channelID string, msgs []components.Message) {
+	if s.Config.Notify {
+		var channel = s.FindChannel(channelID)
+		if channel == nil {
+			return
+		}
+
+		// Join messages by a newline
+		var msgBuf bytes.Buffer
+		for _, msg := range msgs {
+			msgBuf.WriteString(msg.Content)
+			msgBuf.WriteString("\n")
+		}
+
+		s.Notify.Push(channel.Name, msgBuf.String(), "", notificator.UR_NORMAL)
+	}
 }
 
 // SendMessage will send a message to a particular channel
