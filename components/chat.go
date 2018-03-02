@@ -225,7 +225,7 @@ func (c *Chat) ClearMessages() {
 //
 // Offset is 0 when scrolled down. (we loop backwards over the array, so we
 // start with rendering last item in the list at the maximum y of the Chat
-// pane). Increasing the Offset will thus result in substracting the offset
+// pane). Increasing the Offset will thus result in subtracting the offset
 // from the len(Chat.List.Items).
 func (c *Chat) ScrollUp() {
 	c.Offset = c.Offset + 10
@@ -241,7 +241,7 @@ func (c *Chat) ScrollUp() {
 //
 // Offset is 0 when scrolled down. (we loop backwards over the array, so we
 // start with rendering last item in the list at the maximum y of the Chat
-// pane). Increasing the Offset will thus result in substracting the offset
+// pane). Increasing the Offset will thus result in subtracting the offset
 // from the len(Chat.List.Items).
 func (c *Chat) ScrollDown() {
 	c.Offset = c.Offset - 10
