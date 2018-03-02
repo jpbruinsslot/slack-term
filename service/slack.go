@@ -256,16 +256,23 @@ func (s *SlackService) MarkAsRead(channelID int) {
 	}
 }
 
-// MarkAsUnread will set the channel as unread
-func (s *SlackService) MarkAsUnread(channelID string) {
-	var index int
+// Given a channel ID, returns the reference to the channel
+func (s *SlackService) FindChannel(channelID string) *components.ChannelItem {
 	for i, channel := range s.Channels {
 		if channel.ID == channelID {
-			index = i
-			break
+			return &s.Channels[i]
 		}
 	}
-	s.Channels[index].Notification = true
+
+	return nil
+}
+
+// MarkAsUnread will set the channel as unread
+func (s *SlackService) MarkAsUnread(channelID string) {
+	var channel = s.FindChannel(channelID)
+	if channel != nil {
+		channel.Notification = true
+	}
 }
 
 // SendMessage will send a message to a particular channel
