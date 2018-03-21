@@ -55,6 +55,12 @@
 			"revision": ""
 		},
 		{
+			"checksumSHA1": "XaSNlICWzadFvFNJiAVrzdCjVVw=",
+			"path": "github.com/bharath-srinivas/termloader",
+			"revision": "89ad3e1101e85d74b50ad88b4a59f2d276a7ac64",
+			"revisionTime": "2018-03-21T18:04:05Z"
+		},
+		{
 			"checksumSHA1": "CbpC2ha+GTTuROMyyLVd/L3O+8Y=",
 			"path": "github.com/erroneousboat/termui",
 			"revision": "80f245cdfa0488883a3e8602bf3f0c8a3c889a22",
@@ -109,10 +115,28 @@
 			"revision": ""
 		},
 		{
+			"checksumSHA1": "BGm8lKZmvJbf/YOJLeL1rw2WVjA=",
+			"path": "golang.org/x/crypto/ssh/terminal",
+			"revision": "80db560fac1fb3e6ac81dbc7f8ae4c061f5257bd",
+			"revisionTime": "2018-03-14T11:37:28Z"
+		},
+		{
 			"checksumSHA1": "7EZyXN0EmZLgGxZxK01IJua4c8o=",
 			"path": "golang.org/x/net/websocket",
 			"revision": "a8b9294777976932365dabb6640cf1468d95c70f",
 			"revisionTime": "2017-11-29T19:21:16Z"
+		},
+		{
+			"checksumSHA1": "ix2ibX8+QgwX6UtLcKshy0LWYZk=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "c488ab1dd8481ef762f96a79a9577c27825be697",
+			"revisionTime": "2018-03-21T13:30:55Z"
+		},
+		{
+			"checksumSHA1": "Dfz4tGItokMvHZENCsBmPPB8FGQ=",
+			"path": "golang.org/x/sys/windows",
+			"revision": "c488ab1dd8481ef762f96a79a9577c27825be697",
+			"revisionTime": "2018-03-21T13:30:55Z"
 		},
 		{
 			"path": "html",
