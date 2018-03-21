@@ -1,6 +1,9 @@
 package views
 
 import (
+	"time"
+
+	"github.com/bharath-srinivas/termloader"
 	"github.com/erroneousboat/termui"
 
 	"github.com/erroneousboat/slack-term/components"
@@ -18,6 +21,11 @@ type View struct {
 }
 
 func CreateView(config *config.Config, svc *service.SlackService) *View {
+	loader := termloader.New(termloader.Charsets[0], 100*time.Millisecond)
+	loader.Text = "Loading"
+	loader.Color = termloader.Green
+	loader.Start()
+
 	// Create Input component
 	input := components.CreateInputComponent()
 
@@ -60,6 +68,7 @@ func CreateView(config *config.Config, svc *service.SlackService) *View {
 		Debug:    debug,
 	}
 
+	loader.Stop()
 	return view
 }
 
