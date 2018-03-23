@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/erroneousboat/termui"
@@ -25,11 +26,11 @@ func NewConfig(filepath string) (*Config, error) {
 
 	file, err := os.Open(filepath)
 	if err != nil {
-		return &cfg, err
+		return &cfg, fmt.Errorf("couldn't find the slack-term config file: %v", err)
 	}
 
 	if err := json.NewDecoder(file).Decode(&cfg); err != nil {
-		return &cfg, err
+		return &cfg, fmt.Errorf("the slack-term config file isn't valid json: %v", err)
 	}
 
 	if cfg.SlackToken == "" {

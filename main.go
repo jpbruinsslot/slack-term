@@ -51,7 +51,7 @@ func init() {
 	flag.StringVar(
 		&flgConfig,
 		"config",
-		path.Join(usr.HomeDir, "slack-term.json"),
+		path.Join(usr.HomeDir, ".slack-term"),
 		"location of config file",
 	)
 
