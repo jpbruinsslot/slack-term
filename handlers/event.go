@@ -233,17 +233,21 @@ func actionSend(ctx *context.AppContext) {
 	}
 }
 
+// actionSearch will search through the channels based on the users
+// input. A time is implemented to make sure the actual searching
+// and changing of channels is done when the user's typing is paused.
 func actionSearch(ctx *context.AppContext, key rune) {
+	actionInput(ctx.View, key)
+
 	go func() {
 		if timer != nil {
 			timer.Stop()
 		}
 
-		actionInput(ctx.View, key)
-
 		timer = time.NewTimer(time.Second / 4)
 		<-timer.C
 
+		// Only actually search when the time expires
 		term := ctx.View.Input.GetText()
 		ctx.View.Channels.Search(term)
 		actionChangeChannel(ctx)
@@ -291,7 +295,7 @@ func actionGetMessages(ctx *context.AppContext) {
 }
 
 // actionMoveCursorUpChannels will execute the actionChangeChannel
-// function. A time is implemented to support fast scrolling through
+// function. A timer is implemented to support fast scrolling through
 // the list without executing the actionChangeChannel event
 func actionMoveCursorUpChannels(ctx *context.AppContext) {
 	go func() {
@@ -311,7 +315,7 @@ func actionMoveCursorUpChannels(ctx *context.AppContext) {
 }
 
 // actionMoveCursorDownChannels will execute the actionChangeChannel
-// function. A time is implemented to support fast scrolling through
+// function. A timer is implemented to support fast scrolling through
 // the list without executing the actionChangeChannel event
 func actionMoveCursorDownChannels(ctx *context.AppContext) {
 	go func() {
