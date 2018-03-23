@@ -162,6 +162,12 @@ func actionKeyEvent(ctx *context.AppContext, ev termbox.Event) {
 }
 
 func actionResizeEvent(ctx *context.AppContext, ev termbox.Event) {
+	// When terminal window is too small termui will panic, here
+	// we won't resize when the terminal window is too small.
+	if termui.TermWidth() < 25 || termui.TermHeight() < 5 {
+		return
+	}
+
 	termui.Body.Width = termui.TermWidth()
 
 	// Vertical resize components
