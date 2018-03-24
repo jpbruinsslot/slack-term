@@ -47,6 +47,7 @@ func RegisterEventHandlers(ctx *context.AppContext) {
 	messageHandler(ctx)
 }
 
+// eventHandler will handle events created by the user
 func eventHandler(ctx *context.AppContext) {
 	go func() {
 		for {
@@ -95,6 +96,7 @@ func handleMoreTermboxEvents(ctx *context.AppContext, ev termbox.Event) bool {
 	}
 }
 
+// messageHandler will handle events created by the service
 func messageHandler(ctx *context.AppContext) {
 	go func() {
 		for {
@@ -102,8 +104,12 @@ func messageHandler(ctx *context.AppContext) {
 			case msg := <-ctx.Service.RTM.IncomingEvents:
 				switch ev := msg.Data.(type) {
 				case *slack.MessageEvent:
+
 					// Construct message
-					msg := ctx.Service.CreateMessageFromMessageEvent(ev)
+					msg, err := ctx.Service.CreateMessageFromMessageEvent(ev)
+					if err != nil {
+						continue
+					}
 
 					// Add message to the selected channel
 					if ev.Channel == ctx.Service.Channels[ctx.View.Channels.SelectedChannel].ID {

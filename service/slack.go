@@ -397,15 +397,19 @@ func (s *SlackService) CreateMessage(message slack.Message) []components.Message
 	return msgs
 }
 
-func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent) []components.Message {
+func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent) ([]components.Message, error) {
 
 	var msgs []components.Message
 	var name string
 
-	// Append (edited) when an edited message is received
-	if message.SubType == "message_changed" {
+	switch message.SubType {
+	case "message_changed":
+		// Append (edited) when an edited message is received
 		message = &slack.MessageEvent{Msg: *message.SubMessage}
 		message.Text = fmt.Sprintf("%s (edited)", message.Text)
+	case "message_replied":
+		// Ignore reply events
+		return nil, errors.New("ignoring reply events")
 	}
 
 	// Get username from cache
@@ -462,7 +466,7 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 
 	msgs = append(msgs, msg)
 
-	return msgs
+	return msgs, nil
 }
 
 // parseMessage will parse a message string and find and replace:
