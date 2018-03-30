@@ -37,6 +37,9 @@ func CreateAppContext(flgConfig string, flgDebug bool) (*AppContext, error) {
 		}()
 	}
 
+	// Loading screen
+	views.Loading()
+
 	// Load config
 	config, err := config.NewConfig(flgConfig)
 	if err != nil {
