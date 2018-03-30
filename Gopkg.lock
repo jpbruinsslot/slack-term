@@ -4,8 +4,7 @@
 [[projects]]
   name = "github.com/erroneousboat/termui"
   packages = ["."]
-  revision = "24acd523c756fd9728824cdfac66aad9d8982fb7"
-  version = "v2.2.0"
+  revision = "80f245cdfa0488883a3e8602bf3f0c8a3c889a22"
 
 [[projects]]
   name = "github.com/gorilla/websocket"
@@ -51,6 +50,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "719f2440551009ce6f1e1a7f6e56db762acdadd9a0e05245ee427b7455e50233"
+  inputs-digest = "353a2a71e00ecf8dd6123a02828c450fa6d38472a98792d2d8a4cd6349900f11"
   solver-name = "gps-cdcl"
   solver-version = 1
