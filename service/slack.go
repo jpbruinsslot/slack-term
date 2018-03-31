@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/nlopes/slack"
@@ -81,12 +82,47 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 func (s *SlackService) GetChannels() []string {
 	var chans []components.ChannelItem
 
-	// Channel
-	slackChans, err := s.Client.GetChannels(true)
-	if err != nil {
-		chans = append(chans, components.ChannelItem{})
-	}
+	var wg sync.WaitGroup
 
+	// Channels
+	wg.Add(1)
+	var slackChans []slack.Channel
+	go func() {
+		var err error
+		slackChans, err = s.Client.GetChannels(true)
+		if err != nil {
+			chans = append(chans, components.ChannelItem{})
+		}
+		wg.Done()
+	}()
+
+	// Groups
+	wg.Add(1)
+	var slackGroups []slack.Group
+	go func() {
+		var err error
+		slackGroups, err = s.Client.GetGroups(true)
+		if err != nil {
+			chans = append(chans, components.ChannelItem{})
+		}
+		wg.Done()
+	}()
+
+	// IM
+	wg.Add(1)
+	var slackIM []slack.IM
+	go func() {
+		var err error
+		slackIM, err = s.Client.GetIMChannels()
+		if err != nil {
+			chans = append(chans, components.ChannelItem{})
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+	// Channels
 	for _, chn := range slackChans {
 		if chn.IsMember {
 			s.SlackChannels = append(s.SlackChannels, chn)
@@ -106,10 +142,6 @@ func (s *SlackService) GetChannels() []string {
 	}
 
 	// Groups
-	slackGroups, err := s.Client.GetGroups(true)
-	if err != nil {
-		chans = append(chans, components.ChannelItem{})
-	}
 	for _, grp := range slackGroups {
 		s.SlackChannels = append(s.SlackChannels, grp)
 		chans = append(
@@ -127,14 +159,7 @@ func (s *SlackService) GetChannels() []string {
 	}
 
 	// IM
-	slackIM, err := s.Client.GetIMChannels()
-	if err != nil {
-		chans = append(chans, components.ChannelItem{})
-	}
 	for _, im := range slackIM {
-
-		// FIXME: err
-		presence, _ := s.GetUserPresence(im.User)
 
 		// Uncover name, when we can't uncover name for
 		// IM channel this is then probably a deleted
@@ -151,7 +176,7 @@ func (s *SlackService) GetChannels() []string {
 					Topic:       "",
 					Type:        components.ChannelTypeIM,
 					UserID:      im.User,
-					Presence:    presence,
+					Presence:    "",
 					StylePrefix: s.Config.Theme.Channel.Prefix,
 					StyleIcon:   s.Config.Theme.Channel.Icon,
 					StyleText:   s.Config.Theme.Channel.Text,
@@ -163,10 +188,15 @@ func (s *SlackService) GetChannels() []string {
 
 	s.Channels = chans
 
+	// We set presence of IM channels here because we need to separately
+	// issue an API call for every channel, this will speed up that process
+	s.SetPresenceChannels()
+
 	var channels []string
 	for _, chn := range s.Channels {
 		channels = append(channels, chn.ToString())
 	}
+
 	return channels
 }
 
@@ -177,6 +207,26 @@ func (s *SlackService) ChannelsToString() []string {
 		channels = append(channels, chn.ToString())
 	}
 	return channels
+}
+
+// SetPresence will set presence for all IM channels
+func (s *SlackService) SetPresenceChannels() {
+	var wg sync.WaitGroup
+	for i, channel := range s.SlackChannels {
+
+		switch channel := channel.(type) {
+		case slack.IM:
+			wg.Add(1)
+			go func(i int) {
+				presence, _ := s.GetUserPresence(channel.User)
+				s.Channels[i].Presence = presence
+				wg.Done()
+			}(i)
+		}
+
+	}
+
+	wg.Wait()
 }
 
 // SetPresenceChannelEvent will set the presence of a IM channel
