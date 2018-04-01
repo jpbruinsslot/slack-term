@@ -12,6 +12,7 @@ import (
 // Config is the definition of a Config struct
 type Config struct {
 	SlackToken   string                `json:"slack_token"`
+	Notify       bool                  `json:"notify"`
 	SidebarWidth int                   `json:"sidebar_width"`
 	MainWidth    int                   `json:"-"`
 	KeyMap       map[string]keyMapping `json:"key_map"`
@@ -59,6 +60,7 @@ func getDefaultConfig() Config {
 	return Config{
 		SidebarWidth: 1,
 		MainWidth:    11,
+		Notify:       true,
 		KeyMap: map[string]keyMapping{
 			"command": {
 				"i":          "mode-insert",

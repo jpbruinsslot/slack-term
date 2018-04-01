@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/0xAX/notificator"
 	"github.com/erroneousboat/termui"
 	"github.com/nlopes/slack"
 	termbox "github.com/nsf/termbox-go"
@@ -14,7 +15,8 @@ import (
 	"github.com/erroneousboat/slack-term/views"
 )
 
-var timer *time.Timer
+var scrollTimer *time.Timer
+var notifyTimer *time.Timer
 
 // actionMap binds specific action names to the function counterparts,
 // these action names can then be used to bind them to specific keys
@@ -114,7 +116,7 @@ func messageHandler(ctx *context.AppContext) {
 					// Add message to the selected channel
 					if ev.Channel == ctx.Service.Channels[ctx.View.Channels.SelectedChannel].ID {
 
-						// reverse order of messages, mainly done
+						// Reverse order of messages, mainly done
 						// when attachments are added to message
 						for i := len(msg) - 1; i >= 0; i-- {
 							ctx.View.Chat.AddMessage(
@@ -252,12 +254,12 @@ func actionSearch(ctx *context.AppContext, key rune) {
 	actionInput(ctx.View, key)
 
 	go func() {
-		if timer != nil {
-			timer.Stop()
+		if scrollTimer != nil {
+			scrollTimer.Stop()
 		}
 
-		timer = time.NewTimer(time.Second / 4)
-		<-timer.C
+		scrollTimer = time.NewTimer(time.Second / 4)
+		<-scrollTimer.C
 
 		// Only actually search when the time expires
 		term := ctx.View.Input.GetText()
@@ -311,15 +313,15 @@ func actionGetMessages(ctx *context.AppContext) {
 // the list without executing the actionChangeChannel event
 func actionMoveCursorUpChannels(ctx *context.AppContext) {
 	go func() {
-		if timer != nil {
-			timer.Stop()
+		if scrollTimer != nil {
+			scrollTimer.Stop()
 		}
 
 		ctx.View.Channels.MoveCursorUp()
 		termui.Render(ctx.View.Channels)
 
-		timer = time.NewTimer(time.Second / 4)
-		<-timer.C
+		scrollTimer = time.NewTimer(time.Second / 4)
+		<-scrollTimer.C
 
 		// Only actually change channel when the timer expires
 		actionChangeChannel(ctx)
@@ -331,15 +333,15 @@ func actionMoveCursorUpChannels(ctx *context.AppContext) {
 // the list without executing the actionChangeChannel event
 func actionMoveCursorDownChannels(ctx *context.AppContext) {
 	go func() {
-		if timer != nil {
-			timer.Stop()
+		if scrollTimer != nil {
+			scrollTimer.Stop()
 		}
 
 		ctx.View.Channels.MoveCursorDown()
 		termui.Render(ctx.View.Channels)
 
-		timer = time.NewTimer(time.Second / 4)
-		<-timer.C
+		scrollTimer = time.NewTimer(time.Second / 4)
+		<-scrollTimer.C
 
 		// Only actually change channel when the timer expires
 		actionChangeChannel(ctx)
@@ -402,7 +404,28 @@ func actionNewMessage(ctx *context.AppContext, channelID string) {
 	ctx.Service.MarkAsUnread(channelID)
 	ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
 	termui.Render(ctx.View.Channels)
+
+	// Terminal bell
 	fmt.Print("\a")
+
+	// Desktop notification
+	if ctx.Config.Notify {
+		go func() {
+			if notifyTimer != nil {
+				notifyTimer.Stop()
+			}
+
+			notifyTimer = time.NewTimer(time.Second * 2)
+			<-notifyTimer.C
+
+			// Only actually notify when time expires
+			ctx.Notify.Push(
+				"slack-term",
+				ctx.Service.CreateNotifyMessage(channelID), "",
+				notificator.UR_NORMAL,
+			)
+		}()
+	}
 }
 
 func actionSetPresence(ctx *context.AppContext, channelID string, presence string) {

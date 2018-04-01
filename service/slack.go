@@ -306,8 +306,9 @@ func (s *SlackService) MarkAsRead(channelID int) {
 	}
 }
 
-// MarkAsUnread will set the channel as unread
-func (s *SlackService) MarkAsUnread(channelID string) {
+// FindChannel will loop over s.Channels to find the index where the
+// channelID equals the ID
+func (s *SlackService) FindChannel(channelID string) int {
 	var index int
 	for i, channel := range s.Channels {
 		if channel.ID == channelID {
@@ -315,7 +316,19 @@ func (s *SlackService) MarkAsUnread(channelID string) {
 			break
 		}
 	}
+	return index
+}
+
+// MarkAsUnread will set the channel as unread
+func (s *SlackService) MarkAsUnread(channelID string) {
+	index := s.FindChannel(channelID)
 	s.Channels[index].Notification = true
+}
+
+// GetChannelName will return the name for a specific channelID
+func (s *SlackService) GetChannelName(channelID string) string {
+	index := s.FindChannel(channelID)
+	return s.Channels[index].Name
 }
 
 // SendMessage will send a message to a particular channel
@@ -517,6 +530,21 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 	msgs = append(msgs, msg)
 
 	return msgs, nil
+}
+
+func (s *SlackService) CreateNotifyMessage(channelID string) string {
+	channel := s.Channels[s.FindChannel(channelID)]
+
+	switch channel.Type {
+	case ChannelTypeChannel:
+		return fmt.Sprintf("Message received on channel: %s", channel.Name)
+	case ChannelTypeGroup:
+		return fmt.Sprintf("Message received in group: %s", channel.Name)
+	case ChannelTypeIM:
+		return fmt.Sprintf("Message received from: %s", channel.Name)
+	}
+
+	return ""
 }
 
 // parseMessage will parse a message string and find and replace:
