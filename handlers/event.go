@@ -11,6 +11,7 @@ import (
 	"github.com/nlopes/slack"
 	termbox "github.com/nsf/termbox-go"
 
+	"github.com/erroneousboat/slack-term/config"
 	"github.com/erroneousboat/slack-term/context"
 	"github.com/erroneousboat/slack-term/views"
 )
@@ -136,7 +137,7 @@ func messageHandler(ctx *context.AppContext) {
 					// window (tmux). But only create a notification when
 					// it comes from someone else but the current user.
 					if ev.User != ctx.Service.CurrentUserID {
-						actionNewMessage(ctx, ev.Channel)
+						actionNewMessage(ctx, ev)
 					}
 				case *slack.PresenceChangeEvent:
 					actionSetPresence(ctx, ev.User, ev.Presence)
@@ -400,8 +401,10 @@ func actionChangeChannel(ctx *context.AppContext) {
 	termui.Render(ctx.View.Chat)
 }
 
-func actionNewMessage(ctx *context.AppContext, channelID string) {
-	ctx.Service.MarkAsUnread(channelID)
+// actionNewMessage will set the new message indicator for a channel, and
+// if configured will also display a desktop notification
+func actionNewMessage(ctx *context.AppContext, ev *slack.MessageEvent) {
+	ctx.Service.MarkAsUnread(ev.Channel)
 	ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
 	termui.Render(ctx.View.Channels)
 
@@ -409,22 +412,12 @@ func actionNewMessage(ctx *context.AppContext, channelID string) {
 	fmt.Print("\a")
 
 	// Desktop notification
-	if ctx.Config.Notify {
-		go func() {
-			if notifyTimer != nil {
-				notifyTimer.Stop()
-			}
-
-			notifyTimer = time.NewTimer(time.Second * 2)
-			<-notifyTimer.C
-
-			// Only actually notify when time expires
-			ctx.Notify.Push(
-				"slack-term",
-				ctx.Service.CreateNotifyMessage(channelID), "",
-				notificator.UR_NORMAL,
-			)
-		}()
+	if ctx.Config.Notify == config.NotifyMention {
+		if ctx.Service.CheckNotifyMention(ev) {
+			createNotifyMessage(ctx, ev)
+		}
+	} else if ctx.Config.Notify == config.NotifyAll {
+		createNotifyMessage(ctx, ev)
 	}
 }
 
@@ -497,4 +490,22 @@ func getKeyString(e termbox.Event) string {
 
 	ek = pre + mod + k
 	return ek
+}
+
+func createNotifyMessage(ctx *context.AppContext, ev *slack.MessageEvent) {
+	go func() {
+		if notifyTimer != nil {
+			notifyTimer.Stop()
+		}
+
+		notifyTimer = time.NewTimer(time.Second * 2)
+		<-notifyTimer.C
+
+		// Only actually notify when time expires
+		ctx.Notify.Push(
+			"slack-term",
+			ctx.Service.CreateNotifyMessage(ev.Channel), "",
+			notificator.UR_NORMAL,
+		)
+	}()
 }

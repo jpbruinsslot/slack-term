@@ -532,6 +532,29 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 	return msgs, nil
 }
 
+// CheckNotifyMention check if the message event is either contains a
+// mention or is posted on an IM channel
+func (s *SlackService) CheckNotifyMention(ev *slack.MessageEvent) bool {
+	channel := s.Channels[s.FindChannel(ev.Channel)]
+	switch channel.Type {
+	case ChannelTypeIM:
+		return true
+	}
+
+	// Mentions have the following format:
+	//	<@U12345|erroneousboat>
+	// 	<@U12345>
+	r := regexp.MustCompile(`\<@(\w+\|*\w+)\>`)
+	matches := r.FindAllString(ev.Text, -1)
+	for _, match := range matches {
+		if strings.Contains(match, s.CurrentUserID) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (s *SlackService) CreateNotifyMessage(channelID string) string {
 	channel := s.Channels[s.FindChannel(channelID)]
 
