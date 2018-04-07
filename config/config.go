@@ -9,9 +9,15 @@ import (
 	"github.com/erroneousboat/termui"
 )
 
+const (
+	NotifyAll     = "all"
+	NotifyMention = "mention"
+)
+
 // Config is the definition of a Config struct
 type Config struct {
 	SlackToken   string                `json:"slack_token"`
+	Notify       string                `json:"notify"`
 	SidebarWidth int                   `json:"sidebar_width"`
 	MainWidth    int                   `json:"-"`
 	KeyMap       map[string]keyMapping `json:"key_map"`
@@ -43,6 +49,13 @@ func NewConfig(filepath string) (*Config, error) {
 
 	cfg.MainWidth = 12 - cfg.SidebarWidth
 
+	switch cfg.Notify {
+	case NotifyAll, NotifyMention, "":
+		break
+	default:
+		return &cfg, fmt.Errorf("unsupported setting for notify: %s", cfg.Notify)
+	}
+
 	termui.ColorMap = map[string]termui.Attribute{
 		"fg":           termui.StringToAttribute(cfg.Theme.View.Fg),
 		"bg":           termui.StringToAttribute(cfg.Theme.View.Bg),
@@ -59,6 +72,7 @@ func getDefaultConfig() Config {
 	return Config{
 		SidebarWidth: 1,
 		MainWidth:    11,
+		Notify:       "",
 		KeyMap: map[string]keyMapping{
 			"command": {
 				"i":          "mode-insert",

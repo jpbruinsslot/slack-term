@@ -4,6 +4,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	"github.com/0xAX/notificator"
 	"github.com/erroneousboat/termui"
 	termbox "github.com/nsf/termbox-go"
 
@@ -26,6 +27,7 @@ type AppContext struct {
 	Config     *config.Config
 	Debug      bool
 	Mode       string
+	Notify     *notificator.Notificator
 }
 
 // CreateAppContext creates an application context which can be passed
@@ -92,5 +94,6 @@ func CreateAppContext(flgConfig string, flgDebug bool) (*AppContext, error) {
 		Config:     config,
 		Debug:      flgDebug,
 		Mode:       CommandMode,
+		Notify:     notificator.New(notificator.Options{AppName: "slack-term"}),
 	}, nil
 }
