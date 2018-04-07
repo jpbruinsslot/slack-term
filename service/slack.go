@@ -47,7 +47,7 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 	// arrives
 	authTest, err := svc.Client.AuthTest()
 	if err != nil {
-		return nil, errors.New("not able to authorize client, check your connection and or slack-token")
+		return nil, errors.New("not able to authorize client, check your connection and if your slack-token is set correctly")
 	}
 	svc.CurrentUserID = authTest.UserID
 

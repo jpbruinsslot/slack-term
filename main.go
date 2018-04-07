@@ -36,6 +36,7 @@ GLOBAL OPTIONS:
 
 var (
 	flgConfig string
+	flgToken  string
 	flgDebug  bool
 	flgUsage  bool
 )
@@ -53,6 +54,13 @@ func init() {
 		"config",
 		path.Join(usr.HomeDir, ".slack-term"),
 		"location of config file",
+	)
+
+	flag.StringVar(
+		&flgToken,
+		"token",
+		"",
+		"the slack token",
 	)
 
 	flag.BoolVar(
@@ -87,7 +95,7 @@ func main() {
 	termui.DefaultEvtStream = customEvtStream
 
 	// Create context
-	ctx, err := context.CreateAppContext(flgConfig, flgDebug)
+	ctx, err := context.CreateAppContext(flgConfig, flgToken, flgDebug)
 	if err != nil {
 		termbox.Close()
 		log.Println(err)

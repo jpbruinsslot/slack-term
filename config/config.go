@@ -39,10 +39,6 @@ func NewConfig(filepath string) (*Config, error) {
 		return &cfg, fmt.Errorf("the slack-term config file isn't valid json: %v", err)
 	}
 
-	if cfg.SlackToken == "" {
-		return &cfg, errors.New("couldn't find 'slack_token' parameter")
-	}
-
 	if cfg.SidebarWidth < 1 || cfg.SidebarWidth > 11 {
 		return &cfg, errors.New("please specify the 'sidebar_width' between 1 and 11")
 	}
