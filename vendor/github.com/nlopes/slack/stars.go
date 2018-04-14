@@ -45,7 +45,7 @@ func (api *Client) AddStar(channel string, item ItemRef) error {
 func (api *Client) AddStarContext(ctx context.Context, channel string, item ItemRef) error {
 	values := url.Values{
 		"channel": {channel},
-		"token":   {api.config.token},
+		"token":   {api.token},
 	}
 	if item.Timestamp != "" {
 		values.Set("timestamp", string(item.Timestamp))
@@ -56,8 +56,9 @@ func (api *Client) AddStarContext(ctx context.Context, channel string, item Item
 	if item.Comment != "" {
 		values.Set("file_comment", string(item.Comment))
 	}
+
 	response := &SlackResponse{}
-	if err := post(ctx, "stars.add", values, response, api.debug); err != nil {
+	if err := post(ctx, api.httpclient, "stars.add", values, response, api.debug); err != nil {
 		return err
 	}
 	if !response.Ok {
@@ -75,7 +76,7 @@ func (api *Client) RemoveStar(channel string, item ItemRef) error {
 func (api *Client) RemoveStarContext(ctx context.Context, channel string, item ItemRef) error {
 	values := url.Values{
 		"channel": {channel},
-		"token":   {api.config.token},
+		"token":   {api.token},
 	}
 	if item.Timestamp != "" {
 		values.Set("timestamp", string(item.Timestamp))
@@ -86,8 +87,9 @@ func (api *Client) RemoveStarContext(ctx context.Context, channel string, item I
 	if item.Comment != "" {
 		values.Set("file_comment", string(item.Comment))
 	}
+
 	response := &SlackResponse{}
-	if err := post(ctx, "stars.remove", values, response, api.debug); err != nil {
+	if err := post(ctx, api.httpclient, "stars.remove", values, response, api.debug); err != nil {
 		return err
 	}
 	if !response.Ok {
@@ -104,7 +106,7 @@ func (api *Client) ListStars(params StarsParameters) ([]Item, *Paging, error) {
 // ListStarsContext returns information about the stars a user added with a custom context
 func (api *Client) ListStarsContext(ctx context.Context, params StarsParameters) ([]Item, *Paging, error) {
 	values := url.Values{
-		"token": {api.config.token},
+		"token": {api.token},
 	}
 	if params.User != DEFAULT_STARS_USER {
 		values.Add("user", params.User)
@@ -115,8 +117,9 @@ func (api *Client) ListStarsContext(ctx context.Context, params StarsParameters)
 	if params.Page != DEFAULT_STARS_PAGE {
 		values.Add("page", strconv.Itoa(params.Page))
 	}
+
 	response := &listResponseFull{}
-	err := post(ctx, "stars.list", values, response, api.debug)
+	err := post(ctx, api.httpclient, "stars.list", values, response, api.debug)
 	if err != nil {
 		return nil, nil, err
 	}

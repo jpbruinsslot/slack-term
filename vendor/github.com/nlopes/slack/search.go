@@ -83,7 +83,7 @@ func NewSearchParameters() SearchParameters {
 
 func (api *Client) _search(ctx context.Context, path, query string, params SearchParameters, files, messages bool) (response *searchResponseFull, error error) {
 	values := url.Values{
-		"token": {api.config.token},
+		"token": {api.token},
 		"query": {query},
 	}
 	if params.Sort != DEFAULT_SEARCH_SORT {
@@ -101,8 +101,9 @@ func (api *Client) _search(ctx context.Context, path, query string, params Searc
 	if params.Page != DEFAULT_SEARCH_PAGE {
 		values.Add("page", strconv.Itoa(params.Page))
 	}
+
 	response = &searchResponseFull{}
-	err := post(ctx, path, values, response, api.debug)
+	err := post(ctx, api.httpclient, path, values, response, api.debug)
 	if err != nil {
 		return nil, err
 	}

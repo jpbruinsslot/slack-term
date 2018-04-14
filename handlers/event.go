@@ -6,15 +6,18 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/0xAX/notificator"
 	"github.com/erroneousboat/termui"
 	"github.com/nlopes/slack"
 	termbox "github.com/nsf/termbox-go"
 
+	"github.com/erroneousboat/slack-term/config"
 	"github.com/erroneousboat/slack-term/context"
 	"github.com/erroneousboat/slack-term/views"
 )
 
-var timer *time.Timer
+var scrollTimer *time.Timer
+var notifyTimer *time.Timer
 
 // actionMap binds specific action names to the function counterparts,
 // these action names can then be used to bind them to specific keys
@@ -47,6 +50,7 @@ func RegisterEventHandlers(ctx *context.AppContext) {
 	messageHandler(ctx)
 }
 
+// eventHandler will handle events created by the user
 func eventHandler(ctx *context.AppContext) {
 	go func() {
 		for {
@@ -95,6 +99,7 @@ func handleMoreTermboxEvents(ctx *context.AppContext, ev termbox.Event) bool {
 	}
 }
 
+// messageHandler will handle events created by the service
 func messageHandler(ctx *context.AppContext) {
 	go func() {
 		for {
@@ -102,13 +107,17 @@ func messageHandler(ctx *context.AppContext) {
 			case msg := <-ctx.Service.RTM.IncomingEvents:
 				switch ev := msg.Data.(type) {
 				case *slack.MessageEvent:
+
 					// Construct message
-					msg := ctx.Service.CreateMessageFromMessageEvent(ev)
+					msg, err := ctx.Service.CreateMessageFromMessageEvent(ev)
+					if err != nil {
+						continue
+					}
 
 					// Add message to the selected channel
 					if ev.Channel == ctx.Service.Channels[ctx.View.Channels.SelectedChannel].ID {
 
-						// reverse order of messages, mainly done
+						// Reverse order of messages, mainly done
 						// when attachments are added to message
 						for i := len(msg) - 1; i >= 0; i-- {
 							ctx.View.Chat.AddMessage(
@@ -128,7 +137,7 @@ func messageHandler(ctx *context.AppContext) {
 					// window (tmux). But only create a notification when
 					// it comes from someone else but the current user.
 					if ev.User != ctx.Service.CurrentUserID {
-						actionNewMessage(ctx, ev.Channel)
+						actionNewMessage(ctx, ev)
 					}
 				case *slack.PresenceChangeEvent:
 					actionSetPresence(ctx, ev.User, ev.Presence)
@@ -162,6 +171,12 @@ func actionKeyEvent(ctx *context.AppContext, ev termbox.Event) {
 }
 
 func actionResizeEvent(ctx *context.AppContext, ev termbox.Event) {
+	// When terminal window is too small termui will panic, here
+	// we won't resize when the terminal window is too small.
+	if termui.TermWidth() < 25 || termui.TermHeight() < 5 {
+		return
+	}
+
 	termui.Body.Width = termui.TermWidth()
 
 	// Vertical resize components
@@ -233,17 +248,21 @@ func actionSend(ctx *context.AppContext) {
 	}
 }
 
+// actionSearch will search through the channels based on the users
+// input. A time is implemented to make sure the actual searching
+// and changing of channels is done when the user's typing is paused.
 func actionSearch(ctx *context.AppContext, key rune) {
+	actionInput(ctx.View, key)
+
 	go func() {
-		if timer != nil {
-			timer.Stop()
+		if scrollTimer != nil {
+			scrollTimer.Stop()
 		}
 
-		actionInput(ctx.View, key)
+		scrollTimer = time.NewTimer(time.Second / 4)
+		<-scrollTimer.C
 
-		timer = time.NewTimer(time.Second / 4)
-		<-timer.C
-
+		// Only actually search when the time expires
 		term := ctx.View.Input.GetText()
 		ctx.View.Channels.Search(term)
 		actionChangeChannel(ctx)
@@ -291,19 +310,19 @@ func actionGetMessages(ctx *context.AppContext) {
 }
 
 // actionMoveCursorUpChannels will execute the actionChangeChannel
-// function. A time is implemented to support fast scrolling through
+// function. A timer is implemented to support fast scrolling through
 // the list without executing the actionChangeChannel event
 func actionMoveCursorUpChannels(ctx *context.AppContext) {
 	go func() {
-		if timer != nil {
-			timer.Stop()
+		if scrollTimer != nil {
+			scrollTimer.Stop()
 		}
 
 		ctx.View.Channels.MoveCursorUp()
 		termui.Render(ctx.View.Channels)
 
-		timer = time.NewTimer(time.Second / 4)
-		<-timer.C
+		scrollTimer = time.NewTimer(time.Second / 4)
+		<-scrollTimer.C
 
 		// Only actually change channel when the timer expires
 		actionChangeChannel(ctx)
@@ -311,19 +330,19 @@ func actionMoveCursorUpChannels(ctx *context.AppContext) {
 }
 
 // actionMoveCursorDownChannels will execute the actionChangeChannel
-// function. A time is implemented to support fast scrolling through
+// function. A timer is implemented to support fast scrolling through
 // the list without executing the actionChangeChannel event
 func actionMoveCursorDownChannels(ctx *context.AppContext) {
 	go func() {
-		if timer != nil {
-			timer.Stop()
+		if scrollTimer != nil {
+			scrollTimer.Stop()
 		}
 
 		ctx.View.Channels.MoveCursorDown()
 		termui.Render(ctx.View.Channels)
 
-		timer = time.NewTimer(time.Second / 4)
-		<-timer.C
+		scrollTimer = time.NewTimer(time.Second / 4)
+		<-scrollTimer.C
 
 		// Only actually change channel when the timer expires
 		actionChangeChannel(ctx)
@@ -382,11 +401,24 @@ func actionChangeChannel(ctx *context.AppContext) {
 	termui.Render(ctx.View.Chat)
 }
 
-func actionNewMessage(ctx *context.AppContext, channelID string) {
-	ctx.Service.MarkAsUnread(channelID)
+// actionNewMessage will set the new message indicator for a channel, and
+// if configured will also display a desktop notification
+func actionNewMessage(ctx *context.AppContext, ev *slack.MessageEvent) {
+	ctx.Service.MarkAsUnread(ev.Channel)
 	ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
 	termui.Render(ctx.View.Channels)
+
+	// Terminal bell
 	fmt.Print("\a")
+
+	// Desktop notification
+	if ctx.Config.Notify == config.NotifyMention {
+		if ctx.Service.CheckNotifyMention(ev) {
+			createNotifyMessage(ctx, ev)
+		}
+	} else if ctx.Config.Notify == config.NotifyAll {
+		createNotifyMessage(ctx, ev)
+	}
 }
 
 func actionSetPresence(ctx *context.AppContext, channelID string, presence string) {
@@ -458,4 +490,22 @@ func getKeyString(e termbox.Event) string {
 
 	ek = pre + mod + k
 	return ek
+}
+
+func createNotifyMessage(ctx *context.AppContext, ev *slack.MessageEvent) {
+	go func() {
+		if notifyTimer != nil {
+			notifyTimer.Stop()
+		}
+
+		notifyTimer = time.NewTimer(time.Second * 2)
+		<-notifyTimer.C
+
+		// Only actually notify when time expires
+		ctx.Notify.Push(
+			"slack-term",
+			ctx.Service.CreateNotifyMessage(ev.Channel), "",
+			notificator.UR_NORMAL,
+		)
+	}()
 }

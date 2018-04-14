@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/nlopes/slack"
@@ -46,7 +47,7 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 	// arrives
 	authTest, err := svc.Client.AuthTest()
 	if err != nil {
-		return nil, errors.New("not able to authorize client, check your connection and or slack-token")
+		return nil, errors.New("not able to authorize client, check your connection and if your slack-token is set correctly")
 	}
 	svc.CurrentUserID = authTest.UserID
 
@@ -81,12 +82,47 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 func (s *SlackService) GetChannels() []string {
 	var chans []components.ChannelItem
 
-	// Channel
-	slackChans, err := s.Client.GetChannels(true)
-	if err != nil {
-		chans = append(chans, components.ChannelItem{})
-	}
+	var wg sync.WaitGroup
 
+	// Channels
+	wg.Add(1)
+	var slackChans []slack.Channel
+	go func() {
+		var err error
+		slackChans, err = s.Client.GetChannels(true)
+		if err != nil {
+			chans = append(chans, components.ChannelItem{})
+		}
+		wg.Done()
+	}()
+
+	// Groups
+	wg.Add(1)
+	var slackGroups []slack.Group
+	go func() {
+		var err error
+		slackGroups, err = s.Client.GetGroups(true)
+		if err != nil {
+			chans = append(chans, components.ChannelItem{})
+		}
+		wg.Done()
+	}()
+
+	// IM
+	wg.Add(1)
+	var slackIM []slack.IM
+	go func() {
+		var err error
+		slackIM, err = s.Client.GetIMChannels()
+		if err != nil {
+			chans = append(chans, components.ChannelItem{})
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+	// Channels
 	for _, chn := range slackChans {
 		if chn.IsMember {
 			s.SlackChannels = append(s.SlackChannels, chn)
@@ -106,10 +142,6 @@ func (s *SlackService) GetChannels() []string {
 	}
 
 	// Groups
-	slackGroups, err := s.Client.GetGroups(true)
-	if err != nil {
-		chans = append(chans, components.ChannelItem{})
-	}
 	for _, grp := range slackGroups {
 		s.SlackChannels = append(s.SlackChannels, grp)
 		chans = append(
@@ -127,14 +159,7 @@ func (s *SlackService) GetChannels() []string {
 	}
 
 	// IM
-	slackIM, err := s.Client.GetIMChannels()
-	if err != nil {
-		chans = append(chans, components.ChannelItem{})
-	}
 	for _, im := range slackIM {
-
-		// FIXME: err
-		presence, _ := s.GetUserPresence(im.User)
 
 		// Uncover name, when we can't uncover name for
 		// IM channel this is then probably a deleted
@@ -151,7 +176,7 @@ func (s *SlackService) GetChannels() []string {
 					Topic:       "",
 					Type:        components.ChannelTypeIM,
 					UserID:      im.User,
-					Presence:    presence,
+					Presence:    "",
 					StylePrefix: s.Config.Theme.Channel.Prefix,
 					StyleIcon:   s.Config.Theme.Channel.Icon,
 					StyleText:   s.Config.Theme.Channel.Text,
@@ -163,10 +188,15 @@ func (s *SlackService) GetChannels() []string {
 
 	s.Channels = chans
 
+	// We set presence of IM channels here because we need to separately
+	// issue an API call for every channel, this will speed up that process
+	s.SetPresenceChannels()
+
 	var channels []string
 	for _, chn := range s.Channels {
 		channels = append(channels, chn.ToString())
 	}
+
 	return channels
 }
 
@@ -177,6 +207,26 @@ func (s *SlackService) ChannelsToString() []string {
 		channels = append(channels, chn.ToString())
 	}
 	return channels
+}
+
+// SetPresence will set presence for all IM channels
+func (s *SlackService) SetPresenceChannels() {
+	var wg sync.WaitGroup
+	for i, channel := range s.SlackChannels {
+
+		switch channel := channel.(type) {
+		case slack.IM:
+			wg.Add(1)
+			go func(i int) {
+				presence, _ := s.GetUserPresence(channel.User)
+				s.Channels[i].Presence = presence
+				wg.Done()
+			}(i)
+		}
+
+	}
+
+	wg.Wait()
 }
 
 // SetPresenceChannelEvent will set the presence of a IM channel
@@ -256,8 +306,9 @@ func (s *SlackService) MarkAsRead(channelID int) {
 	}
 }
 
-// MarkAsUnread will set the channel as unread
-func (s *SlackService) MarkAsUnread(channelID string) {
+// FindChannel will loop over s.Channels to find the index where the
+// channelID equals the ID
+func (s *SlackService) FindChannel(channelID string) int {
 	var index int
 	for i, channel := range s.Channels {
 		if channel.ID == channelID {
@@ -265,7 +316,19 @@ func (s *SlackService) MarkAsUnread(channelID string) {
 			break
 		}
 	}
+	return index
+}
+
+// MarkAsUnread will set the channel as unread
+func (s *SlackService) MarkAsUnread(channelID string) {
+	index := s.FindChannel(channelID)
 	s.Channels[index].Notification = true
+}
+
+// GetChannelName will return the name for a specific channelID
+func (s *SlackService) GetChannelName(channelID string) string {
+	index := s.FindChannel(channelID)
+	return s.Channels[index].Name
 }
 
 // SendMessage will send a message to a particular channel
@@ -397,15 +460,19 @@ func (s *SlackService) CreateMessage(message slack.Message) []components.Message
 	return msgs
 }
 
-func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent) []components.Message {
+func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent) ([]components.Message, error) {
 
 	var msgs []components.Message
 	var name string
 
-	// Append (edited) when an edited message is received
-	if message.SubType == "message_changed" {
+	switch message.SubType {
+	case "message_changed":
+		// Append (edited) when an edited message is received
 		message = &slack.MessageEvent{Msg: *message.SubMessage}
 		message.Text = fmt.Sprintf("%s (edited)", message.Text)
+	case "message_replied":
+		// Ignore reply events
+		return nil, errors.New("ignoring reply events")
 	}
 
 	// Get username from cache
@@ -462,7 +529,45 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 
 	msgs = append(msgs, msg)
 
-	return msgs
+	return msgs, nil
+}
+
+// CheckNotifyMention check if the message event is either contains a
+// mention or is posted on an IM channel
+func (s *SlackService) CheckNotifyMention(ev *slack.MessageEvent) bool {
+	channel := s.Channels[s.FindChannel(ev.Channel)]
+	switch channel.Type {
+	case ChannelTypeIM:
+		return true
+	}
+
+	// Mentions have the following format:
+	//	<@U12345|erroneousboat>
+	// 	<@U12345>
+	r := regexp.MustCompile(`\<@(\w+\|*\w+)\>`)
+	matches := r.FindAllString(ev.Text, -1)
+	for _, match := range matches {
+		if strings.Contains(match, s.CurrentUserID) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (s *SlackService) CreateNotifyMessage(channelID string) string {
+	channel := s.Channels[s.FindChannel(channelID)]
+
+	switch channel.Type {
+	case ChannelTypeChannel:
+		return fmt.Sprintf("Message received on channel: %s", channel.Name)
+	case ChannelTypeGroup:
+		return fmt.Sprintf("Message received in group: %s", channel.Name)
+	case ChannelTypeIM:
+		return fmt.Sprintf("Message received from: %s", channel.Name)
+	}
+
+	return ""
 }
 
 // parseMessage will parse a message string and find and replace:

@@ -122,8 +122,8 @@ Outer:
 
 // RankFind is similar to Find, except it will also rank all matches using
 // Levenshtein distance.
-func RankFind(source string, targets []string) Ranks {
-	var r Ranks
+func RankFind(source string, targets []string) ranks {
+	var r ranks
 	for _, target := range find(source, targets, noop) {
 		distance := LevenshteinDistance(source, target)
 		r = append(r, Rank{source, target, distance})
@@ -132,8 +132,8 @@ func RankFind(source string, targets []string) Ranks {
 }
 
 // RankFindFold is a case-insensitive version of RankFind.
-func RankFindFold(source string, targets []string) Ranks {
-	var r Ranks
+func RankFindFold(source string, targets []string) ranks {
+	var r ranks
 	for _, target := range find(source, targets, unicode.ToLower) {
 		distance := LevenshteinDistance(source, target)
 		r = append(r, Rank{source, target, distance})
@@ -152,16 +152,16 @@ type Rank struct {
 	Distance int
 }
 
-type Ranks []Rank
+type ranks []Rank
 
-func (r Ranks) Len() int {
+func (r ranks) Len() int {
 	return len(r)
 }
 
-func (r Ranks) Swap(i, j int) {
+func (r ranks) Swap(i, j int) {
 	r[i], r[j] = r[j], r[i]
 }
 
-func (r Ranks) Less(i, j int) bool {
+func (r ranks) Less(i, j int) bool {
 	return r[i].Distance < r[j].Distance
 }

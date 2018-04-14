@@ -3,14 +3,21 @@ package config
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/erroneousboat/termui"
 )
 
+const (
+	NotifyAll     = "all"
+	NotifyMention = "mention"
+)
+
 // Config is the definition of a Config struct
 type Config struct {
 	SlackToken   string                `json:"slack_token"`
+	Notify       string                `json:"notify"`
 	SidebarWidth int                   `json:"sidebar_width"`
 	MainWidth    int                   `json:"-"`
 	KeyMap       map[string]keyMapping `json:"key_map"`
@@ -25,15 +32,11 @@ func NewConfig(filepath string) (*Config, error) {
 
 	file, err := os.Open(filepath)
 	if err != nil {
-		return &cfg, err
+		return &cfg, fmt.Errorf("couldn't find the slack-term config file: %v", err)
 	}
 
 	if err := json.NewDecoder(file).Decode(&cfg); err != nil {
-		return &cfg, err
-	}
-
-	if cfg.SlackToken == "" {
-		return &cfg, errors.New("couldn't find 'slack_token' parameter")
+		return &cfg, fmt.Errorf("the slack-term config file isn't valid json: %v", err)
 	}
 
 	if cfg.SidebarWidth < 1 || cfg.SidebarWidth > 11 {
@@ -41,6 +44,13 @@ func NewConfig(filepath string) (*Config, error) {
 	}
 
 	cfg.MainWidth = 12 - cfg.SidebarWidth
+
+	switch cfg.Notify {
+	case NotifyAll, NotifyMention, "":
+		break
+	default:
+		return &cfg, fmt.Errorf("unsupported setting for notify: %s", cfg.Notify)
+	}
 
 	termui.ColorMap = map[string]termui.Attribute{
 		"fg":           termui.StringToAttribute(cfg.Theme.View.Fg),
@@ -58,6 +68,7 @@ func getDefaultConfig() Config {
 	return Config{
 		SidebarWidth: 1,
 		MainWidth:    11,
+		Notify:       "",
 		KeyMap: map[string]keyMapping{
 			"command": {
 				"i":          "mode-insert",

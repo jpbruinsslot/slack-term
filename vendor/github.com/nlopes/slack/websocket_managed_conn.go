@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"reflect"
 	"time"
 
-	"golang.org/x/net/websocket"
+	"github.com/gorilla/websocket"
 )
 
 // ManageConnection can be called on a Slack RTM instance returned by the
@@ -33,6 +34,7 @@ func (rtm *RTM) ManageConnection() {
 		// if err != nil then the connection is sucessful - otherwise it is
 		// fatal
 		if err != nil {
+			rtm.Debugf("Failed to connect with RTM on try %d: %s", connectionCount, err)
 			return
 		}
 		rtm.info = info
@@ -43,6 +45,8 @@ func (rtm *RTM) ManageConnection() {
 
 		rtm.conn = conn
 		rtm.isConnected = true
+
+		rtm.Debugf("RTM connection succeeded on try %d", connectionCount)
 
 		keepRunning := make(chan bool)
 		// we're now connected (or have failed fatally) so we can set up
@@ -89,6 +93,7 @@ func (rtm *RTM) connect(connectionCount int, useRTMStart bool) (*Info, *websocke
 		}
 		// check for fatal errors - currently only invalid_auth
 		if sErr, ok := err.(*WebError); ok && (sErr.Error() == "invalid_auth" || sErr.Error() == "account_inactive") {
+			rtm.Debugf("Invalid auth when connecting with RTM: %s", err)
 			rtm.IncomingEvents <- RTMEvent{"invalid_auth", &InvalidAuthEvent{}}
 			return nil, nil, sErr
 		}
@@ -99,6 +104,15 @@ func (rtm *RTM) connect(connectionCount int, useRTMStart bool) (*Info, *websocke
 			Attempt:  boff.attempts,
 			ErrorObj: err,
 		}}
+
+		// check if Disconnect() has been invoked.
+		select {
+		case _ = <-rtm.disconnected:
+			rtm.IncomingEvents <- RTMEvent{"disconnected", &DisconnectedEvent{Intentional: true}}
+			return nil, nil, fmt.Errorf("disconnect received while trying to connect")
+		default:
+		}
+
 		// get time we should wait before attempting to connect again
 		dur := boff.Duration()
 		rtm.Debugf("reconnection %d failed: %s", boff.attempts+1, err)
@@ -116,16 +130,24 @@ func (rtm *RTM) startRTMAndDial(useRTMStart bool) (*Info, *websocket.Conn, error
 	var err error
 
 	if useRTMStart {
+		rtm.Debugf("Starting RTM")
 		info, url, err = rtm.StartRTM()
 	} else {
+		rtm.Debugf("Connecting to RTM")
 		info, url, err = rtm.ConnectRTM()
 	}
 	if err != nil {
+		rtm.Debugf("Failed to start or connect to RTM: %s", err)
 		return nil, nil, err
 	}
 
-	conn, err := websocketProxyDial(url, "http://api.slack.com")
+	rtm.Debugf("Dialing to websocket on url %s", url)
+	// Only use HTTPS for connections to prevent MITM attacks on the connection.
+	upgradeHeader := http.Header{}
+	upgradeHeader.Add("Origin", "https://api.slack.com")
+	conn, _, err := websocket.DefaultDialer.Dial(url, upgradeHeader)
 	if err != nil {
+		rtm.Debugf("Failed to dial to the websocket: %s", err)
 		return nil, nil, err
 	}
 	return info, conn, err
@@ -208,7 +230,7 @@ func (rtm *RTM) sendWithDeadline(msg interface{}) error {
 	if err := rtm.conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
 		return err
 	}
-	if err := websocket.JSON.Send(rtm.conn, msg); err != nil {
+	if err := rtm.conn.WriteJSON(msg); err != nil {
 		return err
 	}
 	// remove write deadline
@@ -263,7 +285,7 @@ func (rtm *RTM) ping() error {
 // This will block until a frame is available from the websocket.
 func (rtm *RTM) receiveIncomingEvent() {
 	event := json.RawMessage{}
-	err := websocket.JSON.Receive(rtm.conn, &event)
+	err := rtm.conn.ReadJSON(&event)
 	if err == io.EOF {
 		// EOF's don't seem to signify a failed connection so instead we ignore
 		// them here and detect a failed connection upon attempting to send a
@@ -317,10 +339,19 @@ func (rtm *RTM) handleAck(event json.RawMessage) {
 		rtm.Debugln(" -> Erroneous 'ack' event:", string(event))
 		return
 	}
+
 	if ack.Ok {
 		rtm.IncomingEvents <- RTMEvent{"ack", ack}
+	} else if ack.RTMResponse.Error != nil {
+		// As there is no documentation for RTM error-codes, this
+		// identification of a rate-limit warning is very brittle.
+		if ack.RTMResponse.Error.Code == -1 && ack.RTMResponse.Error.Msg == "slow down, too many messages..." {
+			rtm.IncomingEvents <- RTMEvent{"ack_error", &RateLimitEvent{}}
+		} else {
+			rtm.IncomingEvents <- RTMEvent{"ack_error", &AckErrorEvent{ack.Error}}
+		}
 	} else {
-		rtm.IncomingEvents <- RTMEvent{"ack_error", &AckErrorEvent{ack.Error}}
+		rtm.IncomingEvents <- RTMEvent{"ack_error", &AckErrorEvent{fmt.Errorf("ack decode failure")}}
 	}
 }
 

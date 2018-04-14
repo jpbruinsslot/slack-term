@@ -1,4 +1,4 @@
-Slack-Term
+slack-term
 ==========
 
 A [Slack](https://slack.com) client for your terminal.
@@ -21,10 +21,12 @@ $ mv slack-term /usr/local/bin
 
 #### Via Go
 
-If you want you can also get `slack-term` via Go:
+If you want, you can also get `slack-term` via Go:
 
 ```bash
 $ go get -u github.com/erroneousboat/slack-term
+$ cd $GOPATH/src/github.com/erroneousboat/slack-term
+$ go install .
 ```
 
 Setup
@@ -42,7 +44,12 @@ Setup
     "slack_token": "yourslacktokenhere",
 
     // OPTIONAL: set the width of the sidebar (between 1 and 11), default is 1
-    "sidebar_width": 3,
+    "sidebar_width": 1,
+
+    // OPTIONAL: turn on desktop notifications for all incoming messages, set
+    // the value as: "all", and for only mentions and im messages set the
+    // value as: "mention", default is turned off: ""
+    "notify": "",
 
     // OPTIONAL: define custom key mappings, defaults are:
     "key_map": {
