@@ -21,10 +21,12 @@ $ mv slack-term /usr/local/bin
 
 #### Via Go
 
-If you want you can also get `slack-term` via Go:
+If you want, you can also get `slack-term` via Go:
 
 ```bash
 $ go get -u github.com/erroneousboat/slack-term
+$ cd $GOPATH/src/github.com/erroneousboat/slack-term
+$ go install .
 ```
 
 Setup
