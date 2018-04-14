@@ -34,7 +34,7 @@ Setup
 
 1. Get a slack token, click [here](https://api.slack.com/docs/oauth-test-tokens) 
 
-2. Create a `slack-term.json` file, place it in your home directory. Below is
+2. Create a `.slack-term` file, and place it in your home directory. Below is
    an an example file, you can leave out the `OPTIONAL` parts, you are only
    required to specify a `slack_token`. Remember that your file should be
    a valid json file so don't forget to remove the comments.
