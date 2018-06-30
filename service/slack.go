@@ -338,6 +338,7 @@ func (s *SlackService) SendMessage(channelID int, message string) {
 	postParams := slack.PostMessageParameters{
 		AsUser:   true,
 		Username: s.CurrentUsername,
+		LinkNames: 1,
 	}
 
 	// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
