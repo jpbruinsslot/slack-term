@@ -12,8 +12,8 @@ import (
 
 	"github.com/nlopes/slack"
 
-	"github.com/erroneousboat/slack-term/components"
-	"github.com/erroneousboat/slack-term/config"
+	"github.com/oliverseal/slack-term/components"
+	"github.com/oliverseal/slack-term/config"
 )
 
 const (

@@ -11,8 +11,8 @@ import (
 	"github.com/erroneousboat/termui"
 	termbox "github.com/nsf/termbox-go"
 
-	"github.com/erroneousboat/slack-term/context"
-	"github.com/erroneousboat/slack-term/handlers"
+	"github.com/oliverseal/slack-term/context"
+	"github.com/oliverseal/slack-term/handlers"
 )
 
 const (
@@ -27,7 +27,7 @@ VERSION:
     %s
 
 WEBSITE:
-    https://github.com/erroneousboat/slack-term
+    https://github.com/oliverseal/slack-term
 
 GLOBAL OPTIONS:
    --help, -h

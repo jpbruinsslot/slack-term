@@ -9,9 +9,9 @@ import (
 	"github.com/erroneousboat/termui"
 	termbox "github.com/nsf/termbox-go"
 
-	"github.com/erroneousboat/slack-term/config"
-	"github.com/erroneousboat/slack-term/service"
-	"github.com/erroneousboat/slack-term/views"
+	"github.com/oliverseal/slack-term/config"
+	"github.com/oliverseal/slack-term/service"
+	"github.com/oliverseal/slack-term/views"
 )
 
 const (
