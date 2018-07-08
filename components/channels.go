@@ -3,7 +3,7 @@ package components
 import (
 	"fmt"
 	"html"
-    "strings"
+	"strings"
 
 	"github.com/erroneousboat/termui"
 	"github.com/renstrom/fuzzysearch/fuzzy"
@@ -211,7 +211,6 @@ func (c *Channels) GetSelectedChannel() string {
 	return c.List.Items[c.SelectedChannel]
 }
 
-
 // MoveCursorUp will decrease the SelectedChannel by 1
 func (c *Channels) MoveCursorUp() {
 	if c.SelectedChannel > 0 {
@@ -275,17 +274,17 @@ func (c *Channels) ScrollDown() {
 }
 
 func (c *Channels) GetChannelIndex(name string) int {
-    // because the item buffers can be endless in termui, we have to len it rather than range
-    // otherwise, infiniloops
-    l := len(c.List.Items)
-    formattedName := fmt.Sprintf("[%s]", name)
-    for index := 0; index < l; index++ {
-        channelName := c.List.Items[index]
-        if strings.Contains(channelName, formattedName) {
-            return index
-        }
-    }
-    return -1
+	// because the item buffers can be endless in termui, we have to len it rather than range
+	// otherwise, infiniloops
+	l := len(c.List.Items)
+	formattedName := fmt.Sprintf("[%s]", name)
+	for index := 0; index < l; index++ {
+		channelName := c.List.Items[index]
+		if strings.Contains(channelName, formattedName) {
+			return index
+		}
+	}
+	return -1
 }
 
 // Search will search through the channels to find a channel,
@@ -316,10 +315,10 @@ func (c *Channels) Search(term string) {
 func (c *Channels) GotoPosition(position int, absolute bool) {
 
 	// The new position
-    newPos := position
-    if !absolute {
-	    newPos = c.SearchMatches[position]
-    }
+	newPos := position
+	if !absolute {
+		newPos = c.SearchMatches[position]
+	}
 
 	// Is the new position in range of the current view?
 	minRange := c.Offset
@@ -363,4 +362,3 @@ func (c *Channels) SearchPrev() {
 		c.SearchPosition = newPosition
 	}
 }
-

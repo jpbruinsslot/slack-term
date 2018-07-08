@@ -9,7 +9,7 @@ import (
 
 	"github.com/erroneousboat/termui"
 
-	"github.com/oliverseal/slack-term/config"
+	"github.com/erroneousboat/slack-term/config"
 )
 
 type Message struct {

@@ -3,9 +3,9 @@ package views
 import (
 	"github.com/erroneousboat/termui"
 
-	"github.com/oliverseal/slack-term/components"
-	"github.com/oliverseal/slack-term/config"
-	"github.com/oliverseal/slack-term/service"
+	"github.com/erroneousboat/slack-term/components"
+	"github.com/erroneousboat/slack-term/config"
+	"github.com/erroneousboat/slack-term/service"
 )
 
 type View struct {

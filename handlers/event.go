@@ -11,9 +11,9 @@ import (
 	"github.com/nlopes/slack"
 	termbox "github.com/nsf/termbox-go"
 
-	"github.com/oliverseal/slack-term/config"
-	"github.com/oliverseal/slack-term/context"
-	"github.com/oliverseal/slack-term/views"
+	"github.com/erroneousboat/slack-term/config"
+	"github.com/erroneousboat/slack-term/context"
+	"github.com/erroneousboat/slack-term/views"
 )
 
 var scrollTimer *time.Timer
@@ -38,7 +38,7 @@ var actionMap = map[string]func(*context.AppContext){
 	"channel-down":        actionMoveCursorDownChannels,
 	"channel-top":         actionMoveCursorTopChannels,
 	"channel-bottom":      actionMoveCursorBottomChannels,
-    "channel-unread":      actionGoToUnread,
+	"channel-unread":      actionGoToUnread,
 	"channel-search-next": actionSearchNextChannels,
 	"channel-search-prev": actionSearchPrevChannels,
 	"chat-up":             actionScrollUpChat,
@@ -444,16 +444,16 @@ func actionHelp(ctx *context.AppContext) {
 }
 
 func actionGoToUnread(ctx *context.AppContext) {
-    for _, channel := range ctx.Service.Channels {
-        if channel.Notification {
-            index := ctx.View.Channels.GetChannelIndex(channel.Name)
-            if index >= 0 {
-                ctx.View.Channels.GotoPosition(index, true)
-                actionChangeChannel(ctx)
-                break
-            }
-        }
-    }
+	for _, channel := range ctx.Service.Channels {
+		if channel.Notification {
+			index := ctx.View.Channels.GetChannelIndex(channel.Name)
+			if index >= 0 {
+				ctx.View.Channels.GotoPosition(index, true)
+				actionChangeChannel(ctx)
+				break
+			}
+		}
+	}
 }
 
 // GetKeyString will return a string that resembles the key event from
