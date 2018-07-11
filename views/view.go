@@ -37,12 +37,7 @@ func CreateView(config *config.Config, svc *service.SlackService) *View {
 		chat.GetMaxItems(),
 	)
 
-	var strMsgs []string
-	for _, msg := range msgs {
-		strMsgs = append(strMsgs, msg.ToString())
-	}
-
-	chat.SetMessages(strMsgs)
+    chat.SetMessages(msgs)
 	chat.SetBorderLabel(svc.Channels[channels.SelectedChannel].GetChannelName())
 
 	// Debug: create the component
