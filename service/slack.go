@@ -128,14 +128,15 @@ func (s *SlackService) GetChannels() []string {
 			s.SlackChannels = append(s.SlackChannels, chn)
 			chans = append(
 				chans, components.ChannelItem{
-					ID:          chn.ID,
-					Name:        chn.Name,
-					Topic:       chn.Topic.Value,
-					Type:        components.ChannelTypeChannel,
-					UserID:      "",
-					StylePrefix: s.Config.Theme.Channel.Prefix,
-					StyleIcon:   s.Config.Theme.Channel.Icon,
-					StyleText:   s.Config.Theme.Channel.Text,
+					ID:           chn.ID,
+					Name:         chn.Name,
+					Topic:        chn.Topic.Value,
+					Type:         components.ChannelTypeChannel,
+					UserID:       "",
+					StylePrefix:  s.Config.Theme.Channel.Prefix,
+					StyleIcon:    s.Config.Theme.Channel.Icon,
+					StyleText:    s.Config.Theme.Channel.Text,
+					LastReadTime: time.Now().UTC(),
 				},
 			)
 		}
@@ -146,14 +147,15 @@ func (s *SlackService) GetChannels() []string {
 		s.SlackChannels = append(s.SlackChannels, grp)
 		chans = append(
 			chans, components.ChannelItem{
-				ID:          grp.ID,
-				Name:        grp.Name,
-				Topic:       grp.Topic.Value,
-				Type:        components.ChannelTypeGroup,
-				UserID:      "",
-				StylePrefix: s.Config.Theme.Channel.Prefix,
-				StyleIcon:   s.Config.Theme.Channel.Icon,
-				StyleText:   s.Config.Theme.Channel.Text,
+				ID:           grp.ID,
+				Name:         grp.Name,
+				Topic:        grp.Topic.Value,
+				Type:         components.ChannelTypeGroup,
+				UserID:       "",
+				StylePrefix:  s.Config.Theme.Channel.Prefix,
+				StyleIcon:    s.Config.Theme.Channel.Icon,
+				StyleText:    s.Config.Theme.Channel.Text,
+				LastReadTime: time.Now().UTC(),
 			},
 		)
 	}
@@ -171,15 +173,16 @@ func (s *SlackService) GetChannels() []string {
 			chans = append(
 				chans,
 				components.ChannelItem{
-					ID:          im.ID,
-					Name:        name,
-					Topic:       "",
-					Type:        components.ChannelTypeIM,
-					UserID:      im.User,
-					Presence:    "",
-					StylePrefix: s.Config.Theme.Channel.Prefix,
-					StyleIcon:   s.Config.Theme.Channel.Icon,
-					StyleText:   s.Config.Theme.Channel.Text,
+					ID:           im.ID,
+					Name:         name,
+					Topic:        "",
+					Type:         components.ChannelTypeIM,
+					UserID:       im.User,
+					Presence:     "",
+					StylePrefix:  s.Config.Theme.Channel.Prefix,
+					StyleIcon:    s.Config.Theme.Channel.Icon,
+					StyleText:    s.Config.Theme.Channel.Text,
+					LastReadTime: time.Now().UTC(),
 				},
 			)
 			s.SlackChannels = append(s.SlackChannels, im)
@@ -282,6 +285,7 @@ func (s *SlackService) SetChannelReadMark(channel interface{}) {
 // MarkAsRead will set the channel as read
 func (s *SlackService) MarkAsRead(channelID int) {
 	channel := s.Channels[channelID]
+	s.Channels[channelID].SetLastReadTime(time.Now().UTC())
 
 	if channel.Notification {
 		s.Channels[channelID].Notification = false

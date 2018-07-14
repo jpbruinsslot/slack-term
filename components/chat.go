@@ -235,10 +235,8 @@ func (c *Chat) SetMessages(messages []Message) {
 		unreadDeltaAdded = true
 	}
 
-	//print(fmt.Sprintf("last read: %v", c.LastReadTime))
 	for _, msg := range messages {
 		c.ShowTimeDelta(msg)
-		//print(fmt.Sprintf("message time: %v", msg.Time))
 		if unreadDeltaAdded == false {
 			if msg.Time.UTC().After(c.LastReadTime.UTC()) {
 				c.AddUnreadDelta()
@@ -254,7 +252,7 @@ func (c *Chat) AddUnreadDelta() {
 	unreadLabel := "new messages"
 	screenWidth := c.List.Width
 	markerWidth := len(unreadLabel)
-	split := screenWidth - markerWidth - 4
+	split := screenWidth - markerWidth - 5
 	if split < 0 {
 		// sometimes we don't know the width yet, so arbitrarily, 10.
 		split = 10
