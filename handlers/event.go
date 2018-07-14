@@ -299,7 +299,13 @@ func actionGetMessages(ctx *context.AppContext) {
 		ctx.View.Chat.GetMaxItems(),
 	)
 
+	//lastRead, emptyLastRead := ctx.LastReads[ctx.View.Channels.SelectedChannel]
+
+	//if !emptyLastRead {
+	//    ctx.View.Chat.SetLastReadTime(lastRead)
+	//}
 	ctx.View.Chat.SetMessages(msgs)
+	//ctx.LastReads[ctx.View.Channels.SelectedChannel] = time.Now()
 
 	termui.Render(ctx.View.Chat)
 }
@@ -375,6 +381,12 @@ func actionChangeChannel(ctx *context.AppContext) {
 		ctx.View.Chat.GetMaxItems(),
 	)
 
+	lastRead, ok := ctx.LastReads[ctx.View.Channels.SelectedChannel]
+
+	if ok {
+		lastReadTime := time.Unix(lastRead, 0)
+		ctx.View.Chat.SetLastReadTime(lastReadTime)
+	}
 	// Set messages for the channel
 	ctx.View.Chat.SetMessages(msgs)
 
@@ -385,6 +397,8 @@ func actionChangeChannel(ctx *context.AppContext) {
 
 	// Clear notification icon if there is any
 	ctx.Service.MarkAsRead(ctx.View.Channels.SelectedChannel)
+	ctx.LastReads[ctx.View.Channels.SelectedChannel] = int64(time.Now().Unix())
+
 	ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
 
 	termui.Render(ctx.View.Channels)

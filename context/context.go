@@ -29,6 +29,7 @@ type AppContext struct {
 	Debug      bool
 	Mode       string
 	Notify     *notificator.Notificator
+	LastReads  map[int]int64
 }
 
 // CreateAppContext creates an application context which can be passed
@@ -106,5 +107,6 @@ func CreateAppContext(flgConfig string, flgToken string, flgDebug bool) (*AppCon
 		Debug:      flgDebug,
 		Mode:       CommandMode,
 		Notify:     notificator.New(notificator.Options{AppName: "slack-term"}),
+		LastReads:  map[int]int64{},
 	}, nil
 }
