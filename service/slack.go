@@ -332,16 +332,22 @@ func (s *SlackService) GetChannelName(channelID string) string {
 }
 
 // SendMessage will send a message to a particular channel
-func (s *SlackService) SendMessage(channelID int, message string) {
+func (s *SlackService) SendMessage(channelID int, message string) error {
 
 	// https://godoc.org/github.com/nlopes/slack#PostMessageParameters
 	postParams := slack.PostMessageParameters{
-		AsUser:   true,
-		Username: s.CurrentUsername,
+		AsUser:    true,
+		Username:  s.CurrentUsername,
+		LinkNames: 1,
 	}
 
 	// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
-	s.Client.PostMessage(s.Channels[channelID].ID, message, postParams)
+	_, _, err := s.Client.PostMessage(s.Channels[channelID].ID, message, postParams)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetMessages will get messages for a channel, group or im channel delimited

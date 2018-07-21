@@ -141,6 +141,10 @@ func messageHandler(ctx *context.AppContext) {
 					}
 				case *slack.PresenceChangeEvent:
 					actionSetPresence(ctx, ev.User, ev.Presence)
+				case *slack.RTMError:
+					ctx.View.Debug.Println(
+						ev.Error(),
+					)
 				}
 			}
 		}
@@ -236,10 +240,15 @@ func actionSend(ctx *context.AppContext) {
 		ctx.View.Refresh()
 
 		// Send message
-		ctx.Service.SendMessage(
+		err := ctx.Service.SendMessage(
 			ctx.View.Channels.SelectedChannel,
 			message,
 		)
+		if err != nil {
+			ctx.View.Debug.Println(
+				err.Error(),
+			)
+		}
 
 		// Clear notification icon if there is any
 		ctx.Service.MarkAsRead(ctx.View.Channels.SelectedChannel)
