@@ -24,23 +24,21 @@ func (api *Client) AddPinContext(ctx context.Context, channel string, item ItemR
 		"token":   {api.token},
 	}
 	if item.Timestamp != "" {
-		values.Set("timestamp", string(item.Timestamp))
+		values.Set("timestamp", item.Timestamp)
 	}
 	if item.File != "" {
-		values.Set("file", string(item.File))
+		values.Set("file", item.File)
 	}
 	if item.Comment != "" {
-		values.Set("file_comment", string(item.Comment))
+		values.Set("file_comment", item.Comment)
 	}
 
 	response := &SlackResponse{}
 	if err := post(ctx, api.httpclient, "pins.add", values, response, api.debug); err != nil {
 		return err
 	}
-	if !response.Ok {
-		return errors.New(response.Error)
-	}
-	return nil
+
+	return response.Err()
 }
 
 // RemovePin un-pins an item from a channel
@@ -55,23 +53,21 @@ func (api *Client) RemovePinContext(ctx context.Context, channel string, item It
 		"token":   {api.token},
 	}
 	if item.Timestamp != "" {
-		values.Set("timestamp", string(item.Timestamp))
+		values.Set("timestamp", item.Timestamp)
 	}
 	if item.File != "" {
-		values.Set("file", string(item.File))
+		values.Set("file", item.File)
 	}
 	if item.Comment != "" {
-		values.Set("file_comment", string(item.Comment))
+		values.Set("file_comment", item.Comment)
 	}
 
 	response := &SlackResponse{}
 	if err := post(ctx, api.httpclient, "pins.remove", values, response, api.debug); err != nil {
 		return err
 	}
-	if !response.Ok {
-		return errors.New(response.Error)
-	}
-	return nil
+
+	return response.Err()
 }
 
 // ListPins returns information about the items a user reacted to.

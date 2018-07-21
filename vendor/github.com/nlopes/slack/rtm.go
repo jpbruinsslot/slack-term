@@ -3,9 +3,11 @@ package slack
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/url"
+	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 const (
@@ -29,13 +31,11 @@ func (api *Client) StartRTMContext(ctx context.Context) (info *Info, websocketUR
 	response := &infoResponseFull{}
 	err = post(ctx, api.httpclient, "rtm.start", url.Values{"token": {api.token}}, response, api.debug)
 	if err != nil {
-		return nil, "", fmt.Errorf("post: %s", err)
+		return nil, "", err
 	}
-	if !response.Ok {
-		return nil, "", response.Error
-	}
+
 	api.Debugln("Using URL:", response.Info.URL)
-	return &response.Info, response.Info.URL, nil
+	return &response.Info, response.Info.URL, response.Err()
 }
 
 // ConnectRTM calls the "rtm.connect" endpoint and returns the provided URL and the compact Info block.
@@ -48,7 +48,8 @@ func (api *Client) ConnectRTM() (info *Info, websocketURL string, err error) {
 	return api.ConnectRTMContext(ctx)
 }
 
-// ConnectRTM calls the "rtm.connect" endpoint and returns the provided URL and the compact Info block with a custom context.
+// ConnectRTMContext calls the "rtm.connect" endpoint and returns the
+// provided URL and the compact Info block with a custom context.
 //
 // To have a fully managed Websocket connection, use `NewRTM`, and call `ManageConnection()` on it.
 func (api *Client) ConnectRTMContext(ctx context.Context) (info *Info, websocketURL string, err error) {
@@ -56,25 +57,35 @@ func (api *Client) ConnectRTMContext(ctx context.Context) (info *Info, websocket
 	err = post(ctx, api.httpclient, "rtm.connect", url.Values{"token": {api.token}}, response, api.debug)
 	if err != nil {
 		api.Debugf("Failed to connect to RTM: %s", err)
-		return nil, "", fmt.Errorf("post: %s", err)
+		return nil, "", err
 	}
-	if !response.Ok {
-		return nil, "", response.Error
-	}
+
 	api.Debugln("Using URL:", response.Info.URL)
-	return &response.Info, response.Info.URL, nil
+	return &response.Info, response.Info.URL, response.Err()
+}
+
+// RTMOption options for the managed RTM.
+type RTMOption func(*RTM)
+
+// RTMOptionUseStart as of 11th July 2017 you should prefer setting this to false, see:
+// https://api.slack.com/changelog/2017-04-start-using-rtm-connect-and-stop-using-rtm-start
+func RTMOptionUseStart(b bool) RTMOption {
+	return func(rtm *RTM) {
+		rtm.useRTMStart = b
+	}
+}
+
+// RTMOptionDialer takes a gorilla websocket Dialer and uses it as the
+// Dialer when opening the websocket for the RTM connection.
+func RTMOptionDialer(d *websocket.Dialer) RTMOption {
+	return func(rtm *RTM) {
+		rtm.dialer = d
+	}
 }
 
 // NewRTM returns a RTM, which provides a fully managed connection to
 // Slack's websocket-based Real-Time Messaging protocol.
-func (api *Client) NewRTM() *RTM {
-	return api.NewRTMWithOptions(nil)
-}
-
-// NewRTMWithOptions returns a RTM, which provides a fully managed connection to
-// Slack's websocket-based Real-Time Messaging protocol.
-// This also allows to configure various options available for RTM API.
-func (api *Client) NewRTMWithOptions(options *RTMOptions) *RTM {
+func (api *Client) NewRTM(options ...RTMOption) *RTM {
 	result := &RTM{
 		Client:           *api,
 		IncomingEvents:   make(chan RTMEvent, 50),
@@ -87,13 +98,23 @@ func (api *Client) NewRTMWithOptions(options *RTMOptions) *RTM {
 		forcePing:        make(chan bool),
 		rawEvents:        make(chan json.RawMessage),
 		idGen:            NewSafeID(1),
+		mu:               &sync.Mutex{},
 	}
 
-	if options != nil {
-		result.useRTMStart = options.UseRTMStart
-	} else {
-		result.useRTMStart = true
+	for _, opt := range options {
+		opt(result)
 	}
 
 	return result
+}
+
+// NewRTMWithOptions Deprecated just use NewRTM(RTMOptionsUseStart(true))
+// returns a RTM, which provides a fully managed connection to
+// Slack's websocket-based Real-Time Messaging protocol.
+// This also allows to configure various options available for RTM API.
+func (api *Client) NewRTMWithOptions(options *RTMOptions) *RTM {
+	if options != nil {
+		return api.NewRTM(RTMOptionUseStart(options.UseRTMStart))
+	}
+	return api.NewRTM()
 }

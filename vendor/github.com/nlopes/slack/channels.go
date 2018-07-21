@@ -52,11 +52,8 @@ func (api *Client) ArchiveChannelContext(ctx context.Context, channelID string) 
 		"channel": {channelID},
 	}
 
-	if _, err = channelRequest(ctx, api.httpclient, "channels.archive", values, api.debug); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = channelRequest(ctx, api.httpclient, "channels.archive", values, api.debug)
+	return err
 }
 
 // UnarchiveChannel unarchives the given channel
@@ -73,11 +70,8 @@ func (api *Client) UnarchiveChannelContext(ctx context.Context, channelID string
 		"channel": {channelID},
 	}
 
-	if _, err = channelRequest(ctx, api.httpclient, "channels.unarchive", values, api.debug); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = channelRequest(ctx, api.httpclient, "channels.unarchive", values, api.debug)
+	return err
 }
 
 // CreateChannel creates a channel with the given name and returns a *Channel
@@ -247,11 +241,8 @@ func (api *Client) KickUserFromChannelContext(ctx context.Context, channelID, us
 		"user":    {user},
 	}
 
-	if _, err = channelRequest(ctx, api.httpclient, "channels.kick", values, api.debug); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = channelRequest(ctx, api.httpclient, "channels.kick", values, api.debug)
+	return err
 }
 
 // GetChannels retrieves all the channels
@@ -297,11 +288,8 @@ func (api *Client) SetChannelReadMarkContext(ctx context.Context, channelID, ts 
 		"ts":      {ts},
 	}
 
-	if _, err = channelRequest(ctx, api.httpclient, "channels.mark", values, api.debug); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = channelRequest(ctx, api.httpclient, "channels.mark", values, api.debug)
+	return err
 }
 
 // RenameChannel renames a given channel

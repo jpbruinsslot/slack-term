@@ -8,6 +8,7 @@ type OutgoingMessage struct {
 	Text            string `json:"text,omitempty"`
 	Type            string `json:"type,omitempty"`
 	ThreadTimestamp string `json:"thread_ts,omitempty"`
+	ThreadBroadcast bool   `json:"reply_broadcast,omitempty"`
 }
 
 // Message is an auxiliary type to allow us to have a message containing sub messages
@@ -26,7 +27,7 @@ type Msg struct {
 	Timestamp       string       `json:"ts,omitempty"`
 	ThreadTimestamp string       `json:"thread_ts,omitempty"`
 	IsStarred       bool         `json:"is_starred,omitempty"`
-	PinnedTo        []string     `json:"pinned_to, omitempty"`
+	PinnedTo        []string     `json:"pinned_to,omitempty"`
 	Attachments     []Attachment `json:"attachments,omitempty"`
 	Edited          *Edited      `json:"edited,omitempty"`
 	LastRead        string       `json:"last_read,omitempty"`
@@ -89,6 +90,7 @@ type Msg struct {
 	// slash commands and interactive messages
 	ResponseType    string `json:"response_type,omitempty"`
 	ReplaceOriginal bool   `json:"replace_original,omitempty"`
+	DeleteOriginal  bool   `json:"delete_original,omitempty"`
 }
 
 // Icon is used for bot messages
@@ -129,14 +131,18 @@ type Pong struct {
 // NewOutgoingMessage prepares an OutgoingMessage that the user can
 // use to send a message. Use this function to properly set the
 // messageID.
-func (rtm *RTM) NewOutgoingMessage(text string, channelID string) *OutgoingMessage {
+func (rtm *RTM) NewOutgoingMessage(text string, channelID string, options ...RTMsgOption) *OutgoingMessage {
 	id := rtm.idGen.Next()
-	return &OutgoingMessage{
+	msg := OutgoingMessage{
 		ID:      id,
 		Type:    "message",
 		Channel: channelID,
 		Text:    text,
 	}
+	for _, option := range options {
+		option(&msg)
+	}
+	return &msg
 }
 
 // NewTypingMessage prepares an OutgoingMessage that the user can
@@ -149,4 +155,22 @@ func (rtm *RTM) NewTypingMessage(channelID string) *OutgoingMessage {
 		Type:    "typing",
 		Channel: channelID,
 	}
+}
+
+// RTMsgOption allows configuration of various options available for sending an RTM message
+type RTMsgOption func(*OutgoingMessage)
+
+// RTMsgOptionTS sets thead timestamp of an outgoing message in order to respond to a thread
+func RTMsgOptionTS(threadTimestamp string) RTMsgOption {
+	return func(msg *OutgoingMessage) {
+		msg.ThreadTimestamp = threadTimestamp
+	}
+}
+
+// RTMsgOptionBroadcast sets broadcast reply to channel to "true"
+func RTMsgOptionBroadcast() RTMsgOption {
+	return func(msg *OutgoingMessage) {
+		msg.ThreadBroadcast = true
+	}
+
 }
