@@ -1,6 +1,7 @@
 package context
 
 import (
+	"errors"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -59,6 +60,17 @@ func CreateAppContext(flgConfig string, flgToken string, flgDebug bool) (*AppCon
 		}
 	}
 
+	// Create desktop notifier
+	var notify *notificator.Notificator
+	if config.Notify != "" {
+		notify = notificator.New(notificator.Options{AppName: "slack-term"})
+		if notify == nil {
+			return nil, errors.New(
+				"desktop notifications are not supported for your OS",
+			)
+		}
+	}
+
 	// Create Service
 	svc, err := service.NewSlackService(config)
 	if err != nil {
@@ -105,6 +117,6 @@ func CreateAppContext(flgConfig string, flgToken string, flgDebug bool) (*AppCon
 		Config:     config,
 		Debug:      flgDebug,
 		Mode:       CommandMode,
-		Notify:     notificator.New(notificator.Options{AppName: "slack-term"}),
+		Notify:     notify,
 	}, nil
 }
