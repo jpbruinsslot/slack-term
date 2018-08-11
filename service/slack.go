@@ -453,12 +453,13 @@ func (s *SlackService) CreateMessage(message slack.Message) []components.Message
 
 	// Format message
 	msg := components.Message{
-		Time:      time.Unix(intTime, 0),
-		Name:      name,
-		Content:   parseMessage(s, message.Text),
-		StyleTime: s.Config.Theme.Message.Time,
-		StyleName: s.Config.Theme.Message.Name,
-		StyleText: s.Config.Theme.Message.Text,
+		Time:       time.Unix(intTime, 0),
+		Name:       name,
+		Content:    parseMessage(s, message.Text),
+		StyleTime:  s.Config.Theme.Message.Time,
+		StyleName:  s.Config.Theme.Message.Name,
+		StyleText:  s.Config.Theme.Message.Text,
+		FormatTime: s.Config.Theme.Message.TimeFormat,
 	}
 
 	msgs = append(msgs, msg)
@@ -525,12 +526,13 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 
 	// Format message
 	msg := components.Message{
-		Time:      time.Unix(intTime, 0),
-		Name:      name,
-		Content:   parseMessage(s, message.Text),
-		StyleTime: s.Config.Theme.Message.Time,
-		StyleName: s.Config.Theme.Message.Name,
-		StyleText: s.Config.Theme.Message.Text,
+		Time:       time.Unix(intTime, 0),
+		Name:       name,
+		Content:    parseMessage(s, message.Text),
+		StyleTime:  s.Config.Theme.Message.Time,
+		StyleName:  s.Config.Theme.Message.Name,
+		StyleText:  s.Config.Theme.Message.Text,
+		FormatTime: s.Config.Theme.Message.TimeFormat,
 	}
 
 	msgs = append(msgs, msg)
@@ -663,9 +665,10 @@ func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []c
 					att.Fields[i].Title,
 					att.Fields[i].Value,
 				),
-				StyleTime: s.Config.Theme.Message.Time,
-				StyleName: s.Config.Theme.Message.Name,
-				StyleText: s.Config.Theme.Message.Text,
+				StyleTime:  s.Config.Theme.Message.Time,
+				StyleName:  s.Config.Theme.Message.Name,
+				StyleText:  s.Config.Theme.Message.Text,
+				FormatTime: s.Config.Theme.Message.TimeFormat,
 			},
 			)
 		}
@@ -674,10 +677,11 @@ func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []c
 			msgs = append(
 				msgs,
 				components.Message{
-					Content:   fmt.Sprintf("%s", att.Text),
-					StyleTime: s.Config.Theme.Message.Time,
-					StyleName: s.Config.Theme.Message.Name,
-					StyleText: s.Config.Theme.Message.Text,
+					Content:    fmt.Sprintf("%s", att.Text),
+					StyleTime:  s.Config.Theme.Message.Time,
+					StyleName:  s.Config.Theme.Message.Name,
+					StyleText:  s.Config.Theme.Message.Text,
+					FormatTime: s.Config.Theme.Message.TimeFormat,
 				},
 			)
 		}
@@ -686,10 +690,11 @@ func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []c
 			msgs = append(
 				msgs,
 				components.Message{
-					Content:   fmt.Sprintf("%s", att.Title),
-					StyleTime: s.Config.Theme.Message.Time,
-					StyleName: s.Config.Theme.Message.Name,
-					StyleText: s.Config.Theme.Message.Text,
+					Content:    fmt.Sprintf("%s", att.Title),
+					StyleTime:  s.Config.Theme.Message.Time,
+					StyleName:  s.Config.Theme.Message.Name,
+					StyleText:  s.Config.Theme.Message.Text,
+					FormatTime: s.Config.Theme.Message.TimeFormat,
 				},
 			)
 		}

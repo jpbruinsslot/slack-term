@@ -124,9 +124,10 @@ func getDefaultConfig() Config {
 				Text:   "",
 			},
 			Message: Message{
-				Time: "",
-				Name: "",
-				Text: "",
+				Time:       "",
+				TimeFormat: "15:04",
+				Name:       "",
+				Text:       "",
 			},
 		},
 	}

@@ -19,6 +19,8 @@ type Message struct {
 	StyleTime string
 	StyleName string
 	StyleText string
+
+	FormatTime string
 }
 
 // Chat is the definition of a Chat component
@@ -54,7 +56,11 @@ func (c *Chat) Buffer() termui.Buffer {
 		if (msg.Time != time.Time{} && msg.Name != "") {
 			// Time
 			cells = append(cells, termui.DefaultTxBuilder.Build(
-				fmt.Sprintf("[[%s]](%s) ", msg.Time.Format("15:04"), msg.StyleTime),
+				fmt.Sprintf(
+					"[[%s]](%s) ",
+					msg.Time.Format(msg.FormatTime),
+					msg.StyleTime,
+				),
 				termui.ColorDefault, termui.ColorDefault)...,
 			)
 

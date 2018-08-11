@@ -35,7 +35,7 @@ Setup
 1. Get a slack token, click [here](https://api.slack.com/docs/oauth-test-tokens) 
 
 2. Create a `.slack-term` file, and place it in your home directory. Below is
-   an an example file, you can leave out the `OPTIONAL` parts, you are only
+   an example file, you can leave out the `OPTIONAL` parts, you are only
    required to specify a `slack_token`. Remember that your file should be
    a valid json file so don't forget to remove the comments.
 
@@ -47,7 +47,7 @@ Setup
     "sidebar_width": 1,
 
     // OPTIONAL: turn on desktop notifications for all incoming messages, set
-    // the value as: "all", and for only mentions and im messages set the
+    // the value as: "all". For only mentions and im messages set the
     // value as: "mention", default is turned off: ""
     "notify": "",
 
@@ -112,7 +112,8 @@ Setup
         "message": {
             "time": "",
             "name": "",
-            "text": ""
+            "text": "",
+            "time_format": "15:04"
         }
     }
 }
@@ -139,7 +140,7 @@ $ slack-term -config [path-to-config-file]
 Default Key Mapping
 -------------------
 
-Below are the default key-mapping for `slack-term`, you can change them
+Below are the default key-mappings for `slack-term`, you can change them
 in your `slack-term.json` file.
 
 | mode    | key       | action                     |

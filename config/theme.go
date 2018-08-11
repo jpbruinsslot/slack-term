@@ -16,9 +16,10 @@ type View struct {
 }
 
 type Message struct {
-	Time string `json:"time"`
-	Name string `json:"name"`
-	Text string `json:"text"`
+	Time       string `json:"time"`
+	Name       string `json:"name"`
+	Text       string `json:"text"`
+	TimeFormat string `json:"time_format"`
 }
 
 type Channel struct {
