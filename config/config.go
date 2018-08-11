@@ -18,6 +18,7 @@ const (
 type Config struct {
 	SlackToken   string                `json:"slack_token"`
 	Notify       string                `json:"notify"`
+	Emoji        bool                  `json:"emoji"`
 	SidebarWidth int                   `json:"sidebar_width"`
 	MainWidth    int                   `json:"-"`
 	KeyMap       map[string]keyMapping `json:"key_map"`
@@ -69,6 +70,7 @@ func getDefaultConfig() Config {
 		SidebarWidth: 1,
 		MainWidth:    11,
 		Notify:       "",
+		Emoji:        false,
 		KeyMap: map[string]keyMapping{
 			"command": {
 				"i":          "mode-insert",

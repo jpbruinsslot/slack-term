@@ -582,10 +582,9 @@ func (s *SlackService) CreateNotifyMessage(channelID string) string {
 //	- emoji's
 //	- mentions
 func parseMessage(s *SlackService, msg string) string {
-	// NOTE: Commented out because rendering of the emoji's
-	// creates artifacts from the last view because of
-	// double width emoji's
-	// msg = parseEmoji(msg)
+	if s.Config.Emoji {
+		msg = parseEmoji(msg)
+	}
 
 	msg = parseMentions(s, msg)
 

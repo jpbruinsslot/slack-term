@@ -51,6 +51,9 @@ Setup
     // value as: "mention", default is turned off: ""
     "notify": "",
 
+    // OPTIONAL: turn on emoji's, default is false
+    "emoji": false,
+
     // OPTIONAL: define custom key mappings, defaults are:
     "key_map": {
         "command": {
