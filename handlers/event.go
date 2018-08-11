@@ -121,7 +121,7 @@ func messageHandler(ctx *context.AppContext) {
 						// when attachments are added to message
 						for i := len(msg) - 1; i >= 0; i-- {
 							ctx.View.Chat.AddMessage(
-								msg[i].ToString(),
+								msg[i],
 							)
 						}
 
@@ -308,12 +308,7 @@ func actionGetMessages(ctx *context.AppContext) {
 		ctx.View.Chat.GetMaxItems(),
 	)
 
-	var strMsgs []string
-	for _, msg := range msgs {
-		strMsgs = append(strMsgs, msg.ToString())
-	}
-
-	ctx.View.Chat.SetMessages(strMsgs)
+	ctx.View.Chat.SetMessages(msgs)
 
 	termui.Render(ctx.View.Chat)
 }
@@ -389,13 +384,8 @@ func actionChangeChannel(ctx *context.AppContext) {
 		ctx.View.Chat.GetMaxItems(),
 	)
 
-	var strMsgs []string
-	for _, msg := range msgs {
-		strMsgs = append(strMsgs, msg.ToString())
-	}
-
 	// Set messages for the channel
-	ctx.View.Chat.SetMessages(strMsgs)
+	ctx.View.Chat.SetMessages(msgs)
 
 	// Set channel name for the Chat pane
 	ctx.View.Chat.SetBorderLabel(

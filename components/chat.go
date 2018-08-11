@@ -2,7 +2,6 @@ package components
 
 import (
 	"fmt"
-	"html"
 	"sort"
 	"strings"
 	"time"
@@ -22,31 +21,11 @@ type Message struct {
 	StyleText string
 }
 
-func (m Message) ToString() string {
-	if (m.Time != time.Time{} && m.Name != "") {
-
-		return html.UnescapeString(
-			fmt.Sprintf(
-				"[[%s]](%s) [<%s>](%s) [%s](%s)",
-				m.Time.Format("15:04"),
-				m.StyleTime,
-				m.Name,
-				m.StyleName,
-				m.Content,
-				m.StyleText,
-			),
-		)
-	} else {
-		return html.UnescapeString(
-			fmt.Sprintf("[%s](%s)", m.Content, m.StyleText),
-		)
-	}
-}
-
 // Chat is the definition of a Chat component
 type Chat struct {
-	List   *termui.List
-	Offset int
+	List     *termui.List
+	Messages []Message
+	Offset   int
 }
 
 // CreateChat is the constructor for the Chat struct
@@ -64,11 +43,52 @@ func CreateChatComponent(inputHeight int) *Chat {
 
 // Buffer implements interface termui.Bufferer
 func (c *Chat) Buffer() termui.Buffer {
-	// Build cells, after every item put a newline
-	cells := termui.DefaultTxBuilder.Build(
-		strings.Join(c.List.Items, "\n"),
-		c.List.ItemFgColor, c.List.ItemBgColor,
-	)
+	// Build cells. We're building parts of the message individually, or else
+	// DefaultTxBuilder will interpret potential markdown usage in a message
+	// as well.
+	cells := make([]termui.Cell, 0)
+	for i, msg := range c.Messages {
+
+		// When msg.Time and msg.Name are empty (in the case of attachments)
+		// don't add the time and name parts.
+		if (msg.Time != time.Time{} && msg.Name != "") {
+			// Time
+			cells = append(cells, termui.DefaultTxBuilder.Build(
+				fmt.Sprintf("[[%s]](%s) ", msg.Time.Format("15:04"), msg.StyleTime),
+				termui.ColorDefault, termui.ColorDefault)...,
+			)
+
+			// Name
+			cells = append(cells, termui.DefaultTxBuilder.Build(
+				fmt.Sprintf("[<%s>](%s) ", msg.Name, msg.StyleName),
+				termui.ColorDefault, termui.ColorDefault)...,
+			)
+		}
+
+		// Hack, in order to get the correct fg and bg attributes. This is
+		// because the readAttr function in termui is unexported.
+		txCells := termui.DefaultTxBuilder.Build(
+			fmt.Sprintf("[.](%s)", msg.StyleText),
+			termui.ColorDefault, termui.ColorDefault,
+		)
+
+		// Text
+		for _, r := range msg.Content {
+			cells = append(
+				cells,
+				termui.Cell{
+					Ch: r,
+					Fg: txCells[0].Fg,
+					Bg: txCells[0].Bg,
+				},
+			)
+		}
+
+		// Add a newline after every message
+		if i < len(c.Messages)-1 {
+			cells = append(cells, termui.Cell{Ch: '\n'})
+		}
+	}
 
 	// We will create an array of Line structs, this allows us
 	// to more easily render the items in a list. We will range
@@ -198,21 +218,18 @@ func (c *Chat) GetMaxItems() int {
 	return c.List.InnerBounds().Max.Y - c.List.InnerBounds().Min.Y
 }
 
-// SetMessages will put the provided messages into the Items field of the
+// SetMessages will put the provided messages into the Messages field of the
 // Chat view
-func (c *Chat) SetMessages(messages []string) {
+func (c *Chat) SetMessages(messages []Message) {
 	// Reset offset first, when scrolling in view and changing channels we
 	// want the offset to be 0 when loading new messages
 	c.Offset = 0
-
-	for _, msg := range messages {
-		c.List.Items = append(c.List.Items, html.UnescapeString(msg))
-	}
+	c.Messages = messages
 }
 
-// AddMessage adds a single message to List.Items
-func (c *Chat) AddMessage(message string) {
-	c.List.Items = append(c.List.Items, html.UnescapeString(message))
+// AddMessage adds a single message to Messages
+func (c *Chat) AddMessage(message Message) {
+	c.Messages = append(c.Messages, message)
 }
 
 // ClearMessages clear the List.Items

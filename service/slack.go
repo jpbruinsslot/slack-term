@@ -673,14 +673,24 @@ func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []c
 		if att.Text != "" {
 			msgs = append(
 				msgs,
-				components.Message{Content: fmt.Sprintf("%s", att.Text)},
+				components.Message{
+					Content:   fmt.Sprintf("%s", att.Text),
+					StyleTime: s.Config.Theme.Message.Time,
+					StyleName: s.Config.Theme.Message.Name,
+					StyleText: s.Config.Theme.Message.Text,
+				},
 			)
 		}
 
 		if att.Title != "" {
 			msgs = append(
 				msgs,
-				components.Message{Content: fmt.Sprintf("%s", att.Title)},
+				components.Message{
+					Content:   fmt.Sprintf("%s", att.Title),
+					StyleTime: s.Config.Theme.Message.Time,
+					StyleName: s.Config.Theme.Message.Name,
+					StyleText: s.Config.Theme.Message.Text,
+				},
 			)
 		}
 	}
