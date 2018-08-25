@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/erroneousboat/termui"
+	runewidth "github.com/mattn/go-runewidth"
 
 	"github.com/erroneousboat/slack-term/config"
 )
@@ -138,7 +139,7 @@ func (c *Chat) Buffer() termui.Buffer {
 	lines := []Line{}
 	line := Line{}
 
-	// When we encounter a newline or are at the bounds of the chat view we
+	// When we encounter a newline or, are at the bounds of the chat view we
 	// stop iterating over the cells and add the line to the line array
 	x := 0
 	for _, cell := range cells {
@@ -162,7 +163,7 @@ func (c *Chat) Buffer() termui.Buffer {
 		}
 
 		line.cells = append(line.cells, cell)
-		x++
+		x += cell.Width()
 	}
 
 	// Append the last line to the array when we didn't encounter any
@@ -202,7 +203,7 @@ func (c *Chat) Buffer() termui.Buffer {
 					Bg: c.List.ItemBgColor,
 				},
 			)
-			x++
+			x += runewidth.RuneWidth(' ')
 		}
 		currentY--
 	}
@@ -221,7 +222,7 @@ func (c *Chat) Buffer() termui.Buffer {
 					Bg: c.List.ItemBgColor,
 				},
 			)
-			x++
+			x += runewidth.RuneWidth(' ')
 		}
 		currentY--
 	}
