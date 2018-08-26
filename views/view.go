@@ -25,7 +25,7 @@ func CreateView(config *config.Config, svc *service.SlackService) *View {
 	channels := components.CreateChannelsComponent(input.Par.Height)
 
 	// Channels: fill the component
-	slackChans := svc.GetChannels()
+	slackChans := svc.GetChannelsV2()
 	channels.SetChannels(slackChans)
 
 	// Chat: create the component

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -73,6 +74,118 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 	svc.CurrentUsername = currentUser.Name
 
 	return svc, nil
+}
+
+func (s *SlackService) GetChannelsV2() []string {
+	slackChans := make([]slack.Channel, 0)
+
+	// Initial request
+	initChans, initCur, err := s.Client.GetConversations(
+		&slack.GetConversationsParameters{
+			ExcludeArchived: "true",
+			Limit:           10,
+			Types: []string{
+				"public_channel",
+				"private_channel",
+				"im",
+				"mpim",
+			},
+		},
+	)
+	if err != nil {
+		log.Fatal(err) // FIXME
+	}
+
+	slackChans = append(slackChans, initChans...)
+
+	// Paginate over additional channels
+	nextCur := initCur
+	for nextCur != "" {
+		channels, cursor, err := s.Client.GetConversations(
+			&slack.GetConversationsParameters{
+				Cursor:          nextCur,
+				ExcludeArchived: "true",
+				Limit:           10,
+				Types: []string{
+					"public_channel",
+					"private_channel",
+					"im",
+					"mpim",
+				},
+			},
+		)
+		if err != nil {
+			log.Fatal(err) // FIXME
+		}
+
+		log.Printf("len(channels): %d", len(channels))
+		log.Printf("nextCur: %s", nextCur)
+		log.Printf("cursor: %s", cursor)
+		log.Println("---")
+
+		slackChans = append(slackChans, channels...)
+		nextCur = cursor
+	}
+	// os.Exit(0)
+
+	var chans []components.ChannelItem
+	for _, chn := range slackChans {
+
+		// Defaults
+		if chn.IsChannel {
+			if !chn.IsMember {
+				continue
+				os.Exit(0)
+			}
+		}
+
+		if chn.IsGroup {
+			if !chn.IsMember {
+				continue
+			}
+		}
+
+		if chn.IsMpIM {
+		}
+
+		if chn.IsIM {
+			// TODO: check if user is deleted. IsUsedDeleted is not present
+			// in the `conversation` struct.
+		}
+
+		var chanName string
+		name, ok := s.UserCache[chn.User]
+		if ok {
+			chanName = name
+		} else {
+			chanName = chn.Name
+		}
+
+		chans = append(
+			chans, components.ChannelItem{
+				ID:          chn.ID,
+				Name:        chanName,
+				Topic:       chn.Topic.Value,
+				Type:        components.ChannelTypeChannel,
+				UserID:      chn.User,
+				Presence:    "",
+				StylePrefix: s.Config.Theme.Channel.Prefix,
+				StyleIcon:   s.Config.Theme.Channel.Icon,
+				StyleText:   s.Config.Theme.Channel.Text,
+			},
+		)
+
+		s.SlackChannels = append(s.SlackChannels, chn)
+	}
+
+	s.Channels = chans
+
+	var channels []string
+	for _, chn := range s.Channels {
+		channels = append(channels, chn.ToString())
+	}
+
+	return channels
 }
 
 // GetChannels will retrieve all available channels, groups, and im channels.

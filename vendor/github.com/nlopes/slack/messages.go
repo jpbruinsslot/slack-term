@@ -69,7 +69,7 @@ type Msg struct {
 	ParentUserId string  `json:"parent_user_id,omitempty"`
 
 	// file_share, file_comment, file_mention
-	File *File `json:"file,omitempty"`
+	Files []File `json:"files,omitempty"`
 
 	// file_share
 	Upload bool `json:"upload,omitempty"`
@@ -89,8 +89,8 @@ type Msg struct {
 
 	// slash commands and interactive messages
 	ResponseType    string `json:"response_type,omitempty"`
-	ReplaceOriginal bool   `json:"replace_original,omitempty"`
-	DeleteOriginal  bool   `json:"delete_original,omitempty"`
+	ReplaceOriginal bool   `json:"replace_original"`
+	DeleteOriginal  bool   `json:"delete_original"`
 }
 
 // Icon is used for bot messages
@@ -118,14 +118,16 @@ type Event struct {
 
 // Ping contains information about a Ping Event
 type Ping struct {
-	ID   int    `json:"id"`
-	Type string `json:"type"`
+	ID        int    `json:"id"`
+	Type      string `json:"type"`
+	Timestamp int64  `json:"timestamp"`
 }
 
 // Pong contains information about a Pong Event
 type Pong struct {
-	Type    string `json:"type"`
-	ReplyTo int    `json:"reply_to"`
+	Type      string `json:"type"`
+	ReplyTo   int    `json:"reply_to"`
+	Timestamp int64  `json:"timestamp"`
 }
 
 // NewOutgoingMessage prepares an OutgoingMessage that the user can

@@ -42,7 +42,7 @@ func CreateAppContext(flgConfig string, flgToken string, flgDebug bool) (*AppCon
 	}
 
 	// Loading screen
-	views.Loading()
+	// views.Loading()
 
 	// Load config
 	config, err := config.NewConfig(flgConfig)

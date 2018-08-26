@@ -26,35 +26,32 @@ import (
 // The defined error events are located in websocket_internals.go.
 func (rtm *RTM) ManageConnection() {
 	var (
-		err             error
-		connectionCount int
-		info            *Info
-		conn            *websocket.Conn
+		err  error
+		info *Info
+		conn *websocket.Conn
 	)
 
-	for {
-		// BEGIN SENSITIVE CODE, make sure lock is unlocked in this section.
-		rtm.mu.Lock()
-		connectionCount++
+	for connectionCount := 0; ; connectionCount++ {
 		// start trying to connect
 		// the returned err is already passed onto the IncomingEvents channel
 		if info, conn, err = rtm.connect(connectionCount, rtm.useRTMStart); err != nil {
 			// when the connection is unsuccessful its fatal, and we need to bail out.
 			rtm.Debugf("Failed to connect with RTM on try %d: %s", connectionCount, err)
-			rtm.mu.Unlock()
 			return
 		}
 
+		// lock to prevent data races with Disconnect particularly around isConnected
+		// and conn.
+		rtm.mu.Lock()
+		rtm.conn = conn
+		rtm.isConnected = true
 		rtm.info = info
+		rtm.mu.Unlock()
+
 		rtm.IncomingEvents <- RTMEvent{"connected", &ConnectedEvent{
 			ConnectionCount: connectionCount,
 			Info:            info,
 		}}
-
-		rtm.conn = conn
-		rtm.isConnected = true
-		rtm.mu.Unlock()
-		// END SENSITIVE CODE
 
 		rtm.Debugf("RTM connection succeeded on try %d", connectionCount)
 
@@ -64,7 +61,7 @@ func (rtm *RTM) ManageConnection() {
 		go rtm.handleIncomingEvents(keepRunning)
 
 		// this should be a blocking call until the connection has ended
-		rtm.handleEvents(keepRunning, 30*time.Second)
+		rtm.handleEvents(keepRunning)
 
 		// after being disconnected we need to check if it was intentional
 		// if not then we should try to reconnect
@@ -198,8 +195,8 @@ func (rtm *RTM) killConnection(keepRunning chan bool, intentional bool) error {
 // interval. This also sends outgoing messages that are received from the RTM's
 // outgoingMessages channel. This also handles incoming raw events from the RTM
 // rawEvents channel.
-func (rtm *RTM) handleEvents(keepRunning chan bool, interval time.Duration) {
-	ticker := time.NewTicker(interval)
+func (rtm *RTM) handleEvents(keepRunning chan bool) {
+	ticker := time.NewTicker(rtm.pingInterval)
 	defer ticker.Stop()
 	for {
 		select {
@@ -207,7 +204,12 @@ func (rtm *RTM) handleEvents(keepRunning chan bool, interval time.Duration) {
 		case intentional := <-rtm.killChannel:
 			_ = rtm.killConnection(keepRunning, intentional)
 			return
-			// send pings on ticker interval
+
+		// detect when the connection is dead.
+		case <-rtm.pingDeadman.C:
+			rtm.Debugln("deadman switch trigger disconnecting")
+			_ = rtm.killConnection(keepRunning, false)
+		// send pings on ticker interval
 		case <-ticker.C:
 			err := rtm.ping()
 			if err != nil {
@@ -225,7 +227,11 @@ func (rtm *RTM) handleEvents(keepRunning chan bool, interval time.Duration) {
 			rtm.sendOutgoingMessage(msg)
 		// listen for incoming messages that need to be parsed
 		case rawEvent := <-rtm.rawEvents:
-			rtm.handleRawEvent(rawEvent)
+			switch rtm.handleRawEvent(rawEvent) {
+			case rtmEventTypeGoodbye:
+				_ = rtm.killConnection(keepRunning, false)
+			default:
+			}
 		}
 	}
 }
@@ -295,9 +301,7 @@ func (rtm *RTM) sendOutgoingMessage(msg OutgoingMessage) {
 func (rtm *RTM) ping() error {
 	id := rtm.idGen.Next()
 	rtm.Debugln("Sending PING ", id)
-	rtm.pings[id] = time.Now()
-
-	msg := &Ping{ID: id, Type: "ping"}
+	msg := &Ping{ID: id, Type: "ping", Timestamp: time.Now().Unix()}
 
 	if err := rtm.sendWithDeadline(msg); err != nil {
 		rtm.Debugf("RTM Error sending 'PING %d': %s", id, err.Error())
@@ -339,25 +343,31 @@ func (rtm *RTM) receiveIncomingEvent() error {
 
 // handleRawEvent takes a raw JSON message received from the slack websocket
 // and handles the encoded event.
-func (rtm *RTM) handleRawEvent(rawEvent json.RawMessage) {
+// returns the event type of the message.
+func (rtm *RTM) handleRawEvent(rawEvent json.RawMessage) string {
 	event := &Event{}
 	err := json.Unmarshal(rawEvent, event)
 	if err != nil {
 		rtm.IncomingEvents <- RTMEvent{"unmarshalling_error", &UnmarshallingErrorEvent{err}}
-		return
+		return ""
 	}
+
 	switch event.Type {
-	case "":
+	case rtmEventTypeAck:
 		rtm.handleAck(rawEvent)
-	case "hello":
+	case rtmEventTypeHello:
 		rtm.IncomingEvents <- RTMEvent{"hello", &HelloEvent{}}
-	case "pong":
+	case rtmEventTypePong:
 		rtm.handlePong(rawEvent)
-	case "desktop_notification":
+	case rtmEventTypeGoodbye:
+		// just return the event type up for goodbye, will be handled by caller.
+	case rtmEventTypeDesktopNotification:
 		rtm.Debugln("Received desktop notification, ignoring")
 	default:
 		rtm.handleEvent(event.Type, rawEvent)
 	}
+
+	return event.Type
 }
 
 // handleAck handles an incoming 'ACK' message.
@@ -388,19 +398,20 @@ func (rtm *RTM) handleAck(event json.RawMessage) {
 // a previously sent 'PING' message. This is then used to compute the
 // connection's latency.
 func (rtm *RTM) handlePong(event json.RawMessage) {
-	pong := &Pong{}
-	if err := json.Unmarshal(event, pong); err != nil {
-		rtm.Debugln("RTM Error unmarshalling 'pong' event:", err)
+	var (
+		p Pong
+	)
+
+	rtm.resetDeadman()
+
+	if err := json.Unmarshal(event, &p); err != nil {
+		logger.Println("RTM Error unmarshalling 'pong' event:", err)
 		rtm.Debugln(" -> Erroneous 'ping' event:", string(event))
 		return
 	}
-	if pingTime, exists := rtm.pings[pong.ReplyTo]; exists {
-		latency := time.Since(pingTime)
-		rtm.IncomingEvents <- RTMEvent{"latency_report", &LatencyReport{Value: latency}}
-		delete(rtm.pings, pong.ReplyTo)
-	} else {
-		rtm.Debugln("RTM Error - unmatched 'pong' event:", string(event))
-	}
+
+	latency := time.Since(time.Unix(p.Timestamp, 0))
+	rtm.IncomingEvents <- RTMEvent{"latency_report", &LatencyReport{Value: latency}}
 }
 
 // handleEvent is the "default" response to an event that does not have a

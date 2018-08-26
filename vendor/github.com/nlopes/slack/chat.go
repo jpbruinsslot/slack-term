@@ -164,7 +164,7 @@ func (api *Client) SendMessageContext(ctx context.Context, channelID string, opt
 		return "", "", "", err
 	}
 
-	if err = post(ctx, api.httpclient, string(config.mode), config.values, &response, api.debug); err != nil {
+	if err = postSlackMethod(ctx, api.httpclient, string(config.mode), config.values, &response, api.debug); err != nil {
 		return "", "", "", err
 	}
 
@@ -207,6 +207,7 @@ const (
 	chatPostMessage   sendMode = "chat.postMessage"
 	chatDelete        sendMode = "chat.delete"
 	chatPostEphemeral sendMode = "chat.postEphemeral"
+	chatMeMessage     sendMode = "chat.meMessage"
 )
 
 type sendConfig struct {
@@ -243,6 +244,14 @@ func MsgOptionPostEphemeral2(userID string) MsgOption {
 		MsgOptionUser(userID)(config)
 		config.values.Del("ts")
 
+		return nil
+	}
+}
+
+// MsgOptionMeMessage posts a "me message" type from the calling user
+func MsgOptionMeMessage() MsgOption {
+	return func(config *sendConfig) error {
+		config.mode = chatMeMessage
 		return nil
 	}
 }
@@ -373,7 +382,11 @@ func MsgOptionCompose(options ...MsgOption) MsgOption {
 func MsgOptionParse(b bool) MsgOption {
 	return func(c *sendConfig) error {
 		var v string
-		if b { v = "1" } else { v = "0" }
+		if b {
+			v = "1"
+		} else {
+			v = "0"
+		}
 		c.values.Set("parse", v)
 		return nil
 	}

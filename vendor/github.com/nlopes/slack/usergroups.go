@@ -42,7 +42,7 @@ type userGroupResponseFull struct {
 
 func userGroupRequest(ctx context.Context, client HTTPRequester, path string, values url.Values, debug bool) (*userGroupResponseFull, error) {
 	response := &userGroupResponseFull{}
-	err := post(ctx, client, path, values, response, debug)
+	err := postSlackMethod(ctx, client, path, values, response, debug)
 	if err != nil {
 		return nil, err
 	}

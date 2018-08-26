@@ -168,9 +168,9 @@ type TeamIdentity struct {
 }
 
 type userResponseFull struct {
-	Members      []User        `json:"members,omitempty"`
-	User                       `json:"user,omitempty"`
-	UserPresence                        
+	Members []User `json:"members,omitempty"`
+	User    `json:"user,omitempty"`
+	UserPresence
 	SlackResponse
 	Metadata ResponseMetadata `json:"response_metadata"`
 }
@@ -547,7 +547,7 @@ func (api *Client) GetUserProfileContext(ctx context.Context, userID string, inc
 	}
 	resp := &getUserProfileResponse{}
 
-	err := post(ctx, api.httpclient, "users.profile.get", values, &resp, api.debug)
+	err := postSlackMethod(ctx, api.httpclient, "users.profile.get", values, &resp, api.debug)
 	if err != nil {
 		return nil, err
 	}
