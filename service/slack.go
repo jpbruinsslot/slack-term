@@ -122,8 +122,8 @@ func (s *SlackService) GetChannels() []components.ChannelItem {
 
 	var chans []components.ChannelItem
 	for _, chn := range slackChans {
-
 		// Defaults
+		var chanName string
 		var chanType string
 		var presence string
 
@@ -135,6 +135,7 @@ func (s *SlackService) GetChannels() []components.ChannelItem {
 			}
 
 			chanType = components.ChannelTypeChannel
+			chanName = chn.Name
 		}
 
 		if chn.IsGroup {
@@ -143,29 +144,28 @@ func (s *SlackService) GetChannels() []components.ChannelItem {
 			}
 
 			chanType = components.ChannelTypeGroup
+			chanName = chn.Name
 		}
 
 		if chn.IsMpIM {
 			// TODO: does it have an IsMember?
 			// TODO: same api as im?
 			chanType = components.ChannelTypeMpIM
+			chanName = chn.Name
 		}
 
 		if chn.IsIM {
-			// TODO: check if user is deleted. IsUsedDeleted is not present
-			// in the `conversation` struct.
-			chanType = components.ChannelTypeIM
+			// Check if user is deleted, we do this by checking the user id,
+			// and see if we have the user in the UserCache
+			name, ok := s.UserCache[chn.User]
+			if !ok {
+				continue
+			}
 
+			chanName = name
+			chanType = components.ChannelTypeIM
 			// TODO: way to speed this up? see SetPresenceChannels
 			presence, _ = s.GetUserPresence(chn.ID)
-		}
-
-		var chanName string
-		name, ok := s.UserCache[chn.User]
-		if ok {
-			chanName = name
-		} else {
-			chanName = chn.Name
 		}
 
 		chans = append(

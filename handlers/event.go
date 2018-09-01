@@ -380,8 +380,6 @@ func actionSearchPrevChannels(ctx *context.AppContext) {
 }
 
 func actionChangeChannel(ctx *context.AppContext) {
-	ctx.View.Debug.Println(fmt.Sprintf("%d", ctx.View.Channels.SelectedChannel))
-
 	// Clear messages from Chat pane
 	ctx.View.Chat.ClearMessages()
 
