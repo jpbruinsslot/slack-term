@@ -3,7 +3,9 @@ package handlers
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/0xAX/notificator"
@@ -11,6 +13,7 @@ import (
 	"github.com/nlopes/slack"
 	termbox "github.com/nsf/termbox-go"
 
+	"github.com/erroneousboat/slack-term/components"
 	"github.com/erroneousboat/slack-term/config"
 	"github.com/erroneousboat/slack-term/context"
 	"github.com/erroneousboat/slack-term/views"
@@ -115,7 +118,7 @@ func messageHandler(ctx *context.AppContext) {
 					}
 
 					// Add message to the selected channel
-					if ev.Channel == ctx.Service.Channels[ctx.View.Channels.SelectedChannel].ID {
+					if ev.Channel == ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID {
 
 						// Reverse order of messages, mainly done
 						// when attachments are added to message
@@ -241,7 +244,7 @@ func actionSend(ctx *context.AppContext) {
 
 		// Send message
 		err := ctx.Service.SendMessage(
-			ctx.View.Channels.SelectedChannel,
+			ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
 			message,
 		)
 		if err != nil {
@@ -251,8 +254,11 @@ func actionSend(ctx *context.AppContext) {
 		}
 
 		// Clear notification icon if there is any
-		ctx.Service.MarkAsRead(ctx.View.Channels.SelectedChannel)
-		ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
+		channelItem := ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel]
+		if channelItem.Notification {
+			ctx.Service.MarkAsRead(channelItem.ID)
+			ctx.View.Channels.MarkAsRead(ctx.View.Channels.SelectedChannel)
+		}
 		termui.Render(ctx.View.Channels)
 	}
 }
@@ -304,7 +310,7 @@ func actionSearchMode(ctx *context.AppContext) {
 
 func actionGetMessages(ctx *context.AppContext) {
 	msgs := ctx.Service.GetMessages(
-		ctx.Service.Channels[ctx.View.Channels.SelectedChannel],
+		ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
 		ctx.View.Chat.GetMaxItems(),
 	)
 
@@ -374,13 +380,15 @@ func actionSearchPrevChannels(ctx *context.AppContext) {
 }
 
 func actionChangeChannel(ctx *context.AppContext) {
+	ctx.View.Debug.Println(fmt.Sprintf("%d", ctx.View.Channels.SelectedChannel))
+
 	// Clear messages from Chat pane
 	ctx.View.Chat.ClearMessages()
 
 	// Get messages of the SelectedChannel, and get the count of messages
 	// that fit into the Chat component
 	msgs := ctx.Service.GetMessages(
-		ctx.Service.GetSlackChannel(ctx.View.Channels.SelectedChannel),
+		ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
 		ctx.View.Chat.GetMaxItems(),
 	)
 
@@ -389,12 +397,15 @@ func actionChangeChannel(ctx *context.AppContext) {
 
 	// Set channel name for the Chat pane
 	ctx.View.Chat.SetBorderLabel(
-		ctx.Service.Channels[ctx.View.Channels.SelectedChannel].GetChannelName(),
+		ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].GetChannelName(),
 	)
 
 	// Clear notification icon if there is any
-	ctx.Service.MarkAsRead(ctx.View.Channels.SelectedChannel)
-	ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
+	channelItem := ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel]
+	if channelItem.Notification {
+		ctx.Service.MarkAsRead(channelItem.ID)
+		ctx.View.Channels.MarkAsRead(ctx.View.Channels.SelectedChannel)
+	}
 
 	termui.Render(ctx.View.Channels)
 	termui.Render(ctx.View.Chat)
@@ -403,8 +414,7 @@ func actionChangeChannel(ctx *context.AppContext) {
 // actionNewMessage will set the new message indicator for a channel, and
 // if configured will also display a desktop notification
 func actionNewMessage(ctx *context.AppContext, ev *slack.MessageEvent) {
-	ctx.Service.MarkAsUnread(ev.Channel)
-	ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
+	ctx.View.Channels.MarkAsUnread(ev.Channel)
 	termui.Render(ctx.View.Channels)
 
 	// Terminal bell
@@ -412,7 +422,7 @@ func actionNewMessage(ctx *context.AppContext, ev *slack.MessageEvent) {
 
 	// Desktop notification
 	if ctx.Config.Notify == config.NotifyMention {
-		if ctx.Service.CheckNotifyMention(ev) {
+		if isMention(ctx, ev) {
 			createNotifyMessage(ctx, ev)
 		}
 	} else if ctx.Config.Notify == config.NotifyAll {
@@ -421,8 +431,7 @@ func actionNewMessage(ctx *context.AppContext, ev *slack.MessageEvent) {
 }
 
 func actionSetPresence(ctx *context.AppContext, channelID string, presence string) {
-	ctx.Service.SetPresenceChannelEvent(channelID, presence)
-	ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
+	ctx.View.Channels.SetPresence(channelID, presence)
 	termui.Render(ctx.View.Channels)
 }
 
@@ -491,6 +500,29 @@ func getKeyString(e termbox.Event) string {
 	return ek
 }
 
+// isMention check if the message event either contains a
+// mention or is posted on an IM channel.
+func isMention(ctx *context.AppContext, ev *slack.MessageEvent) bool {
+	channel := ctx.View.Channels.ChannelItems[ctx.View.Channels.FindChannel(ev.Channel)]
+
+	if channel.Type == components.ChannelTypeIM {
+		return true
+	}
+
+	// Mentions have the following format:
+	//	<@U12345|erroneousboat>
+	// 	<@U12345>
+	r := regexp.MustCompile(`\<@(\w+\|*\w+)\>`)
+	matches := r.FindAllString(ev.Text, -1)
+	for _, match := range matches {
+		if strings.Contains(match, ctx.Service.CurrentUserID) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func createNotifyMessage(ctx *context.AppContext, ev *slack.MessageEvent) {
 	go func() {
 		if notifyTimer != nil {
@@ -500,11 +532,20 @@ func createNotifyMessage(ctx *context.AppContext, ev *slack.MessageEvent) {
 		notifyTimer = time.NewTimer(time.Second * 2)
 		<-notifyTimer.C
 
+		var message string
+		channel := ctx.View.Channels.ChannelItems[ctx.View.Channels.FindChannel(ev.Channel)]
+		switch channel.Type {
+		case components.ChannelTypeChannel:
+			message = fmt.Sprintf("Message received on channel: %s", channel.Name)
+		case components.ChannelTypeGroup:
+			message = fmt.Sprintf("Message received in group: %s", channel.Name)
+		case components.ChannelTypeIM:
+			message = fmt.Sprintf("Message received from: %s", channel.Name)
+		default:
+			message = fmt.Sprintf("Message received from: %s", channel.Name)
+		}
+
 		// Only actually notify when time expires
-		ctx.Notify.Push(
-			"slack-term",
-			ctx.Service.CreateNotifyMessage(ev.Channel), "",
-			notificator.UR_NORMAL,
-		)
+		ctx.Notify.Push("slack-term", message, "", notificator.UR_NORMAL)
 	}()
 }

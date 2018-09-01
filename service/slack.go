@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -27,8 +26,7 @@ type SlackService struct {
 	Config          *config.Config
 	Client          *slack.Client
 	RTM             *slack.RTM
-	SlackChannels   []interface{}
-	Channels        []components.ChannelItem
+	Conversations   []slack.Channel
 	UserCache       map[string]string
 	CurrentUserID   string
 	CurrentUsername string
@@ -76,7 +74,7 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 	return svc, nil
 }
 
-func (s *SlackService) GetChannelsV2() []string {
+func (s *SlackService) GetChannels() []components.ChannelItem {
 	slackChans := make([]slack.Channel, 0)
 
 	// Initial request
@@ -118,39 +116,48 @@ func (s *SlackService) GetChannelsV2() []string {
 			log.Fatal(err) // FIXME
 		}
 
-		log.Printf("len(channels): %d", len(channels))
-		log.Printf("nextCur: %s", nextCur)
-		log.Printf("cursor: %s", cursor)
-		log.Println("---")
-
 		slackChans = append(slackChans, channels...)
 		nextCur = cursor
 	}
-	// os.Exit(0)
 
 	var chans []components.ChannelItem
 	for _, chn := range slackChans {
 
 		// Defaults
+		var chanType string
+		var presence string
+
+		// TODO: shared channels?
+
 		if chn.IsChannel {
 			if !chn.IsMember {
 				continue
-				os.Exit(0)
 			}
+
+			chanType = components.ChannelTypeChannel
 		}
 
 		if chn.IsGroup {
 			if !chn.IsMember {
 				continue
 			}
+
+			chanType = components.ChannelTypeGroup
 		}
 
 		if chn.IsMpIM {
+			// TODO: does it have an IsMember?
+			// TODO: same api as im?
+			chanType = components.ChannelTypeMpIM
 		}
 
 		if chn.IsIM {
 			// TODO: check if user is deleted. IsUsedDeleted is not present
 			// in the `conversation` struct.
+			chanType = components.ChannelTypeIM
+
+			// TODO: way to speed this up? see SetPresenceChannels
+			presence, _ = s.GetUserPresence(chn.ID)
 		}
 
 		var chanName string
@@ -166,198 +173,39 @@ func (s *SlackService) GetChannelsV2() []string {
 				ID:          chn.ID,
 				Name:        chanName,
 				Topic:       chn.Topic.Value,
-				Type:        components.ChannelTypeChannel,
+				Type:        chanType,
 				UserID:      chn.User,
-				Presence:    "",
+				Presence:    presence,
 				StylePrefix: s.Config.Theme.Channel.Prefix,
 				StyleIcon:   s.Config.Theme.Channel.Icon,
 				StyleText:   s.Config.Theme.Channel.Text,
 			},
 		)
 
-		s.SlackChannels = append(s.SlackChannels, chn)
+		s.Conversations = append(s.Conversations, chn)
 	}
 
-	s.Channels = chans
-
-	var channels []string
-	for _, chn := range s.Channels {
-		channels = append(channels, chn.ToString())
-	}
-
-	return channels
+	return chans
 }
 
-// GetChannels will retrieve all available channels, groups, and im channels.
-// Because the channels are of different types, we will append them to
-// an []interface as well as to a []Channel which will give us easy access
-// to the id and name of the Channel.
-func (s *SlackService) GetChannels() []string {
-	var chans []components.ChannelItem
-
-	var wg sync.WaitGroup
-
-	// Channels
-	wg.Add(1)
-	var slackChans []slack.Channel
-	go func() {
-		var err error
-		slackChans, err = s.Client.GetChannels(true)
-		if err != nil {
-			chans = append(chans, components.ChannelItem{})
-		}
-		wg.Done()
-	}()
-
-	// Groups
-	wg.Add(1)
-	var slackGroups []slack.Group
-	go func() {
-		var err error
-		slackGroups, err = s.Client.GetGroups(true)
-		if err != nil {
-			chans = append(chans, components.ChannelItem{})
-		}
-		wg.Done()
-	}()
-
-	// IM
-	wg.Add(1)
-	var slackIM []slack.IM
-	go func() {
-		var err error
-		slackIM, err = s.Client.GetIMChannels()
-		if err != nil {
-			chans = append(chans, components.ChannelItem{})
-		}
-		wg.Done()
-	}()
-
-	wg.Wait()
-
-	// Channels
-	for _, chn := range slackChans {
-		if chn.IsMember {
-			s.SlackChannels = append(s.SlackChannels, chn)
-			chans = append(
-				chans, components.ChannelItem{
-					ID:          chn.ID,
-					Name:        chn.Name,
-					Topic:       chn.Topic.Value,
-					Type:        components.ChannelTypeChannel,
-					UserID:      "",
-					StylePrefix: s.Config.Theme.Channel.Prefix,
-					StyleIcon:   s.Config.Theme.Channel.Icon,
-					StyleText:   s.Config.Theme.Channel.Text,
-				},
-			)
-		}
-	}
-
-	// Groups
-	for _, grp := range slackGroups {
-		s.SlackChannels = append(s.SlackChannels, grp)
-		chans = append(
-			chans, components.ChannelItem{
-				ID:          grp.ID,
-				Name:        grp.Name,
-				Topic:       grp.Topic.Value,
-				Type:        components.ChannelTypeGroup,
-				UserID:      "",
-				StylePrefix: s.Config.Theme.Channel.Prefix,
-				StyleIcon:   s.Config.Theme.Channel.Icon,
-				StyleText:   s.Config.Theme.Channel.Text,
-			},
-		)
-	}
-
-	// IM
-	for _, im := range slackIM {
-
-		// Uncover name, when we can't uncover name for
-		// IM channel this is then probably a deleted
-		// user, because we won't add deleted users
-		// to the UserCache, so we skip it
-		name, ok := s.UserCache[im.User]
-
-		if ok {
-			chans = append(
-				chans,
-				components.ChannelItem{
-					ID:          im.ID,
-					Name:        name,
-					Topic:       "",
-					Type:        components.ChannelTypeIM,
-					UserID:      im.User,
-					Presence:    "",
-					StylePrefix: s.Config.Theme.Channel.Prefix,
-					StyleIcon:   s.Config.Theme.Channel.Icon,
-					StyleText:   s.Config.Theme.Channel.Text,
-				},
-			)
-			s.SlackChannels = append(s.SlackChannels, im)
-		}
-	}
-
-	s.Channels = chans
-
-	// We set presence of IM channels here because we need to separately
-	// issue an API call for every channel, this will speed up that process
-	s.SetPresenceChannels()
-
-	var channels []string
-	for _, chn := range s.Channels {
-		channels = append(channels, chn.ToString())
-	}
-
-	return channels
-}
-
-// ChannelsToString will relay the string representation for a channel
-func (s *SlackService) ChannelsToString() []string {
-	var channels []string
-	for _, chn := range s.Channels {
-		channels = append(channels, chn.ToString())
-	}
-	return channels
-}
-
+// TODO:
+// We set presence of IM channels here because we need to separately
+// issue an API call for every channel, this will speed up that process
 // SetPresence will set presence for all IM channels
 func (s *SlackService) SetPresenceChannels() {
 	var wg sync.WaitGroup
-	for i, channel := range s.SlackChannels {
-
-		switch channel := channel.(type) {
-		case slack.IM:
+	for i, channel := range s.Conversations {
+		if channel.IsIM {
 			wg.Add(1)
 			go func(i int) {
-				presence, _ := s.GetUserPresence(channel.User)
-				s.Channels[i].Presence = presence
+				// presence, _ := s.GetUserPresence(channel.User)
+				// s.Channels[i].Presence = presence
 				wg.Done()
 			}(i)
 		}
-
 	}
 
 	wg.Wait()
-}
-
-// SetPresenceChannelEvent will set the presence of a IM channel
-func (s *SlackService) SetPresenceChannelEvent(userID string, presence string) {
-	// Get the correct Channel from svc.Channels
-	var index int
-	for i, channel := range s.Channels {
-		if userID == channel.UserID {
-			index = i
-			break
-		}
-	}
-	s.Channels[index].Presence = presence
-}
-
-// GetSlackChannel returns the representation of a slack channel
-func (s *SlackService) GetSlackChannel(selectedChannel int) interface{} {
-	return s.SlackChannels[selectedChannel]
 }
 
 // GetUserPresence will get the presence of a specific user
@@ -370,82 +218,36 @@ func (s *SlackService) GetUserPresence(userID string) (string, error) {
 	return presence.Presence, nil
 }
 
-// SetChannelReadMark will set the read mark for a channel, group, and im
-// channel based on the current time.
-func (s *SlackService) SetChannelReadMark(channel interface{}) {
-	switch channel := channel.(type) {
-	case slack.Channel:
-		s.Client.SetChannelReadMark(
-			channel.ID, fmt.Sprintf("%f",
-				float64(time.Now().Unix())),
-		)
-	case slack.Group:
-		s.Client.SetGroupReadMark(
-			channel.ID, fmt.Sprintf("%f",
-				float64(time.Now().Unix())),
-		)
-	case slack.IM:
-		s.Client.MarkIMChannel(
-			channel.ID, fmt.Sprintf("%f",
-				float64(time.Now().Unix())),
-		)
-	}
-}
-
 // MarkAsRead will set the channel as read
-func (s *SlackService) MarkAsRead(channelID int) {
-	channel := s.Channels[channelID]
+func (s *SlackService) MarkAsRead(channelID string) {
 
-	if channel.Notification {
-		s.Channels[channelID].Notification = false
+	// TODO: does this work with other channel types? See old one below
+	s.Client.SetChannelReadMark(
+		channelID, fmt.Sprintf("%f",
+			float64(time.Now().Unix())),
+	)
 
-		switch channel.Type {
-		case ChannelTypeChannel:
-			s.Client.SetChannelReadMark(
-				channel.ID, fmt.Sprintf("%f",
-					float64(time.Now().Unix())),
-			)
-		case ChannelTypeGroup:
-			s.Client.SetGroupReadMark(
-				channel.ID, fmt.Sprintf("%f",
-					float64(time.Now().Unix())),
-			)
-		case ChannelTypeIM:
-			s.Client.MarkIMChannel(
-				channel.ID, fmt.Sprintf("%f",
-					float64(time.Now().Unix())),
-			)
-		}
-	}
-}
-
-// FindChannel will loop over s.Channels to find the index where the
-// channelID equals the ID
-func (s *SlackService) FindChannel(channelID string) int {
-	var index int
-	for i, channel := range s.Channels {
-		if channel.ID == channelID {
-			index = i
-			break
-		}
-	}
-	return index
-}
-
-// MarkAsUnread will set the channel as unread
-func (s *SlackService) MarkAsUnread(channelID string) {
-	index := s.FindChannel(channelID)
-	s.Channels[index].Notification = true
-}
-
-// GetChannelName will return the name for a specific channelID
-func (s *SlackService) GetChannelName(channelID string) string {
-	index := s.FindChannel(channelID)
-	return s.Channels[index].Name
+	// switch channel.Type {
+	// case ChannelTypeChannel:
+	// 	s.Client.SetChannelReadMark(
+	// 		channel.ID, fmt.Sprintf("%f",
+	// 			float64(time.Now().Unix())),
+	// 	)
+	// case ChannelTypeGroup:
+	// 	s.Client.SetGroupReadMark(
+	// 		channel.ID, fmt.Sprintf("%f",
+	// 			float64(time.Now().Unix())),
+	// 	)
+	// case ChannelTypeIM:
+	// 	s.Client.MarkIMChannel(
+	// 		channel.ID, fmt.Sprintf("%f",
+	// 			float64(time.Now().Unix())),
+	// 	)
+	// }
 }
 
 // SendMessage will send a message to a particular channel
-func (s *SlackService) SendMessage(channelID int, message string) error {
+func (s *SlackService) SendMessage(channelID string, message string) error {
 
 	// https://godoc.org/github.com/nlopes/slack#PostMessageParameters
 	postParams := slack.PostMessageParameters{
@@ -455,7 +257,7 @@ func (s *SlackService) SendMessage(channelID int, message string) error {
 	}
 
 	// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
-	_, _, err := s.Client.PostMessage(s.Channels[channelID].ID, message, postParams)
+	_, _, err := s.Client.PostMessage(channelID, message, postParams)
 	if err != nil {
 		return err
 	}
@@ -465,33 +267,18 @@ func (s *SlackService) SendMessage(channelID int, message string) error {
 
 // GetMessages will get messages for a channel, group or im channel delimited
 // by a count.
-func (s *SlackService) GetMessages(channel interface{}, count int) []components.Message {
-	// https://api.slack.com/methods/channels.history
-	historyParams := slack.HistoryParameters{
-		Count:     count,
+func (s *SlackService) GetMessages(channelID string, count int) []components.Message {
+	// TODO: check other parameters
+	// https://godoc.org/github.com/nlopes/slack#GetConversationHistoryParameters
+	historyParams := slack.GetConversationHistoryParameters{
+		ChannelID: channelID,
+		Limit:     count,
 		Inclusive: false,
-		Unreads:   false,
 	}
 
-	// https://godoc.org/github.com/nlopes/slack#History
-	history := new(slack.History)
-	var err error
-	switch chnType := channel.(type) {
-	case slack.Channel:
-		history, err = s.Client.GetChannelHistory(chnType.ID, historyParams)
-		if err != nil {
-			log.Fatal(err) // FIXME
-		}
-	case slack.Group:
-		history, err = s.Client.GetGroupHistory(chnType.ID, historyParams)
-		if err != nil {
-			log.Fatal(err) // FIXME
-		}
-	case slack.IM:
-		history, err = s.Client.GetIMHistory(chnType.ID, historyParams)
-		if err != nil {
-			log.Fatal(err) // FIXME
-		}
+	history, err := s.Client.GetConversationHistory(&historyParams)
+	if err != nil {
+		log.Fatal(err) // FIXME
 	}
 
 	// Construct the messages
@@ -651,44 +438,6 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 	msgs = append(msgs, msg)
 
 	return msgs, nil
-}
-
-// CheckNotifyMention check if the message event is either contains a
-// mention or is posted on an IM channel
-func (s *SlackService) CheckNotifyMention(ev *slack.MessageEvent) bool {
-	channel := s.Channels[s.FindChannel(ev.Channel)]
-	switch channel.Type {
-	case ChannelTypeIM:
-		return true
-	}
-
-	// Mentions have the following format:
-	//	<@U12345|erroneousboat>
-	// 	<@U12345>
-	r := regexp.MustCompile(`\<@(\w+\|*\w+)\>`)
-	matches := r.FindAllString(ev.Text, -1)
-	for _, match := range matches {
-		if strings.Contains(match, s.CurrentUserID) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (s *SlackService) CreateNotifyMessage(channelID string) string {
-	channel := s.Channels[s.FindChannel(channelID)]
-
-	switch channel.Type {
-	case ChannelTypeChannel:
-		return fmt.Sprintf("Message received on channel: %s", channel.Name)
-	case ChannelTypeGroup:
-		return fmt.Sprintf("Message received in group: %s", channel.Name)
-	case ChannelTypeIM:
-		return fmt.Sprintf("Message received from: %s", channel.Name)
-	}
-
-	return ""
 }
 
 // parseMessage will parse a message string and find and replace:
