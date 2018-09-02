@@ -527,6 +527,7 @@ func createNotifyMessage(ctx *context.AppContext, ev *slack.MessageEvent) {
 			notifyTimer.Stop()
 		}
 
+		// Only actually notify when time expires
 		notifyTimer = time.NewTimer(time.Second * 2)
 		<-notifyTimer.C
 
@@ -543,7 +544,6 @@ func createNotifyMessage(ctx *context.AppContext, ev *slack.MessageEvent) {
 			message = fmt.Sprintf("Message received from: %s", channel.Name)
 		}
 
-		// Only actually notify when time expires
 		ctx.Notify.Push("slack-term", message, "", notificator.UR_NORMAL)
 	}()
 }

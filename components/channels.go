@@ -14,6 +14,7 @@ const (
 	IconChannel      = "#"
 	IconGroup        = "☰"
 	IconIM           = "●"
+	IconMpIM         = "●" // TODO
 	IconNotification = "*"
 
 	PresenceAway   = "away"
@@ -56,6 +57,8 @@ func (c ChannelItem) ToString() string {
 		icon = IconChannel
 	case ChannelTypeGroup:
 		icon = IconGroup
+	case ChannelTypeMpIM:
+		icon = IconMpIM
 	case ChannelTypeIM:
 		switch c.Presence {
 		case PresenceActive:

@@ -16,12 +16,6 @@ import (
 	"github.com/erroneousboat/slack-term/config"
 )
 
-const (
-	ChannelTypeChannel = "channel"
-	ChannelTypeGroup   = "group"
-	ChannelTypeIM      = "im"
-)
-
 type SlackService struct {
 	Config          *config.Config
 	Client          *slack.Client
@@ -164,8 +158,10 @@ func (s *SlackService) GetChannels() []components.ChannelItem {
 
 			chanName = name
 			chanType = components.ChannelTypeIM
+
 			// TODO: way to speed this up? see SetPresenceChannels
-			presence, _ = s.GetUserPresence(chn.ID)
+			// TODO: err
+			presence, _ = s.GetUserPresence(chn.User)
 		}
 
 		chans = append(
