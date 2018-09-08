@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -114,22 +115,30 @@ func (s *SlackService) GetChannels() []components.ChannelItem {
 		nextCur = cursor
 	}
 
-	var chans []components.ChannelItem
-	for _, chn := range slackChans {
-		// Defaults
-		var chanName string
-		var chanType string
-		var presence string
+	type tempChan struct {
+		channelItem  components.ChannelItem
+		slackChannel slack.Channel
+	}
 
+	buckets := make(map[string][]tempChan)
+	for _, chn := range slackChans {
 		// TODO: shared channels?
+		chanItem := s.createChannelItem(chn)
 
 		if chn.IsChannel {
 			if !chn.IsMember {
 				continue
 			}
 
-			chanType = components.ChannelTypeChannel
-			chanName = chn.Name
+			chanItem.Type = components.ChannelTypeChannel
+
+			buckets["channel"] = append(
+				buckets["channel"],
+				tempChan{
+					channelItem:  chanItem,
+					slackChannel: chn,
+				},
+			)
 		}
 
 		if chn.IsGroup {
@@ -137,15 +146,29 @@ func (s *SlackService) GetChannels() []components.ChannelItem {
 				continue
 			}
 
-			chanType = components.ChannelTypeGroup
-			chanName = chn.Name
+			chanItem.Type = components.ChannelTypeGroup
+
+			buckets["group"] = append(
+				buckets["group"],
+				tempChan{
+					channelItem:  chanItem,
+					slackChannel: chn,
+				},
+			)
 		}
 
 		if chn.IsMpIM {
 			// TODO: does it have an IsMember?
 			// TODO: same api as im?
-			chanType = components.ChannelTypeMpIM
-			chanName = chn.Name
+			chanItem.Type = components.ChannelTypeMpIM
+
+			buckets["mpim"] = append(
+				buckets["mpim"],
+				tempChan{
+					channelItem:  chanItem,
+					slackChannel: chn,
+				},
+			)
 		}
 
 		if chn.IsIM {
@@ -156,29 +179,35 @@ func (s *SlackService) GetChannels() []components.ChannelItem {
 				continue
 			}
 
-			chanName = name
-			chanType = components.ChannelTypeIM
+			chanItem.Name = name
+			chanItem.Type = components.ChannelTypeIM
 
 			// TODO: way to speed this up? see SetPresenceChannels
 			// TODO: err
-			presence, _ = s.GetUserPresence(chn.User)
+			presence, _ := s.GetUserPresence(chn.User)
+			chanItem.Presence = presence
+
+			buckets["im"] = append(
+				buckets["im"],
+				tempChan{
+					channelItem:  chanItem,
+					slackChannel: chn,
+				},
+			)
 		}
+	}
 
-		chans = append(
-			chans, components.ChannelItem{
-				ID:          chn.ID,
-				Name:        chanName,
-				Topic:       chn.Topic.Value,
-				Type:        chanType,
-				UserID:      chn.User,
-				Presence:    presence,
-				StylePrefix: s.Config.Theme.Channel.Prefix,
-				StyleIcon:   s.Config.Theme.Channel.Icon,
-				StyleText:   s.Config.Theme.Channel.Text,
-			},
-		)
+	var chans []components.ChannelItem
+	for bucket := range buckets {
+		// Sort channels in every bucket
+		sort.Slice(buckets[bucket], func(i, j int) bool {
+			return buckets[bucket][i].channelItem.Name < buckets[bucket][j].channelItem.Name
+		})
 
-		s.Conversations = append(s.Conversations, chn)
+		for _, c := range buckets[bucket] {
+			chans = append(chans, c.channelItem)
+			s.Conversations = append(s.Conversations, c.slackChannel)
+		}
 	}
 
 	return chans
@@ -558,4 +587,16 @@ func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []c
 	}
 
 	return msgs
+}
+
+func (s *SlackService) createChannelItem(chn slack.Channel) components.ChannelItem {
+	return components.ChannelItem{
+		ID:          chn.ID,
+		Name:        chn.Name,
+		Topic:       chn.Topic.Value,
+		UserID:      chn.User,
+		StylePrefix: s.Config.Theme.Channel.Prefix,
+		StyleIcon:   s.Config.Theme.Channel.Icon,
+		StyleText:   s.Config.Theme.Channel.Text,
+	}
 }
