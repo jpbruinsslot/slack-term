@@ -305,7 +305,7 @@ func (c *Channels) Search(term string) {
 
 	targets := make([]string, 0)
 	for _, c := range c.ChannelItems {
-		targets = append(targets, c.ToString())
+		targets = append(targets, c.Name)
 	}
 
 	matches := fuzzy.Find(term, targets)
