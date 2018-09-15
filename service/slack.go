@@ -115,14 +115,22 @@ func (s *SlackService) GetChannels() []components.ChannelItem {
 		nextCur = cursor
 	}
 
+	// We're creating tempChan, because we want to be able to
+	// sort the types of channels into buckets
 	type tempChan struct {
 		channelItem  components.ChannelItem
 		slackChannel slack.Channel
 	}
 
-	buckets := make(map[string][]tempChan)
+	// Initialize buckets
+	buckets := make(map[int]map[string]*tempChan)
+	buckets[0] = make(map[string]*tempChan) // Channels
+	buckets[1] = make(map[string]*tempChan) // Group
+	buckets[2] = make(map[string]*tempChan) // MpIM
+	buckets[3] = make(map[string]*tempChan) // IM
+
+	var wg sync.WaitGroup
 	for _, chn := range slackChans {
-		// TODO: shared channels?
 		chanItem := s.createChannelItem(chn)
 
 		if chn.IsChannel {
@@ -132,13 +140,10 @@ func (s *SlackService) GetChannels() []components.ChannelItem {
 
 			chanItem.Type = components.ChannelTypeChannel
 
-			buckets["channel"] = append(
-				buckets["channel"],
-				tempChan{
-					channelItem:  chanItem,
-					slackChannel: chn,
-				},
-			)
+			buckets[0][chn.ID] = &tempChan{
+				channelItem:  chanItem,
+				slackChannel: chn,
+			}
 		}
 
 		if chn.IsGroup {
@@ -148,27 +153,19 @@ func (s *SlackService) GetChannels() []components.ChannelItem {
 
 			chanItem.Type = components.ChannelTypeGroup
 
-			buckets["group"] = append(
-				buckets["group"],
-				tempChan{
-					channelItem:  chanItem,
-					slackChannel: chn,
-				},
-			)
+			buckets[1][chn.ID] = &tempChan{
+				channelItem:  chanItem,
+				slackChannel: chn,
+			}
 		}
 
 		if chn.IsMpIM {
-			// TODO: does it have an IsMember?
-			// TODO: same api as im?
 			chanItem.Type = components.ChannelTypeMpIM
 
-			buckets["mpim"] = append(
-				buckets["mpim"],
-				tempChan{
-					channelItem:  chanItem,
-					slackChannel: chn,
-				},
-			)
+			buckets[2][chn.ID] = &tempChan{
+				channelItem:  chanItem,
+				slackChannel: chn,
+			}
 		}
 
 		if chn.IsIM {
@@ -182,55 +179,49 @@ func (s *SlackService) GetChannels() []components.ChannelItem {
 			chanItem.Name = name
 			chanItem.Type = components.ChannelTypeIM
 
-			// TODO: way to speed this up? see SetPresenceChannels
-			// TODO: err
-			presence, _ := s.GetUserPresence(chn.User)
-			chanItem.Presence = presence
+			buckets[3][chn.User] = &tempChan{
+				channelItem:  chanItem,
+				slackChannel: chn,
+			}
 
-			buckets["im"] = append(
-				buckets["im"],
-				tempChan{
-					channelItem:  chanItem,
-					slackChannel: chn,
-				},
-			)
-		}
-	}
-
-	var chans []components.ChannelItem
-	for bucket := range buckets {
-		// Sort channels in every bucket
-		sort.Slice(buckets[bucket], func(i, j int) bool {
-			return buckets[bucket][i].channelItem.Name < buckets[bucket][j].channelItem.Name
-		})
-
-		for _, c := range buckets[bucket] {
-			chans = append(chans, c.channelItem)
-			s.Conversations = append(s.Conversations, c.slackChannel)
-		}
-	}
-
-	return chans
-}
-
-// TODO:
-// We set presence of IM channels here because we need to separately
-// issue an API call for every channel, this will speed up that process
-// SetPresence will set presence for all IM channels
-func (s *SlackService) SetPresenceChannels() {
-	var wg sync.WaitGroup
-	for i, channel := range s.Conversations {
-		if channel.IsIM {
 			wg.Add(1)
-			go func(i int) {
-				// presence, _ := s.GetUserPresence(channel.User)
-				// s.Channels[i].Presence = presence
-				wg.Done()
-			}(i)
+			go func(user string, buckets map[int]map[string]*tempChan) {
+				defer wg.Done()
+
+				presence, err := s.GetUserPresence(user)
+				if err != nil {
+					buckets[3][user].channelItem.Presence = "away"
+					return
+				}
+
+				buckets[3][user].channelItem.Presence = presence
+			}(chn.User, buckets)
 		}
 	}
 
 	wg.Wait()
+
+	var chans []components.ChannelItem
+	for _, bucket := range buckets {
+
+		// Sort channels in every bucket
+		tcArr := make([]tempChan, 0)
+		for _, v := range bucket {
+			tcArr = append(tcArr, *v)
+		}
+
+		sort.Slice(tcArr, func(i, j int) bool {
+			return tcArr[i].channelItem.Name < tcArr[j].channelItem.Name
+		})
+
+		// Add ChannelItem and SlackChannel to the SlackService struct
+		for _, tc := range tcArr {
+			chans = append(chans, tc.channelItem)
+			s.Conversations = append(s.Conversations, tc.slackChannel)
+		}
+	}
+
+	return chans
 }
 
 // GetUserPresence will get the presence of a specific user
@@ -246,7 +237,8 @@ func (s *SlackService) GetUserPresence(userID string) (string, error) {
 // MarkAsRead will set the channel as read
 func (s *SlackService) MarkAsRead(channelID string) {
 
-	// TODO: does this work with other channel types? See old one below
+	// TODO: does this work with other channel types? See old one below,
+	// test this
 	s.Client.SetChannelReadMark(
 		channelID, fmt.Sprintf("%f",
 			float64(time.Now().Unix())),
