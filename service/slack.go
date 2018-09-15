@@ -201,8 +201,17 @@ func (s *SlackService) GetChannels() []components.ChannelItem {
 
 	wg.Wait()
 
+	// Sort the buckets
+	var keys []int
+	for k := range buckets {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+
 	var chans []components.ChannelItem
-	for _, bucket := range buckets {
+	for _, k := range keys {
+
+		bucket := buckets[k]
 
 		// Sort channels in every bucket
 		tcArr := make([]tempChan, 0)
