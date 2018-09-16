@@ -3,59 +3,93 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:592569a314f98130ac3085243fdbe46f278d3e54c95ce9e0bde9c6b908db82c4"
   name = "github.com/0xAX/notificator"
   packages = ["."]
+  pruneopts = "UT"
   revision = "88d57ee9043ba88d6a62e437fa15dda1ca0d2b59"
 
 [[projects]]
+  digest = "1:c2ee2bebf300b3c6d998802bdefe0422a65bcdcdd5c902e1ed518448c56e8f98"
   name = "github.com/erroneousboat/termui"
   packages = ["."]
+  pruneopts = "UT"
   revision = "80f245cdfa0488883a3e8602bf3f0c8a3c889a22"
 
 [[projects]]
+  digest = "1:cee8e8ac80df6373e7daa11baf1f98c1b6f7242c49ccae7e1ec34a971dc408d9"
   name = "github.com/gorilla/websocket"
   packages = ["."]
-  revision = "ea4d1f681babbce9545c9c5f3d5194a789c89f5b"
-  version = "v1.2.0"
+  pruneopts = "UT"
+  revision = "3ff3320c2a1756a3691521efc290b4701575147c"
+  version = "v1.3.0"
 
 [[projects]]
+  digest = "1:f614e627d47e1276989de725dc5e433504a8b5498850711c9d3fcec3bfa7c943"
   name = "github.com/maruel/panicparse"
   packages = ["stack"]
-  revision = "ad661195ed0e88491e0f14be6613304e3b1141d6"
+  pruneopts = "UT"
+  revision = "785840568bdc7faa0dfb1cd6c643207f03271f64"
+  version = "v1.1.1"
 
 [[projects]]
+  digest = "1:cdb899c199f907ac9fb50495ec71212c95cb5b0e0a8ee0800da0238036091033"
   name = "github.com/mattn/go-runewidth"
   packages = ["."]
-  revision = "9e777a8366cce605130a531d2cd6363d07ad7317"
-  version = "v0.0.2"
+  pruneopts = "UT"
+  revision = "ce7b0b5c7b45a81508558cd1dba6bb1e4ddb51bb"
+  version = "v0.0.3"
 
 [[projects]]
   branch = "master"
+  digest = "1:e68cd472b96cdf7c9f6971ac41bcc1d4d3b23d67c2a31d2399446e295bc88ae9"
   name = "github.com/mitchellh/go-wordwrap"
   packages = ["."]
+  pruneopts = "UT"
   revision = "ad45545899c7b13c020ea92b2072220eefad42b8"
 
 [[projects]]
   branch = "master"
+  digest = "1:410e126b7e96640ac0c41bb49bad7dbf2d1c081aa06fd2c75cdb9e65765fae9b"
   name = "github.com/nlopes/slack"
   packages = ["."]
-  revision = "8ac1139f0b5b26ddb4a5c05b727e7ce155cc37f4"
+  pruneopts = "UT"
+  revision = "7cfa5619e6becd3db5dfb8e26c06798918e123b2"
 
 [[projects]]
   branch = "master"
+  digest = "1:f335d800550786b6f51ddaedb9d1107a7a72f4a2195e5b039dd7c0e103e119bc"
   name = "github.com/nsf/termbox-go"
   packages = ["."]
-  revision = "e2050e41c8847748ec5288741c0b19a8cb26d084"
+  pruneopts = "UT"
+  revision = "b66b20ab708e289ff1eb3e218478302e6aec28ce"
 
 [[projects]]
+  digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
+  digest = "1:3fd3d634f6815f19ac4b2c5e16d28ec9aa4584d0bba25d1ee6c424d813cca22a"
   name = "github.com/renstrom/fuzzysearch"
   packages = ["fuzzy"]
-  revision = "d4ca9dfccd55dc6b076f9880d49c35315922c1f4"
-  version = "v1.0.0"
+  pruneopts = "UT"
+  revision = "b18e754edff4833912ef4dce9eaca885bd3f0de1"
+  version = "v1.0.1"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6b883214c48afc975f37de07cda7d2fbd9d235af028191ffc815755619c9cfc6"
+  input-imports = [
+    "github.com/0xAX/notificator",
+    "github.com/erroneousboat/termui",
+    "github.com/mattn/go-runewidth",
+    "github.com/nlopes/slack",
+    "github.com/nsf/termbox-go",
+    "github.com/renstrom/fuzzysearch/fuzzy",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

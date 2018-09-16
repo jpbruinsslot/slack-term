@@ -104,7 +104,7 @@ func (api *Client) _search(ctx context.Context, path, query string, params Searc
 	}
 
 	response = &searchResponseFull{}
-	err := post(ctx, api.httpclient, path, values, response, api.debug)
+	err := postSlackMethod(ctx, api.httpclient, path, values, response, api.debug)
 	if err != nil {
 		return nil, err
 	}

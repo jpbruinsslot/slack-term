@@ -33,12 +33,14 @@ func CreateView(config *config.Config, svc *service.SlackService) *View {
 
 	// Chat: fill the component
 	msgs := svc.GetMessages(
-		svc.GetSlackChannel(channels.SelectedChannel),
+		channels.ChannelItems[channels.SelectedChannel].ID,
 		chat.GetMaxItems(),
 	)
 
 	chat.SetMessages(msgs)
-	chat.SetBorderLabel(svc.Channels[channels.SelectedChannel].GetChannelName())
+	chat.SetBorderLabel(
+		channels.ChannelItems[channels.SelectedChannel].GetChannelName(),
+	)
 
 	// Debug: create the component
 	debug := components.CreateDebugComponent(input.Par.Height)

@@ -49,11 +49,11 @@ func (c *cache) augmentGoroutine(goroutine *Goroutine) {
 	// For each call site, look at the next call and populate it. Then we can
 	// walk back and reformat things.
 	for i := range goroutine.Stack.Calls {
-		c.load(goroutine.Stack.Calls[i].SourcePath)
+		c.load(goroutine.Stack.Calls[i].LocalSourcePath())
 	}
 
 	// Once all loaded, we can look at the next call when available.
-	for i := 1; i < len(goroutine.Stack.Calls); i++ {
+	for i := 0; i < len(goroutine.Stack.Calls)-1; i++ {
 		// Get the AST from the previous call and process the call line with it.
 		if f := c.getFuncAST(&goroutine.Stack.Calls[i]); f != nil {
 			processCall(&goroutine.Stack.Calls[i], f)
@@ -101,7 +101,7 @@ func (c *cache) load(fileName string) {
 }
 
 func (c *cache) getFuncAST(call *Call) *ast.FuncDecl {
-	if p := c.parsed[call.SourcePath]; p != nil {
+	if p := c.parsed[call.LocalSourcePath()]; p != nil {
 		return p.getFuncAST(call.Func.Name(), call.Line)
 	}
 	return nil
@@ -115,6 +115,15 @@ type parsedFile struct {
 // getFuncAST gets the callee site function AST representation for the code
 // inside the function f at line l.
 func (p *parsedFile) getFuncAST(f string, l int) (d *ast.FuncDecl) {
+	if len(p.lineToByteOffset) <= l {
+		// The line number in the stack trace line does not exist in the file. That
+		// can only mean that the sources on disk do not match the sources used to
+		// build the binary.
+		// TODO(maruel): This should be surfaced, so that source parsing is
+		// completely ignored.
+		return
+	}
+
 	// Walk the AST to find the lineToByteOffset that fits the line number.
 	var lastFunc *ast.FuncDecl
 	var found ast.Node
@@ -155,20 +164,18 @@ func (p *parsedFile) getFuncAST(f string, l int) (d *ast.FuncDecl) {
 }
 
 func name(n ast.Node) string {
-	if _, ok := n.(*ast.InterfaceType); ok {
+	switch t := n.(type) {
+	case *ast.InterfaceType:
 		return "interface{}"
+	case *ast.Ident:
+		return t.Name
+	case *ast.SelectorExpr:
+		return t.Sel.Name
+	case *ast.StarExpr:
+		return "*" + name(t.X)
+	default:
+		return "<unknown>"
 	}
-	if i, ok := n.(*ast.Ident); ok {
-		return i.Name
-	}
-	if _, ok := n.(*ast.FuncType); ok {
-		return "func"
-	}
-	if s, ok := n.(*ast.SelectorExpr); ok {
-		return s.Sel.Name
-	}
-	// TODO(maruel): Implement anything missing.
-	return "<unknown>"
 }
 
 // fieldToType returns the type name and whether if it's an ellipsis.
@@ -189,6 +196,10 @@ func fieldToType(f *ast.Field) (string, bool) {
 		return arg.Sel.Name, false
 	case *ast.StarExpr:
 		return "*" + name(arg.X), false
+	case *ast.MapType:
+		return fmt.Sprintf("map[%s]%s", name(arg.Key), name(arg.Value)), false
+	case *ast.ChanType:
+		return fmt.Sprintf("chan %s", name(arg.Value)), false
 	default:
 		// TODO(maruel): Implement anything missing.
 		return "<unknown>", false
