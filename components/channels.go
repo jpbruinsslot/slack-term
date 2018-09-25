@@ -3,6 +3,7 @@ package components
 import (
 	"fmt"
 	"html"
+	"strings"
 
 	"github.com/erroneousboat/termui"
 	"github.com/renstrom/fuzzysearch/fuzzy"
@@ -272,6 +273,20 @@ func (c *Channels) ScrollDown() {
 	}
 }
 
+func (c *Channels) GetChannelIndex(name string) int {
+	// because the item buffers can be endless in termui, we have to len it rather than range
+	// otherwise, infiniloops
+	l := len(c.List.Items)
+	formattedName := fmt.Sprintf("[%s]", name)
+	for index := 0; index < l; index++ {
+		channelName := c.List.Items[index]
+		if strings.Contains(channelName, formattedName) {
+			return index
+		}
+	}
+	return -1
+}
+
 // Search will search through the channels to find a channel,
 // when a match has been found the selected channel will then
 // be the channel that has been found
@@ -290,17 +305,20 @@ func (c *Channels) Search(term string) {
 	}
 
 	if len(c.SearchMatches) > 0 {
-		c.GotoPosition(0)
+		c.GotoPosition(0, false)
 		c.SearchPosition = 0
 	}
 }
 
 // GotoPosition is used by the search functionality to automatically
 // scroll to a specific location in the channels component
-func (c *Channels) GotoPosition(position int) {
+func (c *Channels) GotoPosition(position int, absolute bool) {
 
 	// The new position
-	newPos := c.SearchMatches[position]
+	newPos := position
+	if !absolute {
+		newPos = c.SearchMatches[position]
+	}
 
 	// Is the new position in range of the current view?
 	minRange := c.Offset
@@ -331,7 +349,7 @@ func (c *Channels) GotoPosition(position int) {
 func (c *Channels) SearchNext() {
 	newPosition := c.SearchPosition + 1
 	if newPosition <= len(c.SearchMatches)-1 {
-		c.GotoPosition(newPosition)
+		c.GotoPosition(newPosition, false)
 		c.SearchPosition = newPosition
 	}
 }
@@ -340,7 +358,7 @@ func (c *Channels) SearchNext() {
 func (c *Channels) SearchPrev() {
 	newPosition := c.SearchPosition - 1
 	if newPosition >= 0 {
-		c.GotoPosition(newPosition)
+		c.GotoPosition(newPosition, false)
 		c.SearchPosition = newPosition
 	}
 }
