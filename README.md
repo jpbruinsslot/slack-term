@@ -51,6 +51,10 @@ Setup
     // value as: "mention", default is turned off: ""
     "notify": "",
 
+    // OPTIONAL: display sender and message content in notifications, set
+    // the value as: false, default is to hide message content: true
+    "notify_private": true,
+
     // OPTIONAL: define custom key mappings, defaults are:
     "key_map": {
         "command": {
