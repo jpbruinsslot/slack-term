@@ -501,10 +501,22 @@ func createNotifyMessage(ctx *context.AppContext, ev *slack.MessageEvent) {
 		notifyTimer = time.NewTimer(time.Second * 2)
 		<-notifyTimer.C
 
+		var title string
+		var msg string
+
+		if ctx.Config.NotifyPrivate {
+			title = "slack-term"
+			msg = ctx.Service.CreateNotifyMessage(ev.Channel)
+		} else {
+			title = ctx.Service.GetChannelName(ev.Channel)
+			msg = ev.Text
+		}
+
 		// Only actually notify when time expires
 		ctx.Notify.Push(
-			"slack-term",
-			ctx.Service.CreateNotifyMessage(ev.Channel), "",
+			title,
+			msg,
+			"",
 			notificator.UR_NORMAL,
 		)
 	}()
