@@ -11,9 +11,9 @@ import (
 	"github.com/nlopes/slack"
 	termbox "github.com/nsf/termbox-go"
 
-	"github.com/erroneousboat/slack-term/config"
-	"github.com/erroneousboat/slack-term/context"
-	"github.com/erroneousboat/slack-term/views"
+	"github.com/theremix/slack-term/config"
+	"github.com/theremix/slack-term/context"
+	"github.com/theremix/slack-term/views"
 )
 
 var scrollTimer *time.Timer
@@ -122,9 +122,11 @@ func messageHandler(ctx *context.AppContext) {
 						// when attachments are added to message
 						for i := len(msg) - 1; i >= 0; i-- {
 							ctx.View.Chat.AddMessage(
-								msg[i].ToString(),
+								msg[i],
 							)
+							ctx.View.Chat.SetLastReadTime(time.Now().UTC())
 						}
+						ctx.Service.Channels[ctx.View.Channels.SelectedChannel].SetLastReadTime(time.Now().UTC())
 
 						termui.Render(ctx.View.Chat)
 
@@ -300,12 +302,7 @@ func actionGetMessages(ctx *context.AppContext) {
 		ctx.View.Chat.GetMaxItems(),
 	)
 
-	var strMsgs []string
-	for _, msg := range msgs {
-		strMsgs = append(strMsgs, msg.ToString())
-	}
-
-	ctx.View.Chat.SetMessages(strMsgs)
+	ctx.View.Chat.SetMessages(msgs)
 
 	termui.Render(ctx.View.Chat)
 }
@@ -376,26 +373,28 @@ func actionChangeChannel(ctx *context.AppContext) {
 
 	// Get messages of the SelectedChannel, and get the count of messages
 	// that fit into the Chat component
+
+	channelData := ctx.Service.GetSlackChannel(ctx.View.Channels.SelectedChannel)
+	channel := ctx.Service.Channels[ctx.View.Channels.SelectedChannel]
 	msgs := ctx.Service.GetMessages(
-		ctx.Service.GetSlackChannel(ctx.View.Channels.SelectedChannel),
+		channelData,
 		ctx.View.Chat.GetMaxItems(),
 	)
 
-	var strMsgs []string
-	for _, msg := range msgs {
-		strMsgs = append(strMsgs, msg.ToString())
-	}
+	// set the chat view last read time to that of the channel so it knows where to put the "new message" delta
+	ctx.View.Chat.SetLastReadTime(channel.LastReadTime)
 
 	// Set messages for the channel
-	ctx.View.Chat.SetMessages(strMsgs)
+	ctx.View.Chat.SetMessages(msgs)
 
 	// Set channel name for the Chat pane
 	ctx.View.Chat.SetBorderLabel(
 		ctx.Service.Channels[ctx.View.Channels.SelectedChannel].GetChannelName(),
 	)
 
-	// Clear notification icon if there is any
+	// Clear notification icon if there is any and update the last read time
 	ctx.Service.MarkAsRead(ctx.View.Channels.SelectedChannel)
+
 	ctx.View.Channels.SetChannels(ctx.Service.ChannelsToString())
 
 	termui.Render(ctx.View.Channels)

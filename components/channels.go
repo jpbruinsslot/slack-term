@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html"
 	"strings"
+	"time"
 
 	"github.com/erroneousboat/termui"
 	"github.com/renstrom/fuzzysearch/fuzzy"
@@ -33,6 +34,7 @@ type ChannelItem struct {
 	UserID       string
 	Presence     string
 	Notification bool
+	LastReadTime time.Time
 
 	StylePrefix string
 	StyleIcon   string
@@ -90,6 +92,11 @@ func (c ChannelItem) GetChannelName() string {
 		channelName = c.Name
 	}
 	return channelName
+}
+
+// Sets the last read time for a channel
+func (c *ChannelItem) SetLastReadTime(readTime time.Time) {
+	c.LastReadTime = readTime
 }
 
 // Channels is the definition of a Channels component

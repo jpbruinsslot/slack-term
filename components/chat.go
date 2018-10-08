@@ -9,7 +9,7 @@ import (
 
 	"github.com/erroneousboat/termui"
 
-	"github.com/erroneousboat/slack-term/config"
+	"github.com/theremix/slack-term/config"
 )
 
 type Message struct {
@@ -45,8 +45,10 @@ func (m Message) ToString() string {
 
 // Chat is the definition of a Chat component
 type Chat struct {
-	List   *termui.List
-	Offset int
+	List            *termui.List
+	Offset          int
+	LastMessageTime time.Time
+	LastReadTime    time.Time
 }
 
 // CreateChat is the constructor for the Chat struct
@@ -60,6 +62,10 @@ func CreateChatComponent(inputHeight int) *Chat {
 	chat.List.Overflow = "wrap"
 
 	return chat
+}
+
+func OnSameDate(a time.Time, b time.Time) bool {
+	return a.Day() == b.Day() && a.Month() == b.Month() && a.Year() == b.Year()
 }
 
 // Buffer implements interface termui.Bufferer
@@ -198,21 +204,89 @@ func (c *Chat) GetMaxItems() int {
 	return c.List.InnerBounds().Max.Y - c.List.InnerBounds().Min.Y
 }
 
-// SetMessages will put the provided messages into the Items field of the
-// Chat view
-func (c *Chat) SetMessages(messages []string) {
-	// Reset offset first, when scrolling in view and changing channels we
-	// want the offset to be 0 when loading new messages
-	c.Offset = 0
-
-	for _, msg := range messages {
-		c.List.Items = append(c.List.Items, html.UnescapeString(msg))
+func (c *Chat) ShowTimeDelta(message Message) {
+	if !message.Time.IsZero() {
+		inDelta := OnSameDate(c.LastMessageTime, message.Time)
+		if !inDelta {
+			c.AddTimeMarker(time.Time.Format(message.Time, "Mon, Jan 2 2006"))
+		}
+		c.LastMessageTime = message.Time
 	}
 }
 
+func (c *Chat) SetLastReadTime(lastRead time.Time) {
+	c.LastReadTime = lastRead
+}
+
+// SetMessages will put the provided messages into the Items field of the
+// Chat view
+func (c *Chat) SetMessages(messages []Message) {
+	// Reset offset first, when scrolling in view and changing channels we
+	// want the offset to be 0 when loading new messages
+	c.Offset = 0
+	if c.LastMessageTime.IsZero() {
+		c.LastMessageTime = time.Now()
+	}
+
+	unreadDeltaAdded := false
+
+	// if this is the first time looking at this channel, don't show an unread delta.
+	if c.LastReadTime.IsZero() {
+		unreadDeltaAdded = true
+	}
+
+	for _, msg := range messages {
+		c.ShowTimeDelta(msg)
+		if unreadDeltaAdded == false {
+			if msg.Time.UTC().After(c.LastReadTime.UTC()) {
+				c.AddUnreadDelta()
+				unreadDeltaAdded = true
+			}
+		}
+		strMsg := msg.ToString()
+		c.List.Items = append(c.List.Items, html.UnescapeString(strMsg))
+	}
+}
+
+func (c *Chat) AddUnreadDelta() {
+	unreadLabel := "new messages"
+	screenWidth := c.List.Width
+	markerWidth := len(unreadLabel)
+	split := screenWidth - markerWidth - 5
+	if split < 0 {
+		// sometimes we don't know the width yet, so arbitrarily, 10.
+		split = 10
+	}
+	prefix := strings.Repeat("─", split)
+
+	line := fmt.Sprintf(" %s %s ", prefix, unreadLabel)
+	c.List.Items = append(c.List.Items, line)
+}
+
+func (c *Chat) AddTimeMarker(marker string) {
+	screenWidth := c.List.Width
+	markerWidth := len(marker)
+	split := ((screenWidth - markerWidth) / 2) - 4
+	if split < 0 {
+		// sometimes we don't know the width yet, so arbitrarily, 10.
+		split = 10
+	}
+	prefix := strings.Repeat("-", split+1)
+	suffix := strings.Repeat("-", split+1)
+	// because this doesn't always divide evenly, add a little extra nudge
+	if int(split)+int(split)+markerWidth+8 < screenWidth {
+		prefix = "-" + prefix
+	}
+
+	line := fmt.Sprintf(" %s %s %s ", prefix, marker, suffix)
+	c.List.Items = append(c.List.Items, line)
+}
+
 // AddMessage adds a single message to List.Items
-func (c *Chat) AddMessage(message string) {
-	c.List.Items = append(c.List.Items, html.UnescapeString(message))
+func (c *Chat) AddMessage(message Message) {
+	c.ShowTimeDelta(message)
+	strMsg := message.ToString()
+	c.List.Items = append(c.List.Items, html.UnescapeString(strMsg))
 }
 
 // ClearMessages clear the List.Items
