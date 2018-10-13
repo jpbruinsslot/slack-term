@@ -103,9 +103,9 @@ Setup
             "fg": "white",
             "bg": "default",
             "border_fg": "white",
-            "border_bg": "white",
-            "par_fg": "white",
-            "par_label_fg": "white"
+            "border_bg": "",
+            "label_fg": "white",
+            "label_bg": ""
         },
         "channel": {
             "prefix": "",

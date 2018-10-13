@@ -7,12 +7,12 @@ type Theme struct {
 }
 
 type View struct {
-	Fg         string `json:"fg"`
-	Bg         string `json:"bg"`
-	BorderFg   string `json:"border_fg"`
-	LabelFg    string `json:"border_fg"`
-	ParFg      string `json:"par_fg"`
-	ParLabelFg string `json:"par_label_fg"`
+	Fg       string `json:"fg"`        // Foreground text
+	Bg       string `json:"bg"`        // Background text
+	BorderFg string `json:"border_fg"` // Border foreground
+	BorderBg string `json:"border_bg"` // Border background
+	LabelFg  string `json:"label"`     // Label text foreground
+	LabelBg  string `json:"label"`     // Label text background
 }
 
 type Message struct {
