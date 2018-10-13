@@ -11,8 +11,8 @@ type View struct {
 	Bg       string `json:"bg"`        // Background text
 	BorderFg string `json:"border_fg"` // Border foreground
 	BorderBg string `json:"border_bg"` // Border background
-	LabelFg  string `json:"label"`     // Label text foreground
-	LabelBg  string `json:"label"`     // Label text background
+	LabelFg  string `json:"label_fg"`  // Label text foreground
+	LabelBg  string `json:"label_bg"`  // Label text background
 }
 
 type Message struct {
