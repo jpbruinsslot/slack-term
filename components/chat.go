@@ -270,9 +270,9 @@ func (c *Chat) AddMessage(message Message) {
 	c.Messages = append(c.Messages, message)
 }
 
-// ClearMessages clear the List.Items
+// ClearMessages clear the c.Messages
 func (c *Chat) ClearMessages() {
-	c.List.Items = []string{}
+	c.Messages = make([]Message, 0)
 }
 
 // ScrollUp will render the chat messages based on the Offset of the Chat
@@ -281,13 +281,13 @@ func (c *Chat) ClearMessages() {
 // Offset is 0 when scrolled down. (we loop backwards over the array, so we
 // start with rendering last item in the list at the maximum y of the Chat
 // pane). Increasing the Offset will thus result in substracting the offset
-// from the len(Chat.List.Items).
+// from the len(Chat.Messages).
 func (c *Chat) ScrollUp() {
 	c.Offset = c.Offset + 10
 
 	// Protect overscrolling
-	if c.Offset > len(c.List.Items) {
-		c.Offset = len(c.List.Items)
+	if c.Offset > len(c.Messages) {
+		c.Offset = len(c.Messages)
 	}
 }
 
@@ -297,7 +297,7 @@ func (c *Chat) ScrollUp() {
 // Offset is 0 when scrolled down. (we loop backwards over the array, so we
 // start with rendering last item in the list at the maximum y of the Chat
 // pane). Increasing the Offset will thus result in substracting the offset
-// from the len(Chat.List.Items).
+// from the len(Chat.Messages).
 func (c *Chat) ScrollDown() {
 	c.Offset = c.Offset - 10
 
@@ -313,20 +313,22 @@ func (c *Chat) SetBorderLabel(channelName string) {
 }
 
 // Help shows the usage and key bindings in the chat pane
-func (c *Chat) Help(cfg *config.Config) {
-	help := []string{
-		"slack-term - slack client for your terminal",
-		"",
-		"USAGE:",
-		"    slack-term -config [path-to-config]",
-		"",
-		"KEY BINDINGS:",
-		"",
+func (c *Chat) Help(usage string, cfg *config.Config) {
+	help := []Message{
+		Message{
+			Content: usage,
+		},
 	}
 
 	for mode, mapping := range cfg.KeyMap {
-		help = append(help, fmt.Sprintf("    %s", strings.ToUpper(mode)))
-		help = append(help, "")
+		help = append(
+			help,
+			Message{
+				Content: fmt.Sprintf("%s", strings.ToUpper(mode)),
+			},
+		)
+
+		help = append(help, Message{Content: ""})
 
 		var keys []string
 		for k := range mapping {
@@ -335,10 +337,16 @@ func (c *Chat) Help(cfg *config.Config) {
 		sort.Strings(keys)
 
 		for _, k := range keys {
-			help = append(help, fmt.Sprintf("    %-12s%-15s", k, mapping[k]))
+			help = append(
+				help,
+				Message{
+					Content: fmt.Sprintf("    %-12s%-15s", k, mapping[k]),
+				},
+			)
 		}
-		help = append(help, "")
+
+		help = append(help, Message{Content: ""})
 	}
 
-	c.List.Items = help
+	c.Messages = help
 }

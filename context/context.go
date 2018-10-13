@@ -22,6 +22,8 @@ const (
 )
 
 type AppContext struct {
+	Version    string
+	Usage      string
 	EventQueue chan termbox.Event
 	Service    *service.SlackService
 	Body       *termui.Grid
@@ -34,7 +36,7 @@ type AppContext struct {
 
 // CreateAppContext creates an application context which can be passed
 // and referenced througout the application
-func CreateAppContext(flgConfig string, flgToken string, flgDebug bool) (*AppContext, error) {
+func CreateAppContext(flgConfig string, flgToken string, flgDebug bool, version string, usage string) (*AppContext, error) {
 	if flgDebug {
 		go func() {
 			http.ListenAndServe(":6060", nil)
@@ -110,6 +112,8 @@ func CreateAppContext(flgConfig string, flgToken string, flgDebug bool) (*AppCon
 	termui.Render(termui.Body)
 
 	return &AppContext{
+		Version:    version,
+		Usage:      usage,
 		EventQueue: make(chan termbox.Event, 20),
 		Service:    svc,
 		Body:       termui.Body,

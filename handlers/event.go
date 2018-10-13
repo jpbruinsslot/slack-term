@@ -444,7 +444,7 @@ func actionScrollDownChat(ctx *context.AppContext) {
 }
 
 func actionHelp(ctx *context.AppContext) {
-	ctx.View.Chat.Help(ctx.Config)
+	ctx.View.Chat.Help(ctx.Usage, ctx.Config)
 	termui.Render(ctx.View.Chat)
 }
 
