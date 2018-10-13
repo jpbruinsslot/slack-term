@@ -14,7 +14,7 @@ const (
 	IconChannel      = "#"
 	IconGroup        = "☰"
 	IconIM           = "●"
-	IconMpIM         = "●" // TODO
+	IconMpIM         = "☰"
 	IconNotification = "*"
 
 	PresenceAway   = "away"
@@ -145,6 +145,7 @@ func (c *Channels) Buffer() termui.Buffer {
 				item.ToString(), c.List.ItemFgColor, c.List.ItemBgColor)
 		}
 
+		// Append ellipsis when overflows
 		cells = termui.DTrimTxCls(cells, c.List.InnerWidth())
 
 		x := 0

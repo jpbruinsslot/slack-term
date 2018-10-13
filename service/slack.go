@@ -151,20 +151,26 @@ func (s *SlackService) GetChannels() []components.ChannelItem {
 				continue
 			}
 
-			chanItem.Type = components.ChannelTypeGroup
+			// This is done because MpIM channels are also considered groups
+			if chn.IsMpIM {
+				if !chn.IsOpen {
+					continue
+				}
 
-			buckets[1][chn.ID] = &tempChan{
-				channelItem:  chanItem,
-				slackChannel: chn,
-			}
-		}
+				chanItem.Type = components.ChannelTypeMpIM
 
-		if chn.IsMpIM {
-			chanItem.Type = components.ChannelTypeMpIM
+				buckets[2][chn.ID] = &tempChan{
+					channelItem:  chanItem,
+					slackChannel: chn,
+				}
+			} else {
 
-			buckets[2][chn.ID] = &tempChan{
-				channelItem:  chanItem,
-				slackChannel: chn,
+				chanItem.Type = components.ChannelTypeGroup
+
+				buckets[1][chn.ID] = &tempChan{
+					channelItem:  chanItem,
+					slackChannel: chn,
+				}
 			}
 		}
 

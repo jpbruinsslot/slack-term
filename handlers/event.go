@@ -139,9 +139,10 @@ func messageHandler(ctx *context.AppContext) {
 					// I'm currently in a channel but not in the terminal
 					// window (tmux). But only create a notification when
 					// it comes from someone else but the current user.
-					if ev.User != ctx.Service.CurrentUserID {
-						actionNewMessage(ctx, ev)
-					}
+					// if ev.User != ctx.Service.CurrentUserID {
+					// 	actionNewMessage(ctx, ev)
+					// }
+					actionNewMessage(ctx, ev)
 				case *slack.PresenceChangeEvent:
 					actionSetPresence(ctx, ev.User, ev.Presence)
 				case *slack.RTMError:
