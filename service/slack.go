@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"fmt"
-	"log"
 	"regexp"
 	"sort"
 	"strconv"
@@ -69,7 +68,7 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 	return svc, nil
 }
 
-func (s *SlackService) GetChannels() []components.ChannelItem {
+func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 	slackChans := make([]slack.Channel, 0)
 
 	// Initial request
@@ -86,7 +85,7 @@ func (s *SlackService) GetChannels() []components.ChannelItem {
 		},
 	)
 	if err != nil {
-		log.Fatal(err) // FIXME
+		return nil, err
 	}
 
 	slackChans = append(slackChans, initChans...)
@@ -108,7 +107,7 @@ func (s *SlackService) GetChannels() []components.ChannelItem {
 			},
 		)
 		if err != nil {
-			log.Fatal(err) // FIXME
+			return nil, err
 		}
 
 		slackChans = append(slackChans, channels...)
@@ -236,7 +235,7 @@ func (s *SlackService) GetChannels() []components.ChannelItem {
 		}
 	}
 
-	return chans
+	return chans, nil
 }
 
 // GetUserPresence will get the presence of a specific user
@@ -251,31 +250,10 @@ func (s *SlackService) GetUserPresence(userID string) (string, error) {
 
 // MarkAsRead will set the channel as read
 func (s *SlackService) MarkAsRead(channelID string) {
-
-	// TODO: does this work with other channel types? See old one below,
-	// test this
 	s.Client.SetChannelReadMark(
 		channelID, fmt.Sprintf("%f",
 			float64(time.Now().Unix())),
 	)
-
-	// switch channel.Type {
-	// case ChannelTypeChannel:
-	// 	s.Client.SetChannelReadMark(
-	// 		channel.ID, fmt.Sprintf("%f",
-	// 			float64(time.Now().Unix())),
-	// 	)
-	// case ChannelTypeGroup:
-	// 	s.Client.SetGroupReadMark(
-	// 		channel.ID, fmt.Sprintf("%f",
-	// 			float64(time.Now().Unix())),
-	// 	)
-	// case ChannelTypeIM:
-	// 	s.Client.MarkIMChannel(
-	// 		channel.ID, fmt.Sprintf("%f",
-	// 			float64(time.Now().Unix())),
-	// 	)
-	// }
 }
 
 // SendMessage will send a message to a particular channel
@@ -299,8 +277,8 @@ func (s *SlackService) SendMessage(channelID string, message string) error {
 
 // GetMessages will get messages for a channel, group or im channel delimited
 // by a count.
-func (s *SlackService) GetMessages(channelID string, count int) []components.Message {
-	// TODO: check other parameters
+func (s *SlackService) GetMessages(channelID string, count int) ([]components.Message, error) {
+
 	// https://godoc.org/github.com/nlopes/slack#GetConversationHistoryParameters
 	historyParams := slack.GetConversationHistoryParameters{
 		ChannelID: channelID,
@@ -310,7 +288,7 @@ func (s *SlackService) GetMessages(channelID string, count int) []components.Mes
 
 	history, err := s.Client.GetConversationHistory(&historyParams)
 	if err != nil {
-		log.Fatal(err) // FIXME
+		return nil, err
 	}
 
 	// Construct the messages
@@ -327,7 +305,7 @@ func (s *SlackService) GetMessages(channelID string, count int) []components.Mes
 		messagesReversed = append(messagesReversed, messages[i])
 	}
 
-	return messagesReversed
+	return messagesReversed, nil
 }
 
 // CreateMessage will create a string formatted message that can be rendered

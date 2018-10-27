@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -309,10 +310,15 @@ func actionSearchMode(ctx *context.AppContext) {
 }
 
 func actionGetMessages(ctx *context.AppContext) {
-	msgs := ctx.Service.GetMessages(
+	msgs, err := ctx.Service.GetMessages(
 		ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
 		ctx.View.Chat.GetMaxItems(),
 	)
+	if err != nil {
+		termbox.Close()
+		log.Println(err)
+		os.Exit(0)
+	}
 
 	ctx.View.Chat.SetMessages(msgs)
 
@@ -385,10 +391,15 @@ func actionChangeChannel(ctx *context.AppContext) {
 
 	// Get messages of the SelectedChannel, and get the count of messages
 	// that fit into the Chat component
-	msgs := ctx.Service.GetMessages(
+	msgs, err := ctx.Service.GetMessages(
 		ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
 		ctx.View.Chat.GetMaxItems(),
 	)
+	if err != nil {
+		termbox.Close()
+		log.Println(err)
+		os.Exit(0)
+	}
 
 	// Set messages for the channel
 	ctx.View.Chat.SetMessages(msgs)

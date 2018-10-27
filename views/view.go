@@ -17,7 +17,7 @@ type View struct {
 	Debug    *components.Debug
 }
 
-func CreateView(config *config.Config, svc *service.SlackService) *View {
+func CreateView(config *config.Config, svc *service.SlackService) (*View, error) {
 	// Create Input component
 	input := components.CreateInputComponent()
 
@@ -25,19 +25,29 @@ func CreateView(config *config.Config, svc *service.SlackService) *View {
 	channels := components.CreateChannelsComponent(input.Par.Height)
 
 	// Channels: fill the component
-	slackChans := svc.GetChannels()
+	slackChans, err := svc.GetChannels()
+	if err != nil {
+		return nil, err
+	}
+
+	// Channels: set channels in component
 	channels.SetChannels(slackChans)
 
 	// Chat: create the component
 	chat := components.CreateChatComponent(input.Par.Height)
 
 	// Chat: fill the component
-	msgs := svc.GetMessages(
+	msgs, err := svc.GetMessages(
 		channels.ChannelItems[channels.SelectedChannel].ID,
 		chat.GetMaxItems(),
 	)
+	if err != nil {
+		return nil, err
+	}
 
+	// Chat: set messages in component
 	chat.SetMessages(msgs)
+
 	chat.SetBorderLabel(
 		channels.ChannelItems[channels.SelectedChannel].GetChannelName(),
 	)
@@ -57,7 +67,7 @@ func CreateView(config *config.Config, svc *service.SlackService) *View {
 		Debug:    debug,
 	}
 
-	return view
+	return view, nil
 }
 
 func (v *View) Refresh() {

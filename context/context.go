@@ -80,7 +80,10 @@ func CreateAppContext(flgConfig string, flgToken string, flgDebug bool, version 
 	}
 
 	// Create the main view
-	view := views.CreateView(config, svc)
+	view, err := views.CreateView(config, svc)
+	if err != nil {
+		return nil, err
+	}
 
 	// Setup the interface
 	if flgDebug {
