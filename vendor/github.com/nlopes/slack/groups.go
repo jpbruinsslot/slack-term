@@ -53,9 +53,6 @@ func (api *Client) ArchiveGroupContext(ctx context.Context, group string) error 
 	}
 
 	_, err := groupRequest(ctx, api.httpclient, "groups.archive", values, api.debug)
-	if err != nil {
-		return err
-	}
 	return err
 }
 
@@ -72,10 +69,7 @@ func (api *Client) UnarchiveGroupContext(ctx context.Context, group string) erro
 	}
 
 	_, err := groupRequest(ctx, api.httpclient, "groups.unarchive", values, api.debug)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // CreateGroup creates a private group
@@ -215,11 +209,8 @@ func (api *Client) LeaveGroupContext(ctx context.Context, group string) (err err
 		"channel": {group},
 	}
 
-	if _, err = groupRequest(ctx, api.httpclient, "groups.leave", values, api.debug); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = groupRequest(ctx, api.httpclient, "groups.leave", values, api.debug)
+	return err
 }
 
 // KickUserFromGroup kicks a user from a group
@@ -235,11 +226,8 @@ func (api *Client) KickUserFromGroupContext(ctx context.Context, group, user str
 		"user":    {user},
 	}
 
-	if _, err = groupRequest(ctx, api.httpclient, "groups.kick", values, api.debug); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = groupRequest(ctx, api.httpclient, "groups.kick", values, api.debug)
+	return err
 }
 
 // GetGroups retrieves all groups
@@ -300,11 +288,8 @@ func (api *Client) SetGroupReadMarkContext(ctx context.Context, group, ts string
 		"ts":      {ts},
 	}
 
-	if _, err = groupRequest(ctx, api.httpclient, "groups.mark", values, api.debug); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = groupRequest(ctx, api.httpclient, "groups.mark", values, api.debug)
+	return err
 }
 
 // OpenGroup opens a private group

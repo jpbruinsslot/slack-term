@@ -18,6 +18,7 @@ const (
 type Config struct {
 	SlackToken   string                `json:"slack_token"`
 	Notify       string                `json:"notify"`
+	Emoji        bool                  `json:"emoji"`
 	SidebarWidth int                   `json:"sidebar_width"`
 	MainWidth    int                   `json:"-"`
 	KeyMap       map[string]keyMapping `json:"key_map"`
@@ -53,12 +54,12 @@ func NewConfig(filepath string) (*Config, error) {
 	}
 
 	termui.ColorMap = map[string]termui.Attribute{
-		"fg":           termui.StringToAttribute(cfg.Theme.View.Fg),
-		"bg":           termui.StringToAttribute(cfg.Theme.View.Bg),
-		"border.fg":    termui.StringToAttribute(cfg.Theme.View.BorderFg),
-		"label.fg":     termui.StringToAttribute(cfg.Theme.View.LabelFg),
-		"par.fg":       termui.StringToAttribute(cfg.Theme.View.ParFg),
-		"par.label.bg": termui.StringToAttribute(cfg.Theme.View.ParLabelFg),
+		"fg":        termui.StringToAttribute(cfg.Theme.View.Fg),
+		"bg":        termui.StringToAttribute(cfg.Theme.View.Bg),
+		"border.fg": termui.StringToAttribute(cfg.Theme.View.BorderFg),
+		"border.bg": termui.StringToAttribute(cfg.Theme.View.BorderBg),
+		"label.fg":  termui.StringToAttribute(cfg.Theme.View.LabelFg),
+		"label.bg":  termui.StringToAttribute(cfg.Theme.View.LabelBg),
 	}
 
 	return &cfg, nil
@@ -69,6 +70,7 @@ func getDefaultConfig() Config {
 		SidebarWidth: 1,
 		MainWidth:    11,
 		Notify:       "",
+		Emoji:        false,
 		KeyMap: map[string]keyMapping{
 			"command": {
 				"i":          "mode-insert",
@@ -111,12 +113,12 @@ func getDefaultConfig() Config {
 		},
 		Theme: Theme{
 			View: View{
-				Fg:         "white",
-				Bg:         "default",
-				BorderFg:   "white",
-				LabelFg:    "green,bold",
-				ParFg:      "white",
-				ParLabelFg: "white",
+				Fg:       "white",
+				Bg:       "default",
+				BorderFg: "white",
+				BorderBg: "",
+				LabelFg:  "green,bold",
+				LabelBg:  "",
 			},
 			Channel: Channel{
 				Prefix: "",
@@ -124,9 +126,10 @@ func getDefaultConfig() Config {
 				Text:   "",
 			},
 			Message: Message{
-				Time: "",
-				Name: "",
-				Text: "",
+				Time:       "",
+				TimeFormat: "15:04",
+				Name:       "",
+				Text:       "",
 			},
 		},
 	}

@@ -38,7 +38,7 @@ type dndTeamInfoResponse struct {
 
 func dndRequest(ctx context.Context, client HTTPRequester, path string, values url.Values, debug bool) (*dndResponseFull, error) {
 	response := &dndResponseFull{}
-	err := post(ctx, client, path, values, response, debug)
+	err := postSlackMethod(ctx, client, path, values, response, debug)
 	if err != nil {
 		return nil, err
 	}
@@ -61,13 +61,11 @@ func (api *Client) EndDNDContext(ctx context.Context) error {
 
 	response := &SlackResponse{}
 
-	if err := post(ctx, api.httpclient, "dnd.endDnd", values, response, api.debug); err != nil {
+	if err := postSlackMethod(ctx, api.httpclient, "dnd.endDnd", values, response, api.debug); err != nil {
 		return err
 	}
-	if !response.Ok {
-		return errors.New(response.Error)
-	}
-	return nil
+
+	return response.Err()
 }
 
 // EndSnooze ends the current user's snooze mode
@@ -122,7 +120,7 @@ func (api *Client) GetDNDTeamInfoContext(ctx context.Context, users []string) (m
 	}
 	response := &dndTeamInfoResponse{}
 
-	if err := post(ctx, api.httpclient, "dnd.teamInfo", values, response, api.debug); err != nil {
+	if err := postSlackMethod(ctx, api.httpclient, "dnd.teamInfo", values, response, api.debug); err != nil {
 		return nil, err
 	}
 	if !response.Ok {

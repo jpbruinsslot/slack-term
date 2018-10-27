@@ -3,8 +3,11 @@ default: test
 # -timeout 	timout in seconds
 #  -v		verbose output
 test:
-	@echo "+ $@"
+	@ echo "+ $@"
 	@ go test -timeout=5s -v
+
+dev: build
+	@ ./bin/slack-term -debug
 
 # `CGO_ENABLED=0`
 # Because of dynamically linked libraries, this will statically compile the

@@ -31,7 +31,7 @@ type IM struct {
 
 func imRequest(ctx context.Context, client HTTPRequester, path string, values url.Values, debug bool) (*imResponseFull, error) {
 	response := &imResponseFull{}
-	err := post(ctx, client, path, values, response, debug)
+	err := postSlackMethod(ctx, client, path, values, response, debug)
 	if err != nil {
 		return nil, err
 	}
@@ -87,18 +87,15 @@ func (api *Client) MarkIMChannel(channel, ts string) (err error) {
 }
 
 // MarkIMChannelContext sets the read mark of a direct message channel to a specific point with a custom context
-func (api *Client) MarkIMChannelContext(ctx context.Context, channel, ts string) (err error) {
+func (api *Client) MarkIMChannelContext(ctx context.Context, channel, ts string) error {
 	values := url.Values{
 		"token":   {api.token},
 		"channel": {channel},
 		"ts":      {ts},
 	}
 
-	_, err = imRequest(ctx, api.httpclient, "im.mark", values, api.debug)
-	if err != nil {
-		return err
-	}
-	return
+	_, err := imRequest(ctx, api.httpclient, "im.mark", values, api.debug)
+	return err
 }
 
 // GetIMHistory retrieves the direct message channel history

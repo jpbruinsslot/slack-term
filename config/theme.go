@@ -7,18 +7,19 @@ type Theme struct {
 }
 
 type View struct {
-	Fg         string `json:"fg"`
-	Bg         string `json:"bg"`
-	BorderFg   string `json:"border_fg"`
-	LabelFg    string `json:"border_fg"`
-	ParFg      string `json:"par_fg"`
-	ParLabelFg string `json:"par_label_fg"`
+	Fg       string `json:"fg"`        // Foreground text
+	Bg       string `json:"bg"`        // Background text
+	BorderFg string `json:"border_fg"` // Border foreground
+	BorderBg string `json:"border_bg"` // Border background
+	LabelFg  string `json:"label_fg"`  // Label text foreground
+	LabelBg  string `json:"label_bg"`  // Label text background
 }
 
 type Message struct {
-	Time string `json:"time"`
-	Name string `json:"name"`
-	Text string `json:"text"`
+	Time       string `json:"time"`
+	Name       string `json:"name"`
+	Text       string `json:"text"`
+	TimeFormat string `json:"time_format"`
 }
 
 type Channel struct {

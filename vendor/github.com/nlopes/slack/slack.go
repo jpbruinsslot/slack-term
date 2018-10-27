@@ -35,9 +35,17 @@ func SetHTTPClient(client HTTPRequester) {
 	customHTTPClient = client
 }
 
-type SlackResponse struct {
-	Ok    bool   `json:"ok"`
-	Error string `json:"error"`
+// ResponseMetadata holds pagination metadata
+type ResponseMetadata struct {
+	Cursor string `json:"next_cursor"`
+}
+
+func (t *ResponseMetadata) initialize() *ResponseMetadata {
+	if t != nil {
+		return t
+	}
+
+	return &ResponseMetadata{}
 }
 
 type AuthTestResponse struct {
@@ -93,7 +101,7 @@ func (api *Client) AuthTest() (response *AuthTestResponse, error error) {
 func (api *Client) AuthTestContext(ctx context.Context) (response *AuthTestResponse, error error) {
 	api.Debugf("Challenging auth...")
 	responseFull := &authTestResponseFull{}
-	err := post(ctx, api.httpclient, "auth.test", url.Values{"token": {api.token}}, responseFull, api.debug)
+	err := postSlackMethod(ctx, api.httpclient, "auth.test", url.Values{"token": {api.token}}, responseFull, api.debug)
 	if err != nil {
 		api.Debugf("failed to test for auth: %s", err)
 		return nil, err
