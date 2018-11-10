@@ -75,7 +75,7 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 	initChans, initCur, err := s.Client.GetConversations(
 		&slack.GetConversationsParameters{
 			ExcludeArchived: "true",
-			Limit:           10,
+			Limit:           1000,
 			Types: []string{
 				"public_channel",
 				"private_channel",
@@ -97,7 +97,7 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 			&slack.GetConversationsParameters{
 				Cursor:          nextCur,
 				ExcludeArchived: "true",
-				Limit:           10,
+				Limit:           1000,
 				Types: []string{
 					"public_channel",
 					"private_channel",
