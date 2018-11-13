@@ -36,7 +36,7 @@ type AppContext struct {
 
 // CreateAppContext creates an application context which can be passed
 // and referenced througout the application
-func CreateAppContext(flgConfig string, flgToken string, flgDebug bool, version string, usage string) (*AppContext, error) {
+func CreateAppContext(flgConfig string, flgWorkspace string, flgDebug bool, version string, usage string) (*AppContext, error) {
 	if flgDebug {
 		go func() {
 			http.ListenAndServe(":6060", nil)
@@ -47,7 +47,7 @@ func CreateAppContext(flgConfig string, flgToken string, flgDebug bool, version 
 	views.Loading()
 
 	// Load config
-	config, err := config.NewConfig(flgConfig)
+	config, err := config.NewConfig(flgConfig, flgWorkspace)
 	if err != nil {
 		return nil, err
 	}

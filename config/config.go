@@ -29,7 +29,7 @@ type Config struct {
 type keyMapping map[string]string
 
 // NewConfig loads the config file and returns a Config struct
-func NewConfig(filepath string) (*Config, error) {
+func NewConfig(filepath string, workspaceName string) (*Config, error) {
 	cfg := getDefaultConfig()
 
 	file, err := os.Open(filepath)
