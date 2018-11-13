@@ -41,6 +41,30 @@ func NewConfig(filepath string, workspaceName string) (*Config, error) {
 		return &cfg, fmt.Errorf("the slack-term config file isn't valid json: %v", err)
 	}
 
+	// Overwrite all options if they're specified in the
+	// workspace-specific config:
+	cfg.SlackToken = cfg.Workspaces[workspaceName].SlackToken
+
+	if cfg.Workspaces[workspaceName].Notify != "" {
+		cfg.Notify = cfg.Workspaces[workspaceName].Notify
+	}
+
+	// TODO: There's no way to distinguish between falsy and unset.
+	// cfg.Emoji = cfg.Workspaces[workspaceName].Emoji
+
+	if cfg.Workspaces[workspaceName].SidebarWidth != 0 {
+		cfg.SidebarWidth = cfg.Workspaces[workspaceName].SidebarWidth
+	}
+	if cfg.Workspaces[workspaceName].MainWidth != 0 {
+		cfg.MainWidth = cfg.Workspaces[workspaceName].MainWidth
+	}
+	if cfg.Workspaces[workspaceName].KeyMap != nil {
+		cfg.KeyMap = cfg.Workspaces[workspaceName].KeyMap
+	}
+	if cfg.Workspaces[workspaceName].Theme != *new(Theme) {
+		cfg.Theme = cfg.Workspaces[workspaceName].Theme
+	}
+
 	if cfg.SidebarWidth < 1 || cfg.SidebarWidth > 11 {
 		return &cfg, errors.New("please specify the 'sidebar_width' between 1 and 11")
 	}

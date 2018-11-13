@@ -52,14 +52,10 @@ func CreateAppContext(flgConfig string, flgWorkspace string, flgDebug bool, vers
 		return nil, err
 	}
 
-	// When slack token isn't set in the config file, we'll check
+	// When slack token still isn't set in the config file, we'll check
 	// the command-line flag or the environment variable
 	if config.SlackToken == "" {
-		if flgToken != "" {
-			config.SlackToken = flgToken
-		} else {
-			config.SlackToken = os.Getenv("SLACK_TOKEN")
-		}
+		config.SlackToken = os.Getenv("SLACK_TOKEN")
 	}
 
 	// Create desktop notifier
