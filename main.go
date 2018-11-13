@@ -51,7 +51,10 @@ func init() {
 		log.Fatal(err)
 	}
 
-	// Parse flags
+	// Parse flags.
+
+	// Path to the config file to use.
+	// Defaults to ~/.slack-term
 	flag.StringVar(
 		&flgConfig,
 		"config",
@@ -60,6 +63,8 @@ func init() {
 	)
 
 	// The name of the workspace to use.
+	// If none is provided, will pick the alphabetical first (in other words,
+	// will pick the only workspace in a list of only one workspace).
 	flag.StringVar(
 		&flgWorkspace,
 		"workspace",

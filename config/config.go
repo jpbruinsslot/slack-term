@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/erroneousboat/termui"
 )
@@ -41,28 +42,41 @@ func NewConfig(filepath string, workspaceName string) (*Config, error) {
 		return &cfg, fmt.Errorf("the slack-term config file isn't valid json: %v", err)
 	}
 
+	// If no workspace is specified, select the first (ABC-order).
+	if workspaceName == "" {
+		keys := make([]string, len(cfg.Workspaces))
+		i := 0
+		for k := range cfg.Workspaces {
+			keys[i] = k
+			i++
+		}
+		sort.Strings(keys)
+		workspaceName = keys[0]
+	}
+	workspaceConfig := cfg.Workspaces[workspaceName]
+
 	// Overwrite all options if they're specified in the
 	// workspace-specific config:
-	cfg.SlackToken = cfg.Workspaces[workspaceName].SlackToken
+	cfg.SlackToken = workspaceConfig.SlackToken
 
-	if cfg.Workspaces[workspaceName].Notify != "" {
-		cfg.Notify = cfg.Workspaces[workspaceName].Notify
+	if workspaceConfig.Notify != "" {
+		cfg.Notify = workspaceConfig.Notify
 	}
 
 	// TODO: There's no way to distinguish between falsy and unset.
-	// cfg.Emoji = cfg.Workspaces[workspaceName].Emoji
+	// cfg.Emoji = workspaceConfig.Emoji
 
-	if cfg.Workspaces[workspaceName].SidebarWidth != 0 {
-		cfg.SidebarWidth = cfg.Workspaces[workspaceName].SidebarWidth
+	if workspaceConfig.SidebarWidth != 0 {
+		cfg.SidebarWidth = workspaceConfig.SidebarWidth
 	}
-	if cfg.Workspaces[workspaceName].MainWidth != 0 {
-		cfg.MainWidth = cfg.Workspaces[workspaceName].MainWidth
+	if workspaceConfig.MainWidth != 0 {
+		cfg.MainWidth = workspaceConfig.MainWidth
 	}
-	if cfg.Workspaces[workspaceName].KeyMap != nil {
-		cfg.KeyMap = cfg.Workspaces[workspaceName].KeyMap
+	if workspaceConfig.KeyMap != nil {
+		cfg.KeyMap = workspaceConfig.KeyMap
 	}
-	if cfg.Workspaces[workspaceName].Theme != *new(Theme) {
-		cfg.Theme = cfg.Workspaces[workspaceName].Theme
+	if workspaceConfig.Theme != *new(Theme) {
+		cfg.Theme = workspaceConfig.Theme
 	}
 
 	if cfg.SidebarWidth < 1 || cfg.SidebarWidth > 11 {
