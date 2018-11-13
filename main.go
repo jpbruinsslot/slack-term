@@ -31,17 +31,17 @@ WEBSITE:
 
 GLOBAL OPTIONS:
    -config [path-to-config-file]
-   -token [slack-token]
+   -workspace [slack-workspace]
    -debug
    -help, -h
 `
 )
 
 var (
-	flgConfig string
-	flgToken  string
-	flgDebug  bool
-	flgUsage  bool
+	flgConfig    string
+	flgWorkspace string
+	flgDebug     bool
+	flgUsage     bool
 )
 
 func init() {
@@ -59,13 +59,15 @@ func init() {
 		"location of config file",
 	)
 
+	// The name of the workspace to use.
 	flag.StringVar(
-		&flgToken,
-		"token",
+		&flgWorkspace,
+		"workspace",
 		"",
-		"the slack token",
+		"the slack workspace to use",
 	)
 
+	// Toggle debug mode.
 	flag.BoolVar(
 		&flgDebug,
 		"debug",
@@ -100,7 +102,7 @@ func main() {
 	// Create context
 	usage := fmt.Sprintf(USAGE, VERSION)
 	ctx, err := context.CreateAppContext(
-		flgConfig, flgToken, flgDebug, VERSION, usage,
+		flgConfig, flgWorkspace, flgDebug, VERSION, usage,
 	)
 	if err != nil {
 		termbox.Close()
