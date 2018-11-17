@@ -28,7 +28,9 @@ const (
 
 type ChannelItem struct {
 	ID           string
+	ListIndex    int
 	Name         string
+	DisplayName  string
 	Topic        string
 	Type         string
 	UserID       string
@@ -36,9 +38,10 @@ type ChannelItem struct {
 	Notification bool
 	LastReadTime time.Time
 
-	StylePrefix string
-	StyleIcon   string
-	StyleText   string
+	IsGroupPrimary bool // first item in a multiline group
+	StylePrefix    string
+	StyleIcon      string
+	StyleText      string
 }
 
 // ToString will set the label of the channel, how it will be
@@ -57,7 +60,11 @@ func (c ChannelItem) ToString() string {
 	case ChannelTypeChannel:
 		icon = IconChannel
 	case ChannelTypeGroup:
-		icon = IconGroup
+		if c.IsGroupPrimary {
+			icon = IconGroup
+		} else {
+			icon = " "
+		}
 	case ChannelTypeIM:
 		switch c.Presence {
 		case PresenceActive:
@@ -85,11 +92,11 @@ func (c ChannelItem) GetChannelName() string {
 	var channelName string
 	if c.Topic != "" {
 		channelName = fmt.Sprintf("%s - %s",
-			html.UnescapeString(c.Name),
+			html.UnescapeString(c.DisplayName),
 			html.UnescapeString(c.Topic),
 		)
 	} else {
-		channelName = c.Name
+		channelName = c.DisplayName
 	}
 	return channelName
 }

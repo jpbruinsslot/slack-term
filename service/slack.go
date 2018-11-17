@@ -122,6 +122,9 @@ func (s *SlackService) GetChannels() []string {
 
 	wg.Wait()
 
+	// Channel index in SlackChannels for multiline listings
+	listIndex := 0
+
 	// Channels
 	for _, chn := range slackChans {
 		if chn.IsMember {
@@ -129,7 +132,9 @@ func (s *SlackService) GetChannels() []string {
 			chans = append(
 				chans, components.ChannelItem{
 					ID:           chn.ID,
+					ListIndex:    listIndex,
 					Name:         chn.Name,
+					DisplayName:  chn.Name,
 					Topic:        chn.Topic.Value,
 					Type:         components.ChannelTypeChannel,
 					UserID:       "",
@@ -139,25 +144,40 @@ func (s *SlackService) GetChannels() []string {
 					LastReadTime: time.Now().UTC(),
 				},
 			)
+			listIndex++
 		}
 	}
 
 	// Groups
 	for _, grp := range slackGroups {
 		s.SlackChannels = append(s.SlackChannels, grp)
-		chans = append(
-			chans, components.ChannelItem{
-				ID:           grp.ID,
-				Name:         grp.Name,
-				Topic:        grp.Topic.Value,
-				Type:         components.ChannelTypeGroup,
-				UserID:       "",
-				StylePrefix:  s.Config.Theme.Channel.Prefix,
-				StyleIcon:    s.Config.Theme.Channel.Icon,
-				StyleText:    s.Config.Theme.Channel.Text,
-				LastReadTime: time.Now().UTC(),
-			},
-		)
+
+		groupPrefix := "mpdm-"
+		if strings.HasPrefix(grp.Name, groupPrefix) {
+			// add multiline group channel
+			grp.Name = grp.Name[len(groupPrefix):]
+		}
+
+		groupMembers := strings.Split(grp.Name, "--")
+		for memberIdx, groupMember := range groupMembers {
+			chans = append(
+				chans, components.ChannelItem{
+					ID:             grp.ID,
+					ListIndex:      listIndex,
+					Name:           groupMember,
+					DisplayName:    strings.Replace(grp.Name, "--", ", ", -1),
+					Topic:          grp.Topic.Value,
+					Type:           components.ChannelTypeGroup,
+					UserID:         "",
+					IsGroupPrimary: memberIdx == 0,
+					StylePrefix:    s.Config.Theme.Channel.Prefix,
+					StyleIcon:      s.Config.Theme.Channel.Icon,
+					StyleText:      s.Config.Theme.Channel.Text,
+					LastReadTime:   time.Now().UTC(),
+				},
+			)
+		}
+		listIndex++
 	}
 
 	// IM
@@ -174,7 +194,9 @@ func (s *SlackService) GetChannels() []string {
 				chans,
 				components.ChannelItem{
 					ID:           im.ID,
+					ListIndex:    listIndex,
 					Name:         name,
+					DisplayName:  name,
 					Topic:        "",
 					Type:         components.ChannelTypeIM,
 					UserID:       im.User,
@@ -186,6 +208,7 @@ func (s *SlackService) GetChannels() []string {
 				},
 			)
 			s.SlackChannels = append(s.SlackChannels, im)
+			listIndex++
 		}
 	}
 
@@ -246,8 +269,8 @@ func (s *SlackService) SetPresenceChannelEvent(userID string, presence string) {
 }
 
 // GetSlackChannel returns the representation of a slack channel
-func (s *SlackService) GetSlackChannel(selectedChannel int) interface{} {
-	return s.SlackChannels[selectedChannel]
+func (s *SlackService) GetSlackChannel(indexInList int) interface{} {
+	return s.SlackChannels[s.Channels[indexInList].ListIndex]
 }
 
 // GetUserPresence will get the presence of a specific user
