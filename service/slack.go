@@ -160,12 +160,16 @@ func (s *SlackService) GetChannels() []string {
 
 		groupMembers := strings.Split(grp.Name, "--")
 		for memberIdx, groupMember := range groupMembers {
+			if memberIdx == len(groupMembers)-1 {
+				groupMember = strings.TrimSuffix(groupMember, "-1")
+			}
+			displayName := strings.TrimSuffix(strings.Replace(grp.Name, "--", ", ", -1), "-1")
 			chans = append(
 				chans, components.ChannelItem{
 					ID:             grp.ID,
 					ListIndex:      listIndex,
 					Name:           groupMember,
-					DisplayName:    strings.Replace(grp.Name, "--", ", ", -1),
+					DisplayName:    displayName,
 					Topic:          grp.Topic.Value,
 					Type:           components.ChannelTypeGroup,
 					UserID:         "",
