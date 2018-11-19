@@ -222,12 +222,7 @@ func (s *SlackService) GetChannels() []string {
 	// issue an API call for every channel, this will speed up that process
 	s.SetPresenceChannels()
 
-	var channels []string
-	for _, chn := range s.Channels {
-		channels = append(channels, chn.ToString())
-	}
-
-	return channels
+	return s.ChannelsToString()
 }
 
 // ChannelsToString will relay the string representation for a channel
@@ -239,9 +234,21 @@ func (s *SlackService) ChannelsToString() []string {
 	return channels
 }
 
+// GetChannelByListIndex will return a Channel that maps to SlackChannels index
+func (s *SlackService) GetChannelByListIndex(index int) components.ChannelItem {
+	blank := components.ChannelItem{}
+	for _, c := range s.Channels {
+		if c.ListIndex == index {
+			return c
+		}
+	}
+	return blank
+}
+
 // SetPresence will set presence for all IM channels
 func (s *SlackService) SetPresenceChannels() {
 	var wg sync.WaitGroup
+
 	for i, channel := range s.SlackChannels {
 
 		switch channel := channel.(type) {
@@ -249,7 +256,8 @@ func (s *SlackService) SetPresenceChannels() {
 			wg.Add(1)
 			go func(i int) {
 				presence, _ := s.GetUserPresence(channel.User)
-				s.Channels[i].Presence = presence
+				c := s.GetChannelByListIndex(i)
+				c.Presence = presence
 				wg.Done()
 			}(i)
 		}
