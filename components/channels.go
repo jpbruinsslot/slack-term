@@ -16,6 +16,7 @@ const (
 	IconChannel      = "#"
 	IconGroup        = "☰"
 	IconIM           = "●"
+	IconMpIM         = "☰"
 	IconNotification = "*"
 
 	PresenceAway   = "away"
@@ -24,6 +25,7 @@ const (
 	ChannelTypeChannel = "channel"
 	ChannelTypeGroup   = "group"
 	ChannelTypeIM      = "im"
+	ChannelTypeMpIM    = "mpim"
 )
 
 type ChannelItem struct {
@@ -65,6 +67,8 @@ func (c ChannelItem) ToString() string {
 		} else {
 			icon = " "
 		}
+	case ChannelTypeMpIM:
+		icon = IconMpIM
 	case ChannelTypeIM:
 		switch c.Presence {
 		case PresenceActive:
@@ -101,13 +105,9 @@ func (c ChannelItem) GetChannelName() string {
 	return channelName
 }
 
-// Sets the last read time for a channel
-func (c *ChannelItem) SetLastReadTime(readTime time.Time) {
-	c.LastReadTime = readTime
-}
-
 // Channels is the definition of a Channels component
 type Channels struct {
+	ChannelItems    []ChannelItem
 	List            *termui.List
 	SelectedChannel int // index of which channel is selected from the List
 	Offset          int // from what offset are channels rendered
@@ -137,7 +137,7 @@ func CreateChannelsComponent(inputHeight int) *Channels {
 func (c *Channels) Buffer() termui.Buffer {
 	buf := c.List.Buffer()
 
-	for i, item := range c.List.Items[c.Offset:] {
+	for i, item := range c.ChannelItems[c.Offset:] {
 
 		y := c.List.InnerBounds().Min.Y + i
 
@@ -149,12 +149,13 @@ func (c *Channels) Buffer() termui.Buffer {
 		var cells []termui.Cell
 		if y == c.CursorPosition {
 			cells = termui.DefaultTxBuilder.Build(
-				item, c.List.ItemBgColor, c.List.ItemFgColor)
+				item.ToString(), c.List.ItemBgColor, c.List.ItemFgColor)
 		} else {
 			cells = termui.DefaultTxBuilder.Build(
-				item, c.List.ItemFgColor, c.List.ItemBgColor)
+				item.ToString(), c.List.ItemFgColor, c.List.ItemBgColor)
 		}
 
+		// Append ellipsis when overflows
 		cells = termui.DTrimTxCls(cells, c.List.InnerWidth())
 
 		x := 0
@@ -211,18 +212,38 @@ func (c *Channels) SetY(y int) {
 	c.List.SetY(y)
 }
 
-func (c *Channels) SetChannels(channels []string) {
-	c.List.Items = channels
+func (c *Channels) SetChannels(channels []ChannelItem) {
+	c.ChannelItems = channels
+}
+
+func (c *Channels) MarkAsRead(channelID int) {
+	c.ChannelItems[channelID].Notification = false
+}
+
+func (c *Channels) MarkAsUnread(channelID string) {
+	index := c.FindChannel(channelID)
+	c.ChannelItems[index].Notification = true
+}
+
+func (c *Channels) SetPresence(channelID string, presence string) {
+	index := c.FindChannel(channelID)
+	c.ChannelItems[index].Presence = presence
+}
+
+func (c *Channels) FindChannel(channelID string) int {
+	var index int
+	for i, channel := range c.ChannelItems {
+		if channel.ID == channelID {
+			index = i
+			break
+		}
+	}
+	return index
 }
 
 // SetSelectedChannel sets the SelectedChannel given the index
 func (c *Channels) SetSelectedChannel(index int) {
 	c.SelectedChannel = index
-}
-
-// GetSelectedChannel returns the SelectedChannel
-func (c *Channels) GetSelectedChannel() string {
-	return c.List.Items[c.SelectedChannel]
 }
 
 // MoveCursorUp will decrease the SelectedChannel by 1
@@ -235,7 +256,7 @@ func (c *Channels) MoveCursorUp() {
 
 // MoveCursorDown will increase the SelectedChannel by 1
 func (c *Channels) MoveCursorDown() {
-	if c.SelectedChannel < len(c.List.Items)-1 {
+	if c.SelectedChannel < len(c.ChannelItems)-1 {
 		c.SetSelectedChannel(c.SelectedChannel + 1)
 		c.ScrollDown()
 	}
@@ -250,9 +271,9 @@ func (c *Channels) MoveCursorTop() {
 
 // MoveCursorBottom will move the cursor to the bottom of the channels
 func (c *Channels) MoveCursorBottom() {
-	c.SetSelectedChannel(len(c.List.Items) - 1)
+	c.SetSelectedChannel(len(c.ChannelItems) - 1)
 
-	offset := len(c.List.Items) - (c.List.InnerBounds().Max.Y - 1)
+	offset := len(c.ChannelItems) - (c.List.InnerBounds().Max.Y - 1)
 
 	if offset < 0 {
 		c.Offset = 0
@@ -279,7 +300,7 @@ func (c *Channels) ScrollUp() {
 func (c *Channels) ScrollDown() {
 	// Is the cursor at the bottom of the channel view?
 	if c.CursorPosition == c.List.InnerBounds().Max.Y-1 {
-		if c.Offset < len(c.List.Items)-1 {
+		if c.Offset < len(c.ChannelItems)-1 {
 			c.Offset++
 		}
 	} else {
@@ -307,11 +328,16 @@ func (c *Channels) GetChannelIndex(name string) int {
 func (c *Channels) Search(term string) {
 	c.SearchMatches = make([]int, 0)
 
-	matches := fuzzy.Find(term, c.List.Items)
+	targets := make([]string, 0)
+	for _, c := range c.ChannelItems {
+		targets = append(targets, c.Name)
+	}
+
+	matches := fuzzy.Find(term, targets)
 
 	for _, m := range matches {
-		for i, item := range c.List.Items {
-			if m == item {
+		for i, item := range c.ChannelItems {
+			if m == item.Name {
 				c.SearchMatches = append(c.SearchMatches, i)
 				break
 			}

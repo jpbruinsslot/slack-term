@@ -1,6 +1,7 @@
 package context
 
 import (
+	"errors"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -21,6 +22,8 @@ const (
 )
 
 type AppContext struct {
+	Version    string
+	Usage      string
 	EventQueue chan termbox.Event
 	Service    *service.SlackService
 	Body       *termui.Grid
@@ -33,7 +36,7 @@ type AppContext struct {
 
 // CreateAppContext creates an application context which can be passed
 // and referenced througout the application
-func CreateAppContext(flgConfig string, flgToken string, flgDebug bool) (*AppContext, error) {
+func CreateAppContext(flgConfig string, flgToken string, flgDebug bool, version string, usage string) (*AppContext, error) {
 	if flgDebug {
 		go func() {
 			http.ListenAndServe(":6060", nil)
@@ -59,6 +62,17 @@ func CreateAppContext(flgConfig string, flgToken string, flgDebug bool) (*AppCon
 		}
 	}
 
+	// Create desktop notifier
+	var notify *notificator.Notificator
+	if config.Notify != "" {
+		notify = notificator.New(notificator.Options{AppName: "slack-term"})
+		if notify == nil {
+			return nil, errors.New(
+				"desktop notifications are not supported for your OS",
+			)
+		}
+	}
+
 	// Create Service
 	svc, err := service.NewSlackService(config)
 	if err != nil {
@@ -66,7 +80,10 @@ func CreateAppContext(flgConfig string, flgToken string, flgDebug bool) (*AppCon
 	}
 
 	// Create the main view
-	view := views.CreateView(config, svc)
+	view, err := views.CreateView(config, svc)
+	if err != nil {
+		return nil, err
+	}
 
 	// Setup the interface
 	if flgDebug {
@@ -98,6 +115,8 @@ func CreateAppContext(flgConfig string, flgToken string, flgDebug bool) (*AppCon
 	termui.Render(termui.Body)
 
 	return &AppContext{
+		Version:    version,
+		Usage:      usage,
 		EventQueue: make(chan termbox.Event, 20),
 		Service:    svc,
 		Body:       termui.Body,
@@ -105,6 +124,6 @@ func CreateAppContext(flgConfig string, flgToken string, flgDebug bool) (*AppCon
 		Config:     config,
 		Debug:      flgDebug,
 		Mode:       CommandMode,
-		Notify:     notificator.New(notificator.Options{AppName: "slack-term"}),
+		Notify:     notify,
 	}, nil
 }

@@ -23,7 +23,7 @@ func (api *Client) GetEmojiContext(ctx context.Context) (map[string]string, erro
 	}
 	response := &emojiResponseFull{}
 
-	err := post(ctx, api.httpclient, "emoji.list", values, response, api.debug)
+	err := postSlackMethod(ctx, api.httpclient, "emoji.list", values, response, api.debug)
 	if err != nil {
 		return nil, err
 	}

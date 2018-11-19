@@ -2,14 +2,27 @@ package components
 
 import (
 	"fmt"
-	"html"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/erroneousboat/termui"
+	runewidth "github.com/mattn/go-runewidth"
 
 	"github.com/theremix/slack-term/config"
+)
+
+var (
+	COLORS = []string{
+		"fg-black",
+		"fg-red",
+		"fg-green",
+		"fg-yellow",
+		"fg-blue",
+		"fg-magenta",
+		"fg-cyan",
+		"fg-white",
+	}
 )
 
 type Message struct {
@@ -20,35 +33,30 @@ type Message struct {
 	StyleTime string
 	StyleName string
 	StyleText string
+
+	FormatTime string
 }
 
-func (m Message) ToString() string {
-	if (m.Time != time.Time{} && m.Name != "") {
+func (m Message) colorizeName(styleName string) string {
+	if strings.Contains(styleName, "colorize") {
+		var sum int
+		for _, c := range m.Name {
+			sum = sum + int(c)
+		}
 
-		return html.UnescapeString(
-			fmt.Sprintf(
-				"[[%s]](%s) [<%s>](%s) [%s](%s)",
-				m.Time.Format("15:04"),
-				m.StyleTime,
-				m.Name,
-				m.StyleName,
-				m.Content,
-				m.StyleText,
-			),
-		)
-	} else {
-		return html.UnescapeString(
-			fmt.Sprintf("[%s](%s)", m.Content, m.StyleText),
-		)
+		i := sum % len(COLORS)
+
+		return strings.Replace(m.StyleName, "colorize", COLORS[i], -1)
 	}
+
+	return styleName
 }
 
 // Chat is the definition of a Chat component
 type Chat struct {
-	List            *termui.List
-	Offset          int
-	LastMessageTime time.Time
-	LastReadTime    time.Time
+	List     *termui.List
+	Messages []Message
+	Offset   int
 }
 
 // CreateChat is the constructor for the Chat struct
@@ -64,17 +72,61 @@ func CreateChatComponent(inputHeight int) *Chat {
 	return chat
 }
 
-func OnSameDate(a time.Time, b time.Time) bool {
-	return a.Day() == b.Day() && a.Month() == b.Month() && a.Year() == b.Year()
-}
-
 // Buffer implements interface termui.Bufferer
 func (c *Chat) Buffer() termui.Buffer {
-	// Build cells, after every item put a newline
-	cells := termui.DefaultTxBuilder.Build(
-		strings.Join(c.List.Items, "\n"),
-		c.List.ItemFgColor, c.List.ItemBgColor,
-	)
+	// Build cells. We're building parts of the message individually, or else
+	// DefaultTxBuilder will interpret potential markdown usage in a message
+	// as well.
+	cells := make([]termui.Cell, 0)
+	for i, msg := range c.Messages {
+
+		// When msg.Time and msg.Name are empty (in the case of attachments)
+		// don't add the time and name parts.
+		if (msg.Time != time.Time{} && msg.Name != "") {
+			// Time
+			cells = append(cells, termui.DefaultTxBuilder.Build(
+				fmt.Sprintf(
+					"[[%s]](%s) ",
+					msg.Time.Format(msg.FormatTime),
+					msg.StyleTime,
+				),
+				termui.ColorDefault, termui.ColorDefault)...,
+			)
+
+			// Name
+			cells = append(cells, termui.DefaultTxBuilder.Build(
+				fmt.Sprintf("[<%s>](%s) ",
+					msg.Name,
+					msg.colorizeName(msg.StyleName),
+				),
+				termui.ColorDefault, termui.ColorDefault)...,
+			)
+		}
+
+		// Hack, in order to get the correct fg and bg attributes. This is
+		// because the readAttr function in termui is unexported.
+		txCells := termui.DefaultTxBuilder.Build(
+			fmt.Sprintf("[.](%s)", msg.StyleText),
+			termui.ColorDefault, termui.ColorDefault,
+		)
+
+		// Text
+		for _, r := range msg.Content {
+			cells = append(
+				cells,
+				termui.Cell{
+					Ch: r,
+					Fg: txCells[0].Fg,
+					Bg: txCells[0].Bg,
+				},
+			)
+		}
+
+		// Add a newline after every message
+		if i < len(c.Messages)-1 {
+			cells = append(cells, termui.Cell{Ch: '\n'})
+		}
+	}
 
 	// We will create an array of Line structs, this allows us
 	// to more easily render the items in a list. We will range
@@ -87,7 +139,7 @@ func (c *Chat) Buffer() termui.Buffer {
 	lines := []Line{}
 	line := Line{}
 
-	// When we encounter a newline or are at the bounds of the chat view we
+	// When we encounter a newline or, are at the bounds of the chat view we
 	// stop iterating over the cells and add the line to the line array
 	x := 0
 	for _, cell := range cells {
@@ -111,7 +163,7 @@ func (c *Chat) Buffer() termui.Buffer {
 		}
 
 		line.cells = append(line.cells, cell)
-		x++
+		x += cell.Width()
 	}
 
 	// Append the last line to the array when we didn't encounter any
@@ -151,7 +203,7 @@ func (c *Chat) Buffer() termui.Buffer {
 					Bg: c.List.ItemBgColor,
 				},
 			)
-			x++
+			x += runewidth.RuneWidth(' ')
 		}
 		currentY--
 	}
@@ -170,7 +222,7 @@ func (c *Chat) Buffer() termui.Buffer {
 					Bg: c.List.ItemBgColor,
 				},
 			)
-			x++
+			x += runewidth.RuneWidth(' ')
 		}
 		currentY--
 	}
@@ -204,94 +256,23 @@ func (c *Chat) GetMaxItems() int {
 	return c.List.InnerBounds().Max.Y - c.List.InnerBounds().Min.Y
 }
 
-func (c *Chat) ShowTimeDelta(message Message) {
-	if !message.Time.IsZero() {
-		inDelta := OnSameDate(c.LastMessageTime, message.Time)
-		if !inDelta {
-			c.AddTimeMarker(time.Time.Format(message.Time, "Mon, Jan 2 2006"))
-		}
-		c.LastMessageTime = message.Time
-	}
-}
-
-func (c *Chat) SetLastReadTime(lastRead time.Time) {
-	c.LastReadTime = lastRead
-}
-
-// SetMessages will put the provided messages into the Items field of the
+// SetMessages will put the provided messages into the Messages field of the
 // Chat view
 func (c *Chat) SetMessages(messages []Message) {
 	// Reset offset first, when scrolling in view and changing channels we
 	// want the offset to be 0 when loading new messages
 	c.Offset = 0
-	if c.LastMessageTime.IsZero() {
-		c.LastMessageTime = time.Now()
-	}
-
-	unreadDeltaAdded := false
-
-	// if this is the first time looking at this channel, don't show an unread delta.
-	if c.LastReadTime.IsZero() {
-		unreadDeltaAdded = true
-	}
-
-	for _, msg := range messages {
-		c.ShowTimeDelta(msg)
-		if unreadDeltaAdded == false {
-			if msg.Time.UTC().After(c.LastReadTime.UTC()) {
-				c.AddUnreadDelta()
-				unreadDeltaAdded = true
-			}
-		}
-		strMsg := msg.ToString()
-		c.List.Items = append(c.List.Items, html.UnescapeString(strMsg))
-	}
+	c.Messages = messages
 }
 
-func (c *Chat) AddUnreadDelta() {
-	unreadLabel := "new messages"
-	screenWidth := c.List.Width
-	markerWidth := len(unreadLabel)
-	split := screenWidth - markerWidth - 5
-	if split < 0 {
-		// sometimes we don't know the width yet, so arbitrarily, 10.
-		split = 10
-	}
-	prefix := strings.Repeat("─", split)
-
-	line := fmt.Sprintf(" %s %s ", prefix, unreadLabel)
-	c.List.Items = append(c.List.Items, line)
-}
-
-func (c *Chat) AddTimeMarker(marker string) {
-	screenWidth := c.List.Width
-	markerWidth := len(marker)
-	split := ((screenWidth - markerWidth) / 2) - 4
-	if split < 0 {
-		// sometimes we don't know the width yet, so arbitrarily, 10.
-		split = 10
-	}
-	prefix := strings.Repeat("-", split+1)
-	suffix := strings.Repeat("-", split+1)
-	// because this doesn't always divide evenly, add a little extra nudge
-	if int(split)+int(split)+markerWidth+8 < screenWidth {
-		prefix = "-" + prefix
-	}
-
-	line := fmt.Sprintf(" %s %s %s ", prefix, marker, suffix)
-	c.List.Items = append(c.List.Items, line)
-}
-
-// AddMessage adds a single message to List.Items
+// AddMessage adds a single message to Messages
 func (c *Chat) AddMessage(message Message) {
-	c.ShowTimeDelta(message)
-	strMsg := message.ToString()
-	c.List.Items = append(c.List.Items, html.UnescapeString(strMsg))
+	c.Messages = append(c.Messages, message)
 }
 
-// ClearMessages clear the List.Items
+// ClearMessages clear the c.Messages
 func (c *Chat) ClearMessages() {
-	c.List.Items = []string{}
+	c.Messages = make([]Message, 0)
 }
 
 // ScrollUp will render the chat messages based on the Offset of the Chat
@@ -300,13 +281,13 @@ func (c *Chat) ClearMessages() {
 // Offset is 0 when scrolled down. (we loop backwards over the array, so we
 // start with rendering last item in the list at the maximum y of the Chat
 // pane). Increasing the Offset will thus result in substracting the offset
-// from the len(Chat.List.Items).
+// from the len(Chat.Messages).
 func (c *Chat) ScrollUp() {
 	c.Offset = c.Offset + 10
 
 	// Protect overscrolling
-	if c.Offset > len(c.List.Items) {
-		c.Offset = len(c.List.Items)
+	if c.Offset > len(c.Messages) {
+		c.Offset = len(c.Messages)
 	}
 }
 
@@ -316,7 +297,7 @@ func (c *Chat) ScrollUp() {
 // Offset is 0 when scrolled down. (we loop backwards over the array, so we
 // start with rendering last item in the list at the maximum y of the Chat
 // pane). Increasing the Offset will thus result in substracting the offset
-// from the len(Chat.List.Items).
+// from the len(Chat.Messages).
 func (c *Chat) ScrollDown() {
 	c.Offset = c.Offset - 10
 
@@ -332,20 +313,22 @@ func (c *Chat) SetBorderLabel(channelName string) {
 }
 
 // Help shows the usage and key bindings in the chat pane
-func (c *Chat) Help(cfg *config.Config) {
-	help := []string{
-		"slack-term - slack client for your terminal",
-		"",
-		"USAGE:",
-		"    slack-term -config [path-to-config]",
-		"",
-		"KEY BINDINGS:",
-		"",
+func (c *Chat) Help(usage string, cfg *config.Config) {
+	help := []Message{
+		Message{
+			Content: usage,
+		},
 	}
 
 	for mode, mapping := range cfg.KeyMap {
-		help = append(help, fmt.Sprintf("    %s", strings.ToUpper(mode)))
-		help = append(help, "")
+		help = append(
+			help,
+			Message{
+				Content: fmt.Sprintf("%s", strings.ToUpper(mode)),
+			},
+		)
+
+		help = append(help, Message{Content: ""})
 
 		var keys []string
 		for k := range mapping {
@@ -354,10 +337,16 @@ func (c *Chat) Help(cfg *config.Config) {
 		sort.Strings(keys)
 
 		for _, k := range keys {
-			help = append(help, fmt.Sprintf("    %-12s%-15s", k, mapping[k]))
+			help = append(
+				help,
+				Message{
+					Content: fmt.Sprintf("    %-12s%-15s", k, mapping[k]),
+				},
+			)
 		}
-		help = append(help, "")
+
+		help = append(help, Message{Content: ""})
 	}
 
-	c.List.Items = help
+	c.Messages = help
 }

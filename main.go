@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	VERSION = "v0.4.0"
+	VERSION = "v0.4.1"
 	USAGE   = `NAME:
     slack-term - slack client for your terminal
 
@@ -30,7 +30,10 @@ WEBSITE:
     https://github.com/erroneousboat/slack-term
 
 GLOBAL OPTIONS:
-   --help, -h
+   -config [path-to-config-file]
+   -token [slack-token]
+   -debug
+   -help, -h
 `
 )
 
@@ -95,7 +98,10 @@ func main() {
 	termui.DefaultEvtStream = customEvtStream
 
 	// Create context
-	ctx, err := context.CreateAppContext(flgConfig, flgToken, flgDebug)
+	usage := fmt.Sprintf(USAGE, VERSION)
+	ctx, err := context.CreateAppContext(
+		flgConfig, flgToken, flgDebug, VERSION, usage,
+	)
 	if err != nil {
 		termbox.Close()
 		log.Println(err)

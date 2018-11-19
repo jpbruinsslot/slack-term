@@ -69,7 +69,7 @@ func NewAccessLogParameters() AccessLogParameters {
 
 func teamRequest(ctx context.Context, client HTTPRequester, path string, values url.Values, debug bool) (*TeamResponse, error) {
 	response := &TeamResponse{}
-	err := post(ctx, client, path, values, response, debug)
+	err := postSlackMethod(ctx, client, path, values, response, debug)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func teamRequest(ctx context.Context, client HTTPRequester, path string, values 
 
 func billableInfoRequest(ctx context.Context, client HTTPRequester, path string, values url.Values, debug bool) (map[string]BillingActive, error) {
 	response := &BillableInfoResponse{}
-	err := post(ctx, client, path, values, response, debug)
+	err := postSlackMethod(ctx, client, path, values, response, debug)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func billableInfoRequest(ctx context.Context, client HTTPRequester, path string,
 
 func accessLogsRequest(ctx context.Context, client HTTPRequester, path string, values url.Values, debug bool) (*LoginResponse, error) {
 	response := &LoginResponse{}
-	err := post(ctx, client, path, values, response, debug)
+	err := postSlackMethod(ctx, client, path, values, response, debug)
 	if err != nil {
 		return nil, err
 	}
