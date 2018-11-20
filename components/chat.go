@@ -9,7 +9,7 @@ import (
 	"github.com/erroneousboat/termui"
 	runewidth "github.com/mattn/go-runewidth"
 
-	"github.com/erroneousboat/slack-term/config"
+	"github.com/theremix/slack-term/config"
 )
 
 var (

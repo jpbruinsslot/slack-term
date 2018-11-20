@@ -14,10 +14,10 @@ import (
 	"github.com/nlopes/slack"
 	termbox "github.com/nsf/termbox-go"
 
-	"github.com/erroneousboat/slack-term/components"
-	"github.com/erroneousboat/slack-term/config"
-	"github.com/erroneousboat/slack-term/context"
-	"github.com/erroneousboat/slack-term/views"
+	"github.com/theremix/slack-term/components"
+	"github.com/theremix/slack-term/config"
+	"github.com/theremix/slack-term/context"
+	"github.com/theremix/slack-term/views"
 )
 
 var scrollTimer *time.Timer
