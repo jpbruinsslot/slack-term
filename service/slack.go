@@ -578,6 +578,7 @@ func (s *SlackService) createChannelItem(chn slack.Channel) components.ChannelIt
 	return components.ChannelItem{
 		ID:          chn.ID,
 		Name:        chn.Name,
+		DisplayName: chn.Name,
 		Topic:       chn.Topic.Value,
 		UserID:      chn.User,
 		StylePrefix: s.Config.Theme.Channel.Prefix,
