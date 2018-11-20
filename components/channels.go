@@ -68,7 +68,11 @@ func (c ChannelItem) ToString() string {
 			icon = " "
 		}
 	case ChannelTypeMpIM:
-		icon = IconMpIM
+		if c.IsGroupPrimary {
+			icon = IconMpIM
+		} else {
+			icon = " "
+		}
 	case ChannelTypeIM:
 		switch c.Presence {
 		case PresenceActive:
@@ -213,7 +217,45 @@ func (c *Channels) SetY(y int) {
 }
 
 func (c *Channels) SetChannels(channels []ChannelItem) {
-	c.ChannelItems = channels
+	groupPrefix := "mpdm-"
+
+	for listIndex, channel := range channels {
+		if channel.Type == ChannelTypeMpIM || channel.Type == ChannelTypeGroup {
+			if strings.HasPrefix(channel.Name, groupPrefix) {
+				// add multiline group channel
+				channel.Name = channel.Name[len(groupPrefix):]
+			}
+
+			groupMembers := strings.Split(channel.Name, "--")
+			for memberIdx, groupMember := range groupMembers {
+				if memberIdx == len(groupMembers)-1 {
+					groupMember = strings.TrimSuffix(groupMember, "-1")
+				}
+
+				displayName := strings.TrimSuffix(strings.Replace(channel.Name, "--", ", ", -1), "-1")
+
+				c.ChannelItems = append(
+					c.ChannelItems, ChannelItem{
+						ID:             channel.ID,
+						ListIndex:      listIndex,
+						Name:           groupMember,
+						DisplayName:    displayName,
+						Topic:          channel.Topic,
+						Type:           channel.Type,
+						UserID:         "",
+						IsGroupPrimary: memberIdx == 0,
+						StylePrefix:    channel.StylePrefix,
+						StyleIcon:      channel.StyleIcon,
+						StyleText:      channel.StyleText,
+						LastReadTime:   time.Now().UTC(),
+					},
+				)
+			}
+		} else {
+			c.ChannelItems = append(c.ChannelItems, channel)
+		}
+	}
+
 }
 
 func (c *Channels) MarkAsRead(channelID int) {
