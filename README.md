@@ -19,6 +19,20 @@ directory where you can access it from the command line. Usually this is
 $ mv slack-term /usr/local/bin
 ```
 
+Optionally, you may also install the manpage to somewhere in your `$MANPATH`. For
+example, if `/usr/local/share/man` is in your `$MANPATH`, after running:
+
+```bash
+$ mkdir -p /usr/local/share/man/man1 && cp slack-term.1 /usr/local/share/man/man1
+```
+
+you will be able to view the `slack-term` manpage with:
+
+
+```bash
+$ man slack-term
+```
+
 #### Via Go
 
 If you want, you can also get `slack-term` via Go:
