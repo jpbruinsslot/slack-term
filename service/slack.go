@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"log"
 	"regexp"
 	"sort"
 	"strconv"
@@ -294,6 +295,14 @@ func (s *SlackService) GetMessages(channelID string, count int) ([]components.Me
 	// Construct the messages
 	var messages []components.Message
 	for _, message := range history.Messages {
+
+		// When the message timestamp and thread timestamp are the same we
+		// have a parent message, and this means it contains a thread with
+		// replies.
+		if message.ThreadTimestamp != "" && message.ThreadTimestamp == message.Timestamp {
+			messages = append(messages, s.CreateMessageFromReplies(message, channelID)...)
+		}
+
 		msg := s.CreateMessage(message)
 		messages = append(messages, msg...)
 	}
@@ -349,7 +358,7 @@ func (s *SlackService) CreateMessage(message slack.Message) []components.Message
 		name = "unknown"
 	}
 
-	// When there are attachments append them
+	// When there are attachments, append them
 	if len(message.Attachments) > 0 {
 		msgs = append(msgs, s.CreateMessageFromAttachments(message.Attachments)...)
 	}
@@ -375,6 +384,37 @@ func (s *SlackService) CreateMessage(message slack.Message) []components.Message
 	msgs = append(msgs, msg)
 
 	return msgs
+}
+
+func (s *SlackService) CreateMessageFromReplies(message slack.Message, channelID string) []components.Message {
+	conversationParams := slack.GetConversationRepliesParameters{
+		ChannelID: channelID,
+		Timestamp: message.ThreadTimestamp,
+	}
+
+	// TODO: pagination
+	conversationReplies, _, _, err := s.Client.GetConversationReplies(
+		&conversationParams,
+	)
+	if err != nil {
+		log.Fatal(err) // FIXME
+	}
+
+	var replies []components.Message
+	for i, reply := range conversationReplies {
+		if i == 0 {
+			continue
+		}
+		msg := s.CreateMessage(reply)
+		replies = append(replies, msg...)
+	}
+
+	var repliesReversed []components.Message
+	for i := len(replies) - 1; i >= 0; i-- {
+		repliesReversed = append(repliesReversed, replies[i])
+	}
+
+	return repliesReversed
 }
 
 func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent) ([]components.Message, error) {
