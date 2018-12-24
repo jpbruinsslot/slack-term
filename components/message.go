@@ -1,6 +1,8 @@
 package components
 
 import (
+	"fmt"
+	"sort"
 	"strings"
 	"time"
 )
@@ -19,6 +21,9 @@ var (
 )
 
 type Message struct {
+	ID       string
+	Messages map[string]Message
+
 	Time    time.Time
 	Name    string
 	Content string
@@ -28,6 +33,25 @@ type Message struct {
 	StyleText string
 
 	FormatTime string
+}
+
+func (m Message) GetTime() string {
+	return fmt.Sprintf(
+		"[[%s]](%s) ",
+		m.Time.Format(m.FormatTime),
+		m.StyleTime,
+	)
+}
+
+func (m Message) GetName() string {
+	return fmt.Sprintf("[<%s>](%s) ",
+		m.Name,
+		m.colorizeName(m.StyleName),
+	)
+}
+
+func (m Message) GetContent() string {
+	return fmt.Sprintf("[.](%s)", m.StyleText)
 }
 
 func (m Message) colorizeName(styleName string) string {
@@ -43,4 +67,20 @@ func (m Message) colorizeName(styleName string) string {
 	}
 
 	return styleName
+}
+
+func SortMessages(msgs map[string]Message) []Message {
+	keys := make([]string, 0)
+	for k := range msgs {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	sortedMessages := make([]Message, 0)
+	for _, k := range keys {
+		sortedMessages = append(sortedMessages, msgs[k])
+	}
+
+	return sortedMessages
 }

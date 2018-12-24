@@ -295,16 +295,8 @@ func (s *SlackService) GetMessages(channelID string, count int) ([]components.Me
 	// Construct the messages
 	var messages []components.Message
 	for _, message := range history.Messages {
-
-		// When the message timestamp and thread timestamp are the same we
-		// have a parent message, and this means it contains a thread with
-		// replies.
-		if message.ThreadTimestamp != "" && message.ThreadTimestamp == message.Timestamp {
-			messages = append(messages, s.CreateMessageFromReplies(message, channelID)...)
-		}
-
-		msg := s.CreateMessage(message)
-		messages = append(messages, msg...)
+		msg := s.CreateMessage(message, channelID)
+		messages = append(messages, msg)
 	}
 
 	// Reverse the order of the messages, we want the newest in
@@ -321,11 +313,7 @@ func (s *SlackService) GetMessages(channelID string, count int) ([]components.Me
 // in the Chat pane.
 //
 // [23:59] <erroneousboat> Hello world!
-//
-// This returns an array of string because we will try to uncover attachments
-// associated with messages.
-func (s *SlackService) CreateMessage(message slack.Message) []components.Message {
-	var msgs []components.Message
+func (s *SlackService) CreateMessage(message slack.Message, channelID string) components.Message {
 	var name string
 
 	// Get username from cache
@@ -358,11 +346,6 @@ func (s *SlackService) CreateMessage(message slack.Message) []components.Message
 		name = "unknown"
 	}
 
-	// When there are attachments, append them
-	if len(message.Attachments) > 0 {
-		msgs = append(msgs, s.CreateMessageFromAttachments(message.Attachments)...)
-	}
-
 	// Parse time
 	floatTime, err := strconv.ParseFloat(message.Timestamp, 64)
 	if err != nil {
@@ -372,6 +355,8 @@ func (s *SlackService) CreateMessage(message slack.Message) []components.Message
 
 	// Format message
 	msg := components.Message{
+		ID:         message.Timestamp,
+		Messages:   make(map[string]components.Message),
 		Time:       time.Unix(intTime, 0),
 		Name:       name,
 		Content:    parseMessage(s, message.Text),
@@ -381,40 +366,86 @@ func (s *SlackService) CreateMessage(message slack.Message) []components.Message
 		FormatTime: s.Config.Theme.Message.TimeFormat,
 	}
 
-	msgs = append(msgs, msg)
+	// When there are attachments, add them to Messages
+	//
+	// NOTE: attachments don't have an id or a timestamp that we can
+	// use as a key value for the Messages field, so we use the index
+	// of the returned array.
+	if len(message.Attachments) > 0 {
+		atts := s.CreateMessageFromAttachments(message.Attachments)
 
-	return msgs
-}
-
-func (s *SlackService) CreateMessageFromReplies(message slack.Message, channelID string) []components.Message {
-	conversationParams := slack.GetConversationRepliesParameters{
-		ChannelID: channelID,
-		Timestamp: message.ThreadTimestamp,
+		for i, a := range atts {
+			msg.Messages[strconv.Itoa(i)] = a
+		}
 	}
 
-	// TODO: pagination
-	conversationReplies, _, _, err := s.Client.GetConversationReplies(
-		&conversationParams,
+	// When the message timestamp and thread timestamp are the same, we
+	// have a parent message. This means it contains a thread with replies.
+	if message.ThreadTimestamp != "" && message.ThreadTimestamp == message.Timestamp {
+		replies := s.CreateMessageFromReplies(message, channelID)
+		for _, reply := range replies {
+			msg.Messages[reply.ID] = reply
+		}
+	}
+
+	return msg
+}
+
+// CreateMessageFromReplies will create components.Message struct from
+// the conversation replies from slack.
+//
+// Useful documentation:
+//
+// https://api.slack.com/docs/message-threading
+// https://api.slack.com/methods/conversations.replies
+// https://godoc.org/github.com/nlopes/slack#Client.GetConversationReplies
+// https://godoc.org/github.com/nlopes/slack#GetConversationRepliesParameters
+func (s *SlackService) CreateMessageFromReplies(message slack.Message, channelID string) []components.Message {
+	msgs := make([]slack.Message, 0)
+
+	initReplies, _, initCur, err := s.Client.GetConversationReplies(
+		&slack.GetConversationRepliesParameters{
+			ChannelID: channelID,
+			Timestamp: message.ThreadTimestamp,
+			Limit:     200,
+		},
 	)
 	if err != nil {
 		log.Fatal(err) // FIXME
 	}
 
+	msgs = append(msgs, initReplies...)
+
+	nextCur := initCur
+	for nextCur != "" {
+		conversationReplies, _, cursor, err := s.Client.GetConversationReplies(&slack.GetConversationRepliesParameters{
+			ChannelID: channelID,
+			Timestamp: message.ThreadTimestamp,
+			Cursor:    nextCur,
+			Limit:     200,
+		},
+		)
+
+		if err != nil {
+			log.Fatal(err) // FIXME
+		}
+
+		// FIXME: for some reason the usage of `append` here makes nextCur
+		// stay the same as initCur
+		msgs = append(msgs, conversationReplies...)
+		nextCur = cursor
+	}
+
 	var replies []components.Message
-	for i, reply := range conversationReplies {
+	for i, reply := range msgs {
 		if i == 0 {
 			continue
 		}
-		msg := s.CreateMessage(reply)
-		replies = append(replies, msg...)
+		msg := s.CreateMessage(reply, channelID)
+		replies = append(replies, msg)
 	}
 
-	var repliesReversed []components.Message
-	for i := len(replies) - 1; i >= 0; i-- {
-		repliesReversed = append(repliesReversed, replies[i])
-	}
-
-	return repliesReversed
+	return replies
 }
 
 func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent) ([]components.Message, error) {
@@ -476,6 +507,7 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 
 	// Format message
 	msg := components.Message{
+		ID:         message.Timestamp,
 		Time:       time.Unix(intTime, 0),
 		Name:       name,
 		Content:    parseMessage(s, message.Text),
@@ -564,17 +596,17 @@ func parseEmoji(msg string) string {
 	)
 }
 
-// CreateMessageFromAttachments will construct a array of string of the Field
-// values of Attachments from a Message.
+// CreateMessageFromAttachments will construct an array of strings from the
+// Field values of Attachments of a Message.
 func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []components.Message {
 	var msgs []components.Message
 	for _, att := range atts {
-		for i := len(att.Fields) - 1; i >= 0; i-- {
+		for _, field := range att.Fields {
 			msgs = append(msgs, components.Message{
 				Content: fmt.Sprintf(
 					"%s %s",
-					att.Fields[i].Title,
-					att.Fields[i].Value,
+					field.Title,
+					field.Value,
 				),
 				StyleTime:  s.Config.Theme.Message.Time,
 				StyleName:  s.Config.Theme.Message.Name,
