@@ -457,7 +457,6 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 		msg = slack.Message{Msg: *message.SubMessage}
 		msg.Text = fmt.Sprintf("%s (edited)", msg.Text)
 	case "message_replied":
-		// Ignore reply events
 		return components.Message{}, errors.New("ignoring reply events")
 	}
 

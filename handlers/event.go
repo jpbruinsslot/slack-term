@@ -121,7 +121,12 @@ func messageHandler(ctx *context.AppContext) {
 					// Add message to the selected channel
 					if ev.Channel == ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID {
 
-						ctx.View.Chat.AddMessage(msg)
+						if ev.ThreadTimestamp != "" {
+							ctx.View.Chat.AddReply(ev.ThreadTimestamp, msg)
+						} else {
+							ctx.View.Chat.AddMessage(msg)
+						}
+
 						termui.Render(ctx.View.Chat)
 
 						// TODO: set Chat.Offset to 0, to automatically scroll

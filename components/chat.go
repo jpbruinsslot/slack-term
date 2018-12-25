@@ -182,6 +182,10 @@ func (c *Chat) AddMessage(message Message) {
 	c.Messages[message.ID] = message
 }
 
+func (c *Chat) AddReply(parentID string, message Message) {
+	c.Messages[parentID].Messages[message.ID] = message
+}
+
 // ClearMessages clear the c.Messages
 func (c *Chat) ClearMessages() {
 	c.Messages = make(map[string]Message)
