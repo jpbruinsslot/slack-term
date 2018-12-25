@@ -448,78 +448,20 @@ func (s *SlackService) CreateMessageFromReplies(message slack.Message, channelID
 	return replies
 }
 
-func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent) ([]components.Message, error) {
-
-	var msgs []components.Message
-	var name string
+func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent, channelID string) (components.Message, error) {
+	msg := slack.Message{Msg: message.Msg}
 
 	switch message.SubType {
 	case "message_changed":
 		// Append (edited) when an edited message is received
-		message = &slack.MessageEvent{Msg: *message.SubMessage}
-		message.Text = fmt.Sprintf("%s (edited)", message.Text)
+		msg = slack.Message{Msg: *message.SubMessage}
+		msg.Text = fmt.Sprintf("%s (edited)", msg.Text)
 	case "message_replied":
 		// Ignore reply events
-		return nil, errors.New("ignoring reply events")
+		return components.Message{}, errors.New("ignoring reply events")
 	}
 
-	// Get username from cache
-	name, ok := s.UserCache[message.User]
-
-	// Name not in cache
-	if !ok {
-		if message.BotID != "" {
-			// Name not found, perhaps a bot, use Username
-			name, ok = s.UserCache[message.BotID]
-			if !ok {
-				// Not found in cache, add it
-				name = message.Username
-				s.UserCache[message.BotID] = message.Username
-			}
-		} else {
-			// Not a bot, not in cache, get user info
-			user, err := s.Client.GetUserInfo(message.User)
-			if err != nil {
-				name = "unknown"
-				s.UserCache[message.User] = name
-			} else {
-				name = user.Name
-				s.UserCache[message.User] = user.Name
-			}
-		}
-	}
-
-	if name == "" {
-		name = "unknown"
-	}
-
-	// When there are attachments append them
-	if len(message.Attachments) > 0 {
-		msgs = append(msgs, s.CreateMessageFromAttachments(message.Attachments)...)
-	}
-
-	// Parse time
-	floatTime, err := strconv.ParseFloat(message.Timestamp, 64)
-	if err != nil {
-		floatTime = 0.0
-	}
-	intTime := int64(floatTime)
-
-	// Format message
-	msg := components.Message{
-		ID:         message.Timestamp,
-		Time:       time.Unix(intTime, 0),
-		Name:       name,
-		Content:    parseMessage(s, message.Text),
-		StyleTime:  s.Config.Theme.Message.Time,
-		StyleName:  s.Config.Theme.Message.Name,
-		StyleText:  s.Config.Theme.Message.Text,
-		FormatTime: s.Config.Theme.Message.TimeFormat,
-	}
-
-	msgs = append(msgs, msg)
-
-	return msgs, nil
+	return s.CreateMessage(msg, channelID), nil
 }
 
 // parseMessage will parse a message string and find and replace:

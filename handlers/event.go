@@ -113,7 +113,7 @@ func messageHandler(ctx *context.AppContext) {
 				case *slack.MessageEvent:
 
 					// Construct message
-					msg, err := ctx.Service.CreateMessageFromMessageEvent(ev)
+					msg, err := ctx.Service.CreateMessageFromMessageEvent(ev, ev.Channel)
 					if err != nil {
 						continue
 					}
@@ -121,14 +121,7 @@ func messageHandler(ctx *context.AppContext) {
 					// Add message to the selected channel
 					if ev.Channel == ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID {
 
-						// Reverse order of messages, mainly done
-						// when attachments are added to message
-						for i := len(msg) - 1; i >= 0; i-- {
-							ctx.View.Chat.AddMessage(
-								msg[i],
-							)
-						}
-
+						ctx.View.Chat.AddMessage(msg)
 						termui.Render(ctx.View.Chat)
 
 						// TODO: set Chat.Offset to 0, to automatically scroll
