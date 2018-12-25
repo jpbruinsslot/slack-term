@@ -173,6 +173,8 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 			}
 		}
 
+		// NOTE: user presence is set in the event handler by the function
+		// `actionSetPresenceAll`, that is why we set the presence to away
 		if chn.IsIM {
 			// Check if user is deleted, we do this by checking the user id,
 			// and see if we have the user in the UserCache
@@ -183,24 +185,12 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 
 			chanItem.Name = name
 			chanItem.Type = components.ChannelTypeIM
+			chanItem.Presence = "away"
 
 			buckets[3][chn.User] = &tempChan{
 				channelItem:  chanItem,
 				slackChannel: chn,
 			}
-
-			wg.Add(1)
-			go func(user string, buckets map[int]map[string]*tempChan) {
-				defer wg.Done()
-
-				presence, err := s.GetUserPresence(user)
-				if err != nil {
-					buckets[3][user].channelItem.Presence = "away"
-					return
-				}
-
-				buckets[3][user].channelItem.Presence = presence
-			}(chn.User, buckets)
 		}
 	}
 

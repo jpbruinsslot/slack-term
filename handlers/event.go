@@ -50,8 +50,15 @@ var actionMap = map[string]func(*context.AppContext){
 }
 
 func RegisterEventHandlers(ctx *context.AppContext) {
+
+	// Keyboard events
 	eventHandler(ctx)
+
+	// RTM incoming events
 	messageHandler(ctx)
+
+	// User presence
+	go actionSetPresenceAll(ctx)
 }
 
 // eventHandler will handle events created by the user
@@ -442,6 +449,24 @@ func actionNewMessage(ctx *context.AppContext, ev *slack.MessageEvent) {
 func actionSetPresence(ctx *context.AppContext, channelID string, presence string) {
 	ctx.View.Channels.SetPresence(channelID, presence)
 	termui.Render(ctx.View.Channels)
+}
+
+// actionPresenceAll will set the presence of the user list. Because the
+// requests to the endpoint are rate limited we implement a timeout here.
+func actionSetPresenceAll(ctx *context.AppContext) {
+	for _, chn := range ctx.Service.Conversations {
+		if chn.IsIM {
+
+			presence, err := ctx.Service.GetUserPresence(chn.User)
+			if err != nil {
+				presence = "away"
+			}
+			ctx.View.Channels.SetPresence(chn.ID, presence)
+
+			termui.Render(ctx.View.Channels)
+			time.Sleep(1200 * time.Millisecond)
+		}
+	}
 }
 
 func actionScrollUpChat(ctx *context.AppContext) {
