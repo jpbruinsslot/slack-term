@@ -442,7 +442,7 @@ func (s *SlackService) CreateMessageFromReplies(message slack.Message, channelID
 		//
 		// Keep in mind that the api returns the replies with the latest
 		// as the first element.
-		if message.ThreadTimestamp != "" && message.ThreadTimestamp == message.Timestamp {
+		if reply.ThreadTimestamp != "" && reply.ThreadTimestamp == reply.Timestamp {
 			continue
 		}
 
