@@ -423,24 +423,29 @@ func (s *SlackService) CreateMessageFromReplies(message slack.Message, channelID
 			Timestamp: message.ThreadTimestamp,
 			Cursor:    nextCur,
 			Limit:     200,
-		},
-		)
+		})
 
 		if err != nil {
 			log.Fatal(err) // FIXME
 		}
 
-		// FIXME: for some reason the usage of `append` here makes nextCur
-		// stay the same as initCur
 		msgs = append(msgs, conversationReplies...)
 		nextCur = cursor
 	}
 
 	var replies []components.Message
-	for i, reply := range msgs {
-		if i == 0 {
+	for _, reply := range msgs {
+
+		// Because the conversations api returns an entire thread (a
+		// message plus all the messages in reply), we need to check if
+		// one of the replies isn't the parent that we started with.
+		//
+		// Keep in mind that the api returns the replies with the latest
+		// as the first element.
+		if message.ThreadTimestamp != "" && message.ThreadTimestamp == message.Timestamp {
 			continue
 		}
+
 		msg := s.CreateMessage(reply, channelID)
 		replies = append(replies, msg)
 	}
