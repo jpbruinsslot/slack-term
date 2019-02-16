@@ -182,7 +182,10 @@ func (c *Chat) AddMessage(message Message) {
 	c.Messages[message.ID] = message
 }
 
+// AddReply adds a single reply to a parent thread, it also sets
+// the thread separator
 func (c *Chat) AddReply(parentID string, message Message) {
+	message.Thread = "  "
 	c.Messages[parentID].Messages[message.ID] = message
 }
 
@@ -264,6 +267,12 @@ func (c *Chat) MessageToCells(msg Message) []termui.Cell {
 		// Time
 		cells = append(cells, termui.DefaultTxBuilder.Build(
 			msg.GetTime(),
+			termui.ColorDefault, termui.ColorDefault)...,
+		)
+
+		// Thread
+		cells = append(cells, termui.DefaultTxBuilder.Build(
+			msg.GetThread(),
 			termui.ColorDefault, termui.ColorDefault)...,
 		)
 

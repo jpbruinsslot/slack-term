@@ -23,6 +23,7 @@ type SlackService struct {
 	RTM             *slack.RTM
 	Conversations   []slack.Channel
 	UserCache       map[string]string
+	ThreadCache     map[string]string
 	CurrentUserID   string
 	CurrentUsername string
 }
@@ -31,9 +32,10 @@ type SlackService struct {
 // the RTM and a Client
 func NewSlackService(config *config.Config) (*SlackService, error) {
 	svc := &SlackService{
-		Config:    config,
-		Client:    slack.New(config.SlackToken),
-		UserCache: make(map[string]string),
+		Config:      config,
+		Client:      slack.New(config.SlackToken),
+		UserCache:   make(map[string]string),
+		ThreadCache: make(map[string]string),
 	}
 
 	// Get user associated with token, mainly
@@ -276,6 +278,66 @@ func (s *SlackService) SendMessage(channelID string, message string) error {
 	return nil
 }
 
+// SendReply will send a message to a particular thread, specifying the
+// ThreadTimestamp will make it reply to that specific thread. (see:
+// https://api.slack.com/docs/message-threading, 'Posting replies')
+func (s *SlackService) SendReply(channelID string, threadID string, message string) error {
+	// https://godoc.org/github.com/nlopes/slack#PostMessageParameters
+	postParams := slack.PostMessageParameters{
+		AsUser:          true,
+		Username:        s.CurrentUsername,
+		LinkNames:       1,
+		ThreadTimestamp: threadID,
+	}
+
+	// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
+	_, _, err := s.Client.PostMessage(channelID, message, postParams)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SendCommand will send a specific command to slack. First we check
+// wether we are dealing with a command, and if it is one of the supported
+// ones.
+func (s *SlackService) SendCommand(channelID string, message string) (bool, error) {
+	// First check if it begins with slash and a command
+	r, err := regexp.Compile(`^/\w+`)
+	if err != nil {
+		return false, err
+	}
+
+	match := r.MatchString(message)
+	if !match {
+		return false, nil
+	}
+
+	// Execute the the command when supported
+	switch r.FindString(message) {
+	case "/reply":
+		r := regexp.MustCompile(`(?P<cmd>^/\w+) (?P<id>\w+) (?P<msg>.*)`)
+		subMatch := r.FindStringSubmatch(message)
+
+		if len(subMatch) < 4 {
+			return false, errors.New("'/reply' command malformed")
+		}
+
+		threadID := s.ThreadCache[subMatch[2]]
+		msg := subMatch[3]
+
+		err := s.SendReply(channelID, threadID, msg)
+		if err != nil {
+			return false, err
+		}
+
+		return true, nil
+	}
+
+	return false, nil
+}
+
 // GetMessages will get messages for a channel, group or im channel delimited
 // by a count.
 func (s *SlackService) GetMessages(channelID string, count int) ([]components.Message, error) {
@@ -355,15 +417,16 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 
 	// Format message
 	msg := components.Message{
-		ID:         message.Timestamp,
-		Messages:   make(map[string]components.Message),
-		Time:       time.Unix(intTime, 0),
-		Name:       name,
-		Content:    parseMessage(s, message.Text),
-		StyleTime:  s.Config.Theme.Message.Time,
-		StyleName:  s.Config.Theme.Message.Name,
-		StyleText:  s.Config.Theme.Message.Text,
-		FormatTime: s.Config.Theme.Message.TimeFormat,
+		ID:          message.Timestamp,
+		Messages:    make(map[string]components.Message),
+		Time:        time.Unix(intTime, 0),
+		Name:        name,
+		Content:     parseMessage(s, message.Text),
+		StyleTime:   s.Config.Theme.Message.Time,
+		StyleThread: s.Config.Theme.Message.Thread,
+		StyleName:   s.Config.Theme.Message.Name,
+		StyleText:   s.Config.Theme.Message.Text,
+		FormatTime:  s.Config.Theme.Message.TimeFormat,
 	}
 
 	// When there are attachments, add them to Messages
@@ -381,7 +444,23 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 
 	// When the message timestamp and thread timestamp are the same, we
 	// have a parent message. This means it contains a thread with replies.
+	//
+	// Additionally, we set the thread timestamp in the s.ThreadCache with
+	// the hexadecimal representation of the timestamp. We do this because
+	// we if we want to reply to a thread, we need to reference this
+	// timestamp. Which is too long to type, we shorten it and remember the
+	// reference in the cache.
 	if message.ThreadTimestamp != "" && message.ThreadTimestamp == message.Timestamp {
+
+		// Set the thread identifier for thread cache
+		f, _ := strconv.ParseFloat(message.ThreadTimestamp, 64)
+		threadID := fmt.Sprintf("thread_%x", int(f))
+		s.ThreadCache[threadID] = message.ThreadTimestamp
+
+		// Set thread prefix for message
+		msg.Thread = fmt.Sprintf("%s ", threadID)
+
+		// Create the message replies from the thread
 		replies := s.CreateMessageFromReplies(message, channelID)
 		for _, reply := range replies {
 			msg.Messages[reply.ID] = reply
@@ -435,7 +514,6 @@ func (s *SlackService) CreateMessageFromReplies(message slack.Message, channelID
 
 	var replies []components.Message
 	for _, reply := range msgs {
-
 		// Because the conversations api returns an entire thread (a
 		// message plus all the messages in reply), we need to check if
 		// one of the replies isn't the parent that we started with.
@@ -447,6 +525,10 @@ func (s *SlackService) CreateMessageFromReplies(message slack.Message, channelID
 		}
 
 		msg := s.CreateMessage(reply, channelID)
+
+		// Set the thread separator
+		msg.Thread = "  "
+
 		replies = append(replies, msg)
 	}
 
@@ -554,10 +636,11 @@ func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []c
 					field.Title,
 					field.Value,
 				),
-				StyleTime:  s.Config.Theme.Message.Time,
-				StyleName:  s.Config.Theme.Message.Name,
-				StyleText:  s.Config.Theme.Message.Text,
-				FormatTime: s.Config.Theme.Message.TimeFormat,
+				StyleTime:   s.Config.Theme.Message.Time,
+				StyleThread: s.Config.Theme.Message.Thread,
+				StyleName:   s.Config.Theme.Message.Name,
+				StyleText:   s.Config.Theme.Message.Text,
+				FormatTime:  s.Config.Theme.Message.TimeFormat,
 			},
 			)
 		}
@@ -566,11 +649,12 @@ func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []c
 			msgs = append(
 				msgs,
 				components.Message{
-					Content:    fmt.Sprintf("%s", att.Text),
-					StyleTime:  s.Config.Theme.Message.Time,
-					StyleName:  s.Config.Theme.Message.Name,
-					StyleText:  s.Config.Theme.Message.Text,
-					FormatTime: s.Config.Theme.Message.TimeFormat,
+					Content:     fmt.Sprintf("%s", att.Text),
+					StyleTime:   s.Config.Theme.Message.Time,
+					StyleThread: s.Config.Theme.Message.Thread,
+					StyleName:   s.Config.Theme.Message.Name,
+					StyleText:   s.Config.Theme.Message.Text,
+					FormatTime:  s.Config.Theme.Message.TimeFormat,
 				},
 			)
 		}
@@ -579,11 +663,12 @@ func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []c
 			msgs = append(
 				msgs,
 				components.Message{
-					Content:    fmt.Sprintf("%s", att.Title),
-					StyleTime:  s.Config.Theme.Message.Time,
-					StyleName:  s.Config.Theme.Message.Name,
-					StyleText:  s.Config.Theme.Message.Text,
-					FormatTime: s.Config.Theme.Message.TimeFormat,
+					Content:     fmt.Sprintf("%s", att.Title),
+					StyleTime:   s.Config.Theme.Message.Time,
+					StyleThread: s.Config.Theme.Message.Thread,
+					StyleName:   s.Config.Theme.Message.Name,
+					StyleText:   s.Config.Theme.Message.Text,
+					FormatTime:  s.Config.Theme.Message.TimeFormat,
 				},
 			)
 		}

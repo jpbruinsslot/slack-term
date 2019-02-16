@@ -121,6 +121,8 @@ func messageHandler(ctx *context.AppContext) {
 					// Add message to the selected channel
 					if ev.Channel == ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID {
 
+						// When timestamp isn't set this is a thread reply,
+						// handle as such
 						if ev.ThreadTimestamp != "" {
 							ctx.View.Chat.AddReply(ev.ThreadTimestamp, msg)
 						} else {
@@ -241,8 +243,8 @@ func actionSend(ctx *context.AppContext) {
 		ctx.View.Input.Clear()
 		ctx.View.Refresh()
 
-		// Send message
-		err := ctx.Service.SendMessage(
+		// Send slash command
+		isCmd, err := ctx.Service.SendCommand(
 			ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
 			message,
 		)
@@ -250,6 +252,19 @@ func actionSend(ctx *context.AppContext) {
 			ctx.View.Debug.Println(
 				err.Error(),
 			)
+		}
+
+		// Send message
+		if !isCmd {
+			err := ctx.Service.SendMessage(
+				ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
+				message,
+			)
+			if err != nil {
+				ctx.View.Debug.Println(
+					err.Error(),
+				)
+			}
 		}
 
 		// Clear notification icon if there is any

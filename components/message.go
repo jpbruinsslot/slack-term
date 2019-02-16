@@ -25,12 +25,14 @@ type Message struct {
 	Messages map[string]Message
 
 	Time    time.Time
+	Thread  string
 	Name    string
 	Content string
 
-	StyleTime string
-	StyleName string
-	StyleText string
+	StyleTime   string
+	StyleThread string
+	StyleName   string
+	StyleText   string
 
 	FormatTime string
 }
@@ -40,6 +42,13 @@ func (m Message) GetTime() string {
 		"[[%s]](%s) ",
 		m.Time.Format(m.FormatTime),
 		m.StyleTime,
+	)
+}
+
+func (m Message) GetThread() string {
+	return fmt.Sprintf("[%s](%s)",
+		m.Thread,
+		m.StyleThread,
 	)
 }
 
