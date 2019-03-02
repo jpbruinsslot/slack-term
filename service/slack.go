@@ -140,6 +140,10 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 
 			chanItem.Type = components.ChannelTypeChannel
 
+			if chn.UnreadCount > 0 {
+				chanItem.Notification = true
+			}
+
 			buckets[0][chn.ID] = &tempChan{
 				channelItem:  chanItem,
 				slackChannel: chn,
@@ -159,6 +163,10 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 
 				chanItem.Type = components.ChannelTypeMpIM
 
+				if chn.UnreadCount > 0 {
+					chanItem.Notification = true
+				}
+
 				buckets[2][chn.ID] = &tempChan{
 					channelItem:  chanItem,
 					slackChannel: chn,
@@ -166,6 +174,10 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 			} else {
 
 				chanItem.Type = components.ChannelTypeGroup
+
+				if chn.UnreadCount > 0 {
+					chanItem.Notification = true
+				}
 
 				buckets[1][chn.ID] = &tempChan{
 					channelItem:  chanItem,
@@ -184,6 +196,10 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 
 			chanItem.Name = name
 			chanItem.Type = components.ChannelTypeIM
+
+			if chn.UnreadCount > 0 {
+				chanItem.Notification = true
+			}
 
 			buckets[3][chn.User] = &tempChan{
 				channelItem:  chanItem,
