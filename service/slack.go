@@ -316,12 +316,12 @@ func (s *SlackService) SendCommand(channelID string, message string) (bool, erro
 
 	// Execute the the command when supported
 	switch r.FindString(message) {
-	case "/reply":
+	case "/thread":
 		r := regexp.MustCompile(`(?P<cmd>^/\w+) (?P<id>\w+) (?P<msg>.*)`)
 		subMatch := r.FindStringSubmatch(message)
 
 		if len(subMatch) < 4 {
-			return false, errors.New("'/reply' command malformed")
+			return false, errors.New("'/thread' command malformed")
 		}
 
 		threadID := s.ThreadCache[subMatch[2]]
@@ -454,7 +454,7 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 
 		// Set the thread identifier for thread cache
 		f, _ := strconv.ParseFloat(message.ThreadTimestamp, 64)
-		threadID := fmt.Sprintf("thread_%x", int(f))
+		threadID := hashID(int(f))
 		s.ThreadCache[threadID] = message.ThreadTimestamp
 
 		// Set thread prefix for message
@@ -687,4 +687,16 @@ func (s *SlackService) createChannelItem(chn slack.Channel) components.ChannelIt
 		StyleIcon:   s.Config.Theme.Channel.Icon,
 		StyleText:   s.Config.Theme.Channel.Text,
 	}
+}
+
+func hashID(input int) string {
+	const base62Alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+
+	hash := ""
+	for input > 0 {
+		hash = string(base62Alphabet[input%62]) + hash
+		input = int(input / 62)
+	}
+
+	return hash
 }
