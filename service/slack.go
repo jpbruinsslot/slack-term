@@ -58,12 +58,13 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 		}
 	}
 
-	// Get name of current user
+	// Get name of current user, and set presence to active
 	currentUser, err := svc.Client.GetUserInfo(svc.CurrentUserID)
 	if err != nil {
 		svc.CurrentUsername = "slack-term"
 	}
 	svc.CurrentUsername = currentUser.Name
+	svc.SetUserAsActive()
 
 	return svc, nil
 }
@@ -246,6 +247,11 @@ func (s *SlackService) GetUserPresence(userID string) (string, error) {
 	}
 
 	return presence.Presence, nil
+}
+
+// Set current user presence to active
+func (s *SlackService) SetUserAsActive() {
+	s.Client.SetUserPresence("auto")
 }
 
 // MarkAsRead will set the channel as read
