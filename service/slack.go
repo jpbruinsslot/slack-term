@@ -446,7 +446,7 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 	// have a parent message. This means it contains a thread with replies.
 	//
 	// Additionally, we set the thread timestamp in the s.ThreadCache with
-	// the hexadecimal representation of the timestamp. We do this because
+	// the base62 representation of the timestamp. We do this because
 	// we if we want to reply to a thread, we need to reference this
 	// timestamp. Which is too long to type, we shorten it and remember the
 	// reference in the cache.
