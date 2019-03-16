@@ -332,7 +332,7 @@ func actionSearchMode(ctx *context.AppContext) {
 }
 
 func actionGetMessages(ctx *context.AppContext) {
-	msgs, err := ctx.Service.GetMessages(
+	msgs, _, err := ctx.Service.GetMessages(
 		ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
 		ctx.View.Chat.GetMaxItems(),
 	)
@@ -418,7 +418,7 @@ func actionChangeChannel(ctx *context.AppContext) {
 
 	// Get messages of the SelectedChannel, and get the count of messages
 	// that fit into the Chat component
-	msgs, err := ctx.Service.GetMessages(
+	msgs, threads, err := ctx.Service.GetMessages(
 		ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
 		ctx.View.Chat.GetMaxItems(),
 	)
@@ -436,6 +436,9 @@ func actionChangeChannel(ctx *context.AppContext) {
 		ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].GetChannelName(),
 	)
 
+	// Set threads
+	ctx.View.Threads.SetChannels(threads)
+
 	// Clear notification icon if there is any
 	channelItem := ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel]
 	if channelItem.Notification {
@@ -444,6 +447,7 @@ func actionChangeChannel(ctx *context.AppContext) {
 	}
 
 	termui.Render(ctx.View.Channels)
+	termui.Render(ctx.View.Threads)
 	termui.Render(ctx.View.Chat)
 }
 

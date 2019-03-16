@@ -87,11 +87,13 @@ func CreateAppContext(flgConfig string, flgToken string, flgDebug bool, version 
 
 	// Setup the interface
 	if flgDebug {
+		// FIXME: threads width configurable
 		termui.Body.AddRows(
 			termui.NewRow(
 				termui.NewCol(config.SidebarWidth, 0, view.Channels),
 				termui.NewCol(config.MainWidth-5, 0, view.Chat),
-				termui.NewCol(config.MainWidth-6, 0, view.Debug),
+				termui.NewCol(config.MainWidth-10, 0, view.Threads),
+				termui.NewCol(config.MainWidth-7, 0, view.Debug),
 			),
 			termui.NewRow(
 				termui.NewCol(config.SidebarWidth, 0, view.Mode),
@@ -99,10 +101,12 @@ func CreateAppContext(flgConfig string, flgToken string, flgDebug bool, version 
 			),
 		)
 	} else {
+		// FIXME: threads width configurable
 		termui.Body.AddRows(
 			termui.NewRow(
 				termui.NewCol(config.SidebarWidth, 0, view.Channels),
-				termui.NewCol(config.MainWidth, 0, view.Chat),
+				termui.NewCol(config.MainWidth-1, 0, view.Chat),
+				termui.NewCol(config.MainWidth-10, 0, view.Threads),
 			),
 			termui.NewRow(
 				termui.NewCol(config.SidebarWidth, 0, view.Mode),

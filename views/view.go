@@ -13,6 +13,7 @@ type View struct {
 	Input    *components.Input
 	Chat     *components.Chat
 	Channels *components.Channels
+	Threads  *components.Threads
 	Mode     *components.Mode
 	Debug    *components.Debug
 }
@@ -22,7 +23,8 @@ func CreateView(config *config.Config, svc *service.SlackService) (*View, error)
 	input := components.CreateInputComponent()
 
 	// Channels: create the component
-	channels := components.CreateChannelsComponent(input.Par.Height)
+	sideBarHeight := termui.TermHeight() - input.Par.Height
+	channels := components.CreateChannelsComponent(sideBarHeight)
 
 	// Channels: fill the component
 	slackChans, err := svc.GetChannels()
@@ -33,11 +35,14 @@ func CreateView(config *config.Config, svc *service.SlackService) (*View, error)
 	// Channels: set channels in component
 	channels.SetChannels(slackChans)
 
+	// Threads: create component
+	threads := components.CreateThreadsComponent(sideBarHeight)
+
 	// Chat: create the component
 	chat := components.CreateChatComponent(input.Par.Height)
 
 	// Chat: fill the component
-	msgs, err := svc.GetMessages(
+	msgs, thds, err := svc.GetMessages(
 		channels.ChannelItems[channels.SelectedChannel].ID,
 		chat.GetMaxItems(),
 	)
@@ -52,6 +57,9 @@ func CreateView(config *config.Config, svc *service.SlackService) (*View, error)
 		channels.ChannelItems[channels.SelectedChannel].GetChannelName(),
 	)
 
+	// Threads: set threads in component
+	threads.SetChannels(thds)
+
 	// Debug: create the component
 	debug := components.CreateDebugComponent(input.Par.Height)
 
@@ -62,6 +70,7 @@ func CreateView(config *config.Config, svc *service.SlackService) (*View, error)
 		Config:   config,
 		Input:    input,
 		Channels: channels,
+		Threads:  threads,
 		Chat:     chat,
 		Mode:     mode,
 		Debug:    debug,
@@ -75,6 +84,7 @@ func (v *View) Refresh() {
 		v.Input,
 		v.Chat,
 		v.Channels,
+		v.Threads,
 		v.Mode,
 	)
 }
