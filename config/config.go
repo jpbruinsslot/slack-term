@@ -128,6 +128,7 @@ func getDefaultConfig() Config {
 			Message: Message{
 				Time:       "",
 				TimeFormat: "15:04",
+				Thread:     "fg-bold",
 				Name:       "",
 				Text:       "",
 			},
