@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/url"
 	"regexp"
 	"sort"
 	"strconv"
@@ -291,8 +292,31 @@ func (s *SlackService) SendMessage(channelID string, message string) error {
 		LinkNames: 1,
 	}
 
-	// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
-	_, _, err := s.Client.PostMessage(channelID, message, postParams)
+	var err error
+	if strings.HasPrefix(message, "/") {
+		var args string
+		msgParts := strings.Split(message, " ")
+		if len(msgParts) > 1 {
+			args = strings.Join(msgParts[1:], " ")
+		}
+
+		// https://godoc.org/github.com/nlopes/slack#Client.SendMessage
+                _, _, err = s.Client.PostMessage(
+			channelID,
+			slack.UnsafeMsgOptionEndpoint(
+				slack.APIURL + "chat.command",
+				func(values url.Values) {
+					values.Add("command", msgParts[0])
+					values.Add("text", args)
+				},
+			),
+			slack.MsgOptionPostMessageParameters(postParams),
+		)
+        } else {
+		// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
+		_, _, err = s.Client.PostMessage(channelID, slack.MsgOptionText(message, true), slack.MsgOptionPostMessageParameters(postParams))
+	}
+
 	if err != nil {
 		return err
 	}
@@ -313,7 +337,7 @@ func (s *SlackService) SendReply(channelID string, threadID string, message stri
 	}
 
 	// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
-	_, _, err := s.Client.PostMessage(channelID, message, postParams)
+	_, _, err := s.Client.PostMessage(channelID, slack.MsgOptionText(message, true), slack.MsgOptionPostMessageParameters(postParams))
 	if err != nil {
 		return err
 	}
