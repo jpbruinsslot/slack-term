@@ -50,11 +50,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:410e126b7e96640ac0c41bb49bad7dbf2d1c081aa06fd2c75cdb9e65765fae9b"
+  digest = "1:f647f0806867032e28a4e7c46ad2cc8cb76ead7f6fdff128a74e821ba089f085"
   name = "github.com/nlopes/slack"
-  packages = ["."]
+  packages = [
+    ".",
+    "slackutilsx"
+  ]
   pruneopts = "UT"
-  revision = "7cfa5619e6becd3db5dfb8e26c06798918e123b2"
+  revision = "eb54e3636e4f935fa2b0af3091590561ce943a40"
 
 [[projects]]
   branch = "master"

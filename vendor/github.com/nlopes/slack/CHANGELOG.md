@@ -1,3 +1,20 @@
+### v0.5.0 - January 20, 2019
+full differences can be viewed using `git log --oneline --decorate --color v0.4.0..v0.5.0`
+- Breaking changes: various old struct fields have been removed or updated to match slack's api.
+- deadlock fix in RTM disconnect.
+
+### v0.4.0 - October 06, 2018
+full differences can be viewed using `git log --oneline --decorate --color v0.3.0..v0.4.0`
+- Breaking Change: renamed ApplyMessageOption, to mark it as unsafe,
+this means it may break without warning in the future.
+- Breaking: Msg structure files field changed to an array.
+- General: implementation for new security headers.
+- RTM: deadlock fix between connect/disconnect.
+- Events: various new fields added.
+- Web: various fixes, new fields exposed, new methods added.
+- Interactions: minor additions expect breaking changes in next release for dialogs/button clicks.
+- Utils: new methods added.
+
 ### v0.3.0 - July 30, 2018
 full differences can be viewed using `git log --oneline --decorate --color v0.2.0..v0.3.0`
 - slack events initial support added. (still considered experimental and undergoing changes, stability not promised)

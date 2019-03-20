@@ -3,6 +3,7 @@ package slack
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/url"
 	"strconv"
@@ -86,21 +87,40 @@ type File struct {
 	CommentsCount   int      `json:"comments_count"`
 	NumStars        int      `json:"num_stars"`
 	IsStarred       bool     `json:"is_starred"`
+	Shares          Share    `json:"shares"`
+}
+
+type Share struct {
+	Public map[string][]ShareFileInfo `json:"public"`
+}
+
+type ShareFileInfo struct {
+	ReplyUsers      []string `json:"reply_users"`
+	ReplyUsersCount int      `json:"reply_users_count"`
+	ReplyCount      int      `json:"reply_count"`
+	Ts              string   `json:"ts"`
+	ThreadTs        string   `json:"thread_ts"`
+	LatestReply     string   `json:"latest_reply"`
+	ChannelName     string   `json:"channel_name"`
+	TeamID          string   `json:"team_id"`
 }
 
 // FileUploadParameters contains all the parameters necessary (including the optional ones) for an UploadFile() request.
 //
 // There are three ways to upload a file. You can either set Content if file is small, set Reader if file is large,
 // or provide a local file path in File to upload it from your filesystem.
+//
+// Note that when using the Reader option, you *must* specify the Filename, otherwise the Slack API isn't happy.
 type FileUploadParameters struct {
-	File           string
-	Content        string
-	Reader         io.Reader
-	Filetype       string
-	Filename       string
-	Title          string
-	InitialComment string
-	Channels       []string
+	File            string
+	Content         string
+	Reader          io.Reader
+	Filetype        string
+	Filename        string
+	Title           string
+	InitialComment  string
+	Channels        []string
+	ThreadTimestamp string
 }
 
 // GetFilesParameters contains all the parameters necessary (including the optional ones) for a GetFiles() request
@@ -136,16 +156,14 @@ func NewGetFilesParameters() GetFilesParameters {
 	}
 }
 
-func fileRequest(ctx context.Context, client HTTPRequester, path string, values url.Values, debug bool) (*fileResponseFull, error) {
+func fileRequest(ctx context.Context, client httpClient, path string, values url.Values, d debug) (*fileResponseFull, error) {
 	response := &fileResponseFull{}
-	err := postForm(ctx, client, SLACK_API+path, values, response, debug)
+	err := postForm(ctx, client, APIURL+path, values, response, d)
 	if err != nil {
 		return nil, err
 	}
-	if !response.Ok {
-		return nil, errors.New(response.Error)
-	}
-	return response, nil
+
+	return response, response.Err()
 }
 
 // GetFileInfo retrieves a file and related comments
@@ -162,11 +180,16 @@ func (api *Client) GetFileInfoContext(ctx context.Context, fileID string, count,
 		"page":  {strconv.Itoa(page)},
 	}
 
-	response, err := fileRequest(ctx, api.httpclient, "files.info", values, api.debug)
+	response, err := fileRequest(ctx, api.httpclient, "files.info", values, api)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 	return &response.File, response.Comments, &response.Paging, nil
+}
+
+// GetFile retreives a given file from its private download URL
+func (api *Client) GetFile(downloadURL string, writer io.Writer) error {
+	return downloadFile(api.httpclient, api.token, downloadURL, writer, api)
 }
 
 // GetFiles retrieves all files according to the parameters given
@@ -201,7 +224,7 @@ func (api *Client) GetFilesContext(ctx context.Context, params GetFilesParameter
 		values.Add("page", strconv.Itoa(params.Page))
 	}
 
-	response, err := fileRequest(ctx, api.httpclient, "files.list", values, api.debug)
+	response, err := fileRequest(ctx, api.httpclient, "files.list", values, api)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -221,6 +244,9 @@ func (api *Client) UploadFileContext(ctx context.Context, params FileUploadParam
 	if err != nil {
 		return nil, err
 	}
+	if params.Filename == "" {
+		return nil, fmt.Errorf("files.upload: FileUploadParameters.Filename is mandatory")
+	}
 	response := &fileResponseFull{}
 	values := url.Values{
 		"token": {api.token},
@@ -237,24 +263,25 @@ func (api *Client) UploadFileContext(ctx context.Context, params FileUploadParam
 	if params.InitialComment != "" {
 		values.Add("initial_comment", params.InitialComment)
 	}
+	if params.ThreadTimestamp != "" {
+		values.Add("thread_ts", params.ThreadTimestamp)
+	}
 	if len(params.Channels) != 0 {
 		values.Add("channels", strings.Join(params.Channels, ","))
 	}
 	if params.Content != "" {
 		values.Add("content", params.Content)
-		err = postForm(ctx, api.httpclient, SLACK_API+"files.upload", values, response, api.debug)
+		err = postForm(ctx, api.httpclient, APIURL+"files.upload", values, response, api)
 	} else if params.File != "" {
-		err = postLocalWithMultipartResponse(ctx, api.httpclient, "files.upload", params.File, "file", values, response, api.debug)
+		err = postLocalWithMultipartResponse(ctx, api.httpclient, "files.upload", params.File, "file", values, response, api)
 	} else if params.Reader != nil {
-		err = postWithMultipartResponse(ctx, api.httpclient, "files.upload", params.Filename, "file", values, params.Reader, response, api.debug)
+		err = postWithMultipartResponse(ctx, api.httpclient, "files.upload", params.Filename, "file", values, params.Reader, response, api)
 	}
 	if err != nil {
 		return nil, err
 	}
-	if !response.Ok {
-		return nil, errors.New(response.Error)
-	}
-	return &response.File, nil
+
+	return &response.File, response.Err()
 }
 
 // DeleteFileComment deletes a file's comment
@@ -273,7 +300,7 @@ func (api *Client) DeleteFileCommentContext(ctx context.Context, fileID, comment
 		"file":  {fileID},
 		"id":    {commentID},
 	}
-	_, err = fileRequest(ctx, api.httpclient, "files.comments.delete", values, api.debug)
+	_, err = fileRequest(ctx, api.httpclient, "files.comments.delete", values, api)
 	return err
 }
 
@@ -289,7 +316,7 @@ func (api *Client) DeleteFileContext(ctx context.Context, fileID string) (err er
 		"file":  {fileID},
 	}
 
-	_, err = fileRequest(ctx, api.httpclient, "files.delete", values, api.debug)
+	_, err = fileRequest(ctx, api.httpclient, "files.delete", values, api)
 	return err
 }
 
@@ -305,7 +332,7 @@ func (api *Client) RevokeFilePublicURLContext(ctx context.Context, fileID string
 		"file":  {fileID},
 	}
 
-	response, err := fileRequest(ctx, api.httpclient, "files.revokePublicURL", values, api.debug)
+	response, err := fileRequest(ctx, api.httpclient, "files.revokePublicURL", values, api)
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +351,7 @@ func (api *Client) ShareFilePublicURLContext(ctx context.Context, fileID string)
 		"file":  {fileID},
 	}
 
-	response, err := fileRequest(ctx, api.httpclient, "files.sharedPublicURL", values, api.debug)
+	response, err := fileRequest(ctx, api.httpclient, "files.sharedPublicURL", values, api)
 	if err != nil {
 		return nil, nil, nil, err
 	}

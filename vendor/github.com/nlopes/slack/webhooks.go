@@ -1,15 +1,20 @@
 package slack
 
 import (
-	"github.com/pkg/errors"
-	"net/http"
 	"bytes"
 	"encoding/json"
+	"net/http"
+
+	"github.com/pkg/errors"
 )
 
 type WebhookMessage struct {
-	Text    		string 				`json:"text,omitempty"`
-	Attachments []Attachment	`json:"attachments,omitempty"`
+	Username    string       `json:"username,omitempty"`
+	IconEmoji   string       `json:"icon_emoji,omitempty"`
+	IconURL     string       `json:"icon_url,omitempty"`
+	Channel     string       `json:"channel,omitempty"`
+	Text        string       `json:"text,omitempty"`
+	Attachments []Attachment `json:"attachments,omitempty"`
 }
 
 func PostWebhook(url string, msg *WebhookMessage) error {
@@ -19,7 +24,7 @@ func PostWebhook(url string, msg *WebhookMessage) error {
 		return errors.Wrap(err, "marshal failed")
 	}
 
-	response, err := http.Post(url, "application/json", bytes.NewReader(raw));
+	response, err := http.Post(url, "application/json", bytes.NewReader(raw))
 
 	if err != nil {
 		return errors.Wrap(err, "failed to post webhook")
