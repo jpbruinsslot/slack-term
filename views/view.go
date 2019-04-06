@@ -42,7 +42,7 @@ func CreateView(config *config.Config, svc *service.SlackService) (*View, error)
 	chat := components.CreateChatComponent(input.Par.Height)
 
 	// Chat: fill the component
-	msgs, thds, err := svc.GetMessages(
+	msgs, thr, err := svc.GetMessages(
 		channels.ChannelItems[channels.SelectedChannel].ID,
 		chat.GetMaxItems(),
 	)
@@ -58,7 +58,7 @@ func CreateView(config *config.Config, svc *service.SlackService) (*View, error)
 	)
 
 	// Threads: set threads in component
-	threads.SetChannels(thds)
+	threads.SetChannels(thr)
 
 	// Debug: create the component
 	debug := components.CreateDebugComponent(input.Par.Height)

@@ -235,6 +235,11 @@ func (c *Channels) SetSelectedChannel(index int) {
 	c.SelectedChannel = index
 }
 
+// Get SelectedChannel returns the ChannelItem that is currently selected
+func (c *Channels) GetSelectedChannel() ChannelItem {
+	return c.ChannelItems[c.SelectedChannel]
+}
+
 // MoveCursorUp will decrease the SelectedChannel by 1
 func (c *Channels) MoveCursorUp() {
 	if c.SelectedChannel > 0 {

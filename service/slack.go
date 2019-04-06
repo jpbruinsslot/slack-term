@@ -559,7 +559,7 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 		msg.Thread = fmt.Sprintf("%s ", threadID)
 
 		// Create the message replies from the thread
-		replies := s.CreateMessageFromReplies(message, channelID)
+		replies := s.CreateMessageFromReplies(message.ThreadTimestamp, channelID)
 		for _, reply := range replies {
 			msg.Messages[reply.ID] = reply
 		}
@@ -577,13 +577,13 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 // https://api.slack.com/methods/conversations.replies
 // https://godoc.org/github.com/nlopes/slack#Client.GetConversationReplies
 // https://godoc.org/github.com/nlopes/slack#GetConversationRepliesParameters
-func (s *SlackService) CreateMessageFromReplies(message slack.Message, channelID string) []components.Message {
+func (s *SlackService) CreateMessageFromReplies(messageID string, channelID string) []components.Message {
 	msgs := make([]slack.Message, 0)
 
 	initReplies, _, initCur, err := s.Client.GetConversationReplies(
 		&slack.GetConversationRepliesParameters{
 			ChannelID: channelID,
-			Timestamp: message.ThreadTimestamp,
+			Timestamp: messageID,
 			Limit:     200,
 		},
 	)
@@ -597,7 +597,7 @@ func (s *SlackService) CreateMessageFromReplies(message slack.Message, channelID
 	for nextCur != "" {
 		conversationReplies, _, cursor, err := s.Client.GetConversationReplies(&slack.GetConversationRepliesParameters{
 			ChannelID: channelID,
-			Timestamp: message.ThreadTimestamp,
+			Timestamp: messageID,
 			Cursor:    nextCur,
 			Limit:     200,
 		})

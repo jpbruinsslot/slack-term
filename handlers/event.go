@@ -45,6 +45,8 @@ var actionMap = map[string]func(*context.AppContext){
 	"channel-search-next": actionSearchNextChannels,
 	"channel-search-prev": actionSearchPrevChannels,
 	"channel-jump":        actionJumpChannels,
+	"thread-up":           actionMoveCursorUpThreads,
+	"thread-down":         actionMoveCursorDownThreads,
 	"chat-up":             actionScrollUpChat,
 	"chat-down":           actionScrollDownChat,
 	"help":                actionHelp,
@@ -449,6 +451,63 @@ func actionChangeChannel(ctx *context.AppContext) {
 	termui.Render(ctx.View.Channels)
 	termui.Render(ctx.View.Threads)
 	termui.Render(ctx.View.Chat)
+}
+
+func actionChangeThread(ctx *context.AppContext) {
+	// Clear messages from Chat pane
+	ctx.View.Chat.ClearMessages()
+
+	// TODO: err
+	// TODO: change function name to match GetMessages
+	msgs := ctx.Service.CreateMessageFromReplies(
+		ctx.View.Threads.ChannelItems[ctx.View.Threads.SelectedChannel].ID,
+		ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
+	)
+
+	// Set messages for the channel
+	ctx.View.Chat.SetMessages(msgs)
+
+	termui.Render(ctx.View.Channels)
+	termui.Render(ctx.View.Threads)
+	termui.Render(ctx.View.Chat)
+}
+
+// TODO
+func actionMoveCursorUpThreads(ctx *context.AppContext) {
+	go func() {
+		if scrollTimer != nil {
+			scrollTimer.Stop()
+		}
+
+		ctx.View.Threads.MoveCursorUp()
+		termui.Render(ctx.View.Threads)
+
+		scrollTimer = time.NewTimer(time.Second / 4)
+		<-scrollTimer.C
+
+		// Only actually change channel when the timer expires
+		actionChangeThread(ctx)
+	}()
+
+}
+
+// TODO
+func actionMoveCursorDownThreads(ctx *context.AppContext) {
+	go func() {
+		if scrollTimer != nil {
+			scrollTimer.Stop()
+		}
+
+		ctx.View.Threads.MoveCursorDown()
+		termui.Render(ctx.View.Channels)
+
+		scrollTimer = time.NewTimer(time.Second / 4)
+		<-scrollTimer.C
+
+		// Only actually change thread when the timer expires
+		actionChangeThread(ctx)
+	}()
+
 }
 
 // actionNewMessage will set the new message indicator for a channel, and
