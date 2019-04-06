@@ -155,9 +155,9 @@ func (c *Channels) Buffer() termui.Buffer {
 		}
 
 		// When not at the end of the pane fill it up empty characters
-		for x < c.List.InnerBounds().Max.X-1 {
+		for x < c.List.InnerBounds().Max.X {
 			if y == c.CursorPosition {
-				buf.Set(x+1, y,
+				buf.Set(x, y,
 					termui.Cell{
 						Ch: ' ',
 						Fg: c.List.ItemBgColor,
@@ -166,7 +166,7 @@ func (c *Channels) Buffer() termui.Buffer {
 				)
 			} else {
 				buf.Set(
-					x+1, y,
+					x, y,
 					termui.Cell{
 						Ch: ' ',
 						Fg: c.List.ItemFgColor,
