@@ -92,7 +92,7 @@
     "github.com/mattn/go-runewidth",
     "github.com/nlopes/slack",
     "github.com/nsf/termbox-go",
-    "github.com/renstrom/fuzzysearch/fuzzy",
+    "github.com/renstrom/fuzzysearch/fuzzy"
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
