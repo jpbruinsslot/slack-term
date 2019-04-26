@@ -292,7 +292,9 @@ func (s *SlackService) SendMessage(channelID string, message string) error {
 		LinkNames: 1,
 	}
 
-	var err error
+	msg := slack.MsgOptionText(message, true)
+	params := slack.MsgOptionPostMessageParameters(postParams)
+
 	if strings.HasPrefix(message, "/") {
 		var args string
 		msgParts := strings.Split(message, " ")
@@ -300,28 +302,18 @@ func (s *SlackService) SendMessage(channelID string, message string) error {
 			args = strings.Join(msgParts[1:], " ")
 		}
 
-		// https://godoc.org/github.com/nlopes/slack#Client.SendMessage
-                _, _, err = s.Client.PostMessage(
-			channelID,
-			slack.UnsafeMsgOptionEndpoint(
-				slack.APIURL + "chat.command",
-				func(values url.Values) {
-					values.Add("command", msgParts[0])
-					values.Add("text", args)
-				},
-			),
-			slack.MsgOptionPostMessageParameters(postParams),
+		msg = slack.UnsafeMsgOptionEndpoint(
+			slack.APIURL+"chat.command",
+			func(values url.Values) {
+				values.Add("command", msgParts[0])
+				values.Add("text", args)
+			},
 		)
-        } else {
-		// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
-		_, _, err = s.Client.PostMessage(channelID, slack.MsgOptionText(message, true), slack.MsgOptionPostMessageParameters(postParams))
 	}
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
+	_, _, err := s.Client.PostMessage(channelID, msg, params)
+	return err
 }
 
 // SendReply will send a message to a particular thread, specifying the
@@ -614,7 +606,7 @@ func parseMessage(s *SlackService, msg string) string {
 //
 // Mentions have the following format:
 //	<@U12345|erroneousboat>
-// 	<@U12345>
+//	<@U12345>
 func parseMentions(s *SlackService, msg string) string {
 	r := regexp.MustCompile(`\<@(\w+\|*\w+)\>`)
 
