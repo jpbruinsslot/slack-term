@@ -464,6 +464,24 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 		}
 	}
 
+	// When there are blocks, add them to Messages
+	if len(message.Blocks) > 0 {
+		atts := s.CreateMessageFromBlocks(message)
+
+		for i, a := range atts {
+			msg.Messages[strconv.Itoa(i)] = a
+		}
+	}
+
+	// When there are files, add them to Messages
+	if len(message.Files) > 0 {
+		atts := s.CreateMessageFromFiles(message.Files)
+
+		for i, a := range atts {
+			msg.Messages[strconv.Itoa(i)] = a
+		}
+	}
+
 	// When the message timestamp and thread timestamp are the same, we
 	// have a parent message. This means it contains a thread with replies.
 	//
@@ -646,6 +664,67 @@ func parseEmoji(msg string) string {
 	)
 }
 
+func (s *SlackService) CreateMessageFromFiles(atts []slack.File) []components.Message {
+	var msgs []components.Message
+	for _, att := range atts {
+		msgs = append(
+			msgs,
+			components.Message{
+				Content:     fmt.Sprintf("File: %s %s %s", att.Name, att.Title, att.Mimetype),
+				StyleTime:   s.Config.Theme.Message.Time,
+				StyleThread: s.Config.Theme.Message.Thread,
+				StyleName:   s.Config.Theme.Message.Name,
+				StyleText:   s.Config.Theme.Message.Text,
+				FormatTime:  s.Config.Theme.Message.TimeFormat,
+			},
+		)
+
+		if att.Preview != "" {
+			msgs = append(
+				msgs,
+				components.Message{
+					Content:     fmt.Sprintf("%s", att.Preview),
+					StyleTime:   s.Config.Theme.Message.Time,
+					StyleThread: s.Config.Theme.Message.Thread,
+					StyleName:   s.Config.Theme.Message.Name,
+					StyleText:   s.Config.Theme.Message.Text,
+					FormatTime:  s.Config.Theme.Message.TimeFormat,
+				},
+			)
+		}
+
+		if att.URLPrivate != "" {
+			msgs = append(
+				msgs,
+				components.Message{
+					Content:     fmt.Sprintf("URL: %s", att.URLPrivate),
+					StyleTime:   s.Config.Theme.Message.Time,
+					StyleThread: s.Config.Theme.Message.Thread,
+					StyleName:   s.Config.Theme.Message.Name,
+					StyleText:   s.Config.Theme.Message.Text,
+					FormatTime:  s.Config.Theme.Message.TimeFormat,
+				},
+			)
+		}
+
+		if att.URLPrivateDownload != "" {
+			msgs = append(
+				msgs,
+				components.Message{
+					Content:     fmt.Sprintf("Download: %s", att.URLPrivateDownload),
+					StyleTime:   s.Config.Theme.Message.Time,
+					StyleThread: s.Config.Theme.Message.Thread,
+					StyleName:   s.Config.Theme.Message.Name,
+					StyleText:   s.Config.Theme.Message.Text,
+					FormatTime:  s.Config.Theme.Message.TimeFormat,
+				},
+			)
+		}
+	}
+
+	return msgs
+}
+
 // CreateMessageFromAttachments will construct an array of strings from the
 // Field values of Attachments of a Message.
 func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []components.Message {
@@ -667,6 +746,48 @@ func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []c
 			)
 		}
 
+		if att.Title != "" {
+			msgs = append(
+				msgs,
+				components.Message{
+					Content:     fmt.Sprintf("Title: %s", att.Title),
+					StyleTime:   s.Config.Theme.Message.Time,
+					StyleThread: s.Config.Theme.Message.Thread,
+					StyleName:   s.Config.Theme.Message.Name,
+					StyleText:   s.Config.Theme.Message.Text,
+					FormatTime:  s.Config.Theme.Message.TimeFormat,
+				},
+			)
+		}
+
+		if att.TitleLink != "" {
+			msgs = append(
+				msgs,
+				components.Message{
+					Content:     fmt.Sprintf("%s", att.TitleLink),
+					StyleTime:   s.Config.Theme.Message.Time,
+					StyleThread: s.Config.Theme.Message.Thread,
+					StyleName:   s.Config.Theme.Message.Name,
+					StyleText:   s.Config.Theme.Message.Text,
+					FormatTime:  s.Config.Theme.Message.TimeFormat,
+				},
+			)
+		}
+
+		if att.Pretext != "" {
+			msgs = append(
+				msgs,
+				components.Message{
+					Content:     fmt.Sprintf("Pretext: %s", att.Pretext),
+					StyleTime:   s.Config.Theme.Message.Time,
+					StyleThread: s.Config.Theme.Message.Thread,
+					StyleName:   s.Config.Theme.Message.Name,
+					StyleText:   s.Config.Theme.Message.Text,
+					FormatTime:  s.Config.Theme.Message.TimeFormat,
+				},
+			)
+		}
+
 		if att.Text != "" {
 			msgs = append(
 				msgs,
@@ -681,11 +802,11 @@ func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []c
 			)
 		}
 
-		if att.Title != "" {
+		if att.ImageURL != "" {
 			msgs = append(
 				msgs,
 				components.Message{
-					Content:     fmt.Sprintf("%s", att.Title),
+					Content:     fmt.Sprintf("%s", att.ImageURL),
 					StyleTime:   s.Config.Theme.Message.Time,
 					StyleThread: s.Config.Theme.Message.Thread,
 					StyleName:   s.Config.Theme.Message.Name,
@@ -693,6 +814,184 @@ func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []c
 					FormatTime:  s.Config.Theme.Message.TimeFormat,
 				},
 			)
+		}
+
+		if att.Fallback != "" {
+			msgs = append(
+				msgs,
+				components.Message{
+					Content:     fmt.Sprintf("Fallback: %s", att.Fallback),
+					StyleTime:   s.Config.Theme.Message.Time,
+					StyleThread: s.Config.Theme.Message.Thread,
+					StyleName:   s.Config.Theme.Message.Name,
+					StyleText:   s.Config.Theme.Message.Text,
+					FormatTime:  s.Config.Theme.Message.TimeFormat,
+				},
+			)
+		}
+
+		for _, field := range att.Actions {
+			msgs = append(msgs, components.Message{
+				Content: fmt.Sprintf(
+					"%s: %s %s %s",
+					field.Name,
+					field.Text,
+					field.Value,
+					field.URL,
+				),
+				StyleTime:   s.Config.Theme.Message.Time,
+				StyleThread: s.Config.Theme.Message.Thread,
+				StyleName:   s.Config.Theme.Message.Name,
+				StyleText:   s.Config.Theme.Message.Text,
+				FormatTime:  s.Config.Theme.Message.TimeFormat,
+			},
+			)
+		}
+
+		if att.Footer != "" {
+			msgs = append(
+				msgs,
+				components.Message{
+					Content:     fmt.Sprintf("Footer: %s", att.Footer),
+					StyleTime:   s.Config.Theme.Message.Time,
+					StyleThread: s.Config.Theme.Message.Thread,
+					StyleName:   s.Config.Theme.Message.Name,
+					StyleText:   s.Config.Theme.Message.Text,
+					FormatTime:  s.Config.Theme.Message.TimeFormat,
+				},
+			)
+		}
+	}
+
+	return msgs
+}
+
+func (s *SlackService) CreateMessageFromBlocks(msg slack.Message) []components.Message {
+	var msgs []components.Message
+	msgs = append(
+		msgs,
+		components.Message{
+			Content:     "Blocks",
+			StyleTime:   s.Config.Theme.Message.Time,
+			StyleThread: s.Config.Theme.Message.Thread,
+			StyleName:   s.Config.Theme.Message.Name,
+			StyleText:   s.Config.Theme.Message.Text,
+			FormatTime:  s.Config.Theme.Message.TimeFormat,
+		},
+	)
+	for _, block := range msg.Blocks {
+		imageBlock, valid := block.(slack.ImageBlock)
+		if valid {
+			msgs = append(
+				msgs,
+				components.Message{
+					Content:     fmt.Sprintf("%s", imageBlock.Title.Text),
+					StyleTime:   s.Config.Theme.Message.Time,
+					StyleThread: s.Config.Theme.Message.Thread,
+					StyleName:   s.Config.Theme.Message.Name,
+					StyleText:   s.Config.Theme.Message.Text,
+					FormatTime:  s.Config.Theme.Message.TimeFormat,
+				},
+			)
+			msgs = append(
+				msgs,
+				components.Message{
+					Content:     fmt.Sprintf("%s", imageBlock.ImageURL),
+					StyleTime:   s.Config.Theme.Message.Time,
+					StyleThread: s.Config.Theme.Message.Thread,
+					StyleName:   s.Config.Theme.Message.Name,
+					StyleText:   s.Config.Theme.Message.Text,
+					FormatTime:  s.Config.Theme.Message.TimeFormat,
+				},
+			)
+			msgs = append(
+				msgs,
+				components.Message{
+					Content:     fmt.Sprintf("%s", imageBlock.AltText),
+					StyleTime:   s.Config.Theme.Message.Time,
+					StyleThread: s.Config.Theme.Message.Thread,
+					StyleName:   s.Config.Theme.Message.Name,
+					StyleText:   s.Config.Theme.Message.Text,
+					FormatTime:  s.Config.Theme.Message.TimeFormat,
+				},
+			)
+			continue
+		}
+
+		sectionBlock, valid := block.(slack.SectionBlock)
+		if valid {
+			msgs = append(
+				msgs,
+				components.Message{
+					Content:     fmt.Sprintf("%s", sectionBlock.Text.Text),
+					StyleTime:   s.Config.Theme.Message.Time,
+					StyleThread: s.Config.Theme.Message.Thread,
+					StyleName:   s.Config.Theme.Message.Name,
+					StyleText:   s.Config.Theme.Message.Text,
+					FormatTime:  s.Config.Theme.Message.TimeFormat,
+				},
+			)
+			imgBlockElement, valid := sectionBlock.Accessory.(slack.ImageBlockElement)
+			if valid {
+				msgs = append(
+					msgs,
+					components.Message{
+						Content:     fmt.Sprintf("%s", imgBlockElement.ImageURL),
+						StyleTime:   s.Config.Theme.Message.Time,
+						StyleThread: s.Config.Theme.Message.Thread,
+						StyleName:   s.Config.Theme.Message.Name,
+						StyleText:   s.Config.Theme.Message.Text,
+						FormatTime:  s.Config.Theme.Message.TimeFormat,
+					},
+				)
+			}
+			for _, field := range sectionBlock.Fields {
+				msgs = append(
+					msgs,
+					components.Message{
+						Content:     fmt.Sprintf("%s", field.Text),
+						StyleTime:   s.Config.Theme.Message.Time,
+						StyleThread: s.Config.Theme.Message.Thread,
+						StyleName:   s.Config.Theme.Message.Name,
+						StyleText:   s.Config.Theme.Message.Text,
+						FormatTime:  s.Config.Theme.Message.TimeFormat,
+					},
+				)
+			}
+			continue
+		}
+
+		contextBlock, valid := block.(slack.ContextBlock)
+		if valid {
+			for _, element := range contextBlock.Elements {
+				imgBlockObject, valid := element.(slack.ImageBlockObject)
+				if valid {
+					msgs = append(
+						msgs,
+						components.Message{
+							Content:     fmt.Sprintf("%s", imgBlockObject.ImageURL),
+							StyleTime:   s.Config.Theme.Message.Time,
+							StyleThread: s.Config.Theme.Message.Thread,
+							StyleName:   s.Config.Theme.Message.Name,
+							StyleText:   s.Config.Theme.Message.Text,
+							FormatTime:  s.Config.Theme.Message.TimeFormat,
+						},
+					)
+					msgs = append(
+						msgs,
+						components.Message{
+							Content:     fmt.Sprintf("%s", imgBlockObject.AltText),
+							StyleTime:   s.Config.Theme.Message.Time,
+							StyleThread: s.Config.Theme.Message.Thread,
+							StyleName:   s.Config.Theme.Message.Name,
+							StyleText:   s.Config.Theme.Message.Text,
+							FormatTime:  s.Config.Theme.Message.TimeFormat,
+						},
+					)
+					continue
+				}
+			}
+			continue
 		}
 	}
 
