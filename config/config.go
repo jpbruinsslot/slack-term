@@ -46,13 +46,6 @@ func NewConfig(filepath string) (*Config, error) {
 
 	cfg.MainWidth = 12 - cfg.SidebarWidth
 
-	switch cfg.Notify {
-	case NotifyAll, NotifyMention, "":
-		break
-	default:
-		return &cfg, fmt.Errorf("unsupported setting for notify: %s", cfg.Notify)
-	}
-
 	termui.ColorMap = map[string]termui.Attribute{
 		"fg":        termui.StringToAttribute(cfg.Theme.View.Fg),
 		"bg":        termui.StringToAttribute(cfg.Theme.View.Bg),
