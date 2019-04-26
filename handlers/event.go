@@ -449,6 +449,8 @@ func actionNewMessage(ctx *context.AppContext, ev *slack.MessageEvent) {
 		}
 	} else if ctx.Config.Notify == config.NotifyAll {
 		createNotifyMessage(ctx, ev)
+	} else if isHighlight(ctx, ev) {
+		createNotifyMessage(ctx, ev)
 	}
 }
 
@@ -538,6 +540,21 @@ func isMention(ctx *context.AppContext, ev *slack.MessageEvent) bool {
 	matches := r.FindAllString(ev.Text, -1)
 	for _, match := range matches {
 		if strings.Contains(match, ctx.Service.CurrentUserID) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// isHighlight check if the message contains a notify keyword
+func isHighlight(ctx *context.AppContext, ev *slack.MessageEvent) bool {
+	for _, substr := range strings.Split(ctx.Config.Notify, ",") {
+		if strings.Compare(substr, config.NotifyMention) == 0 {
+			if isMention(ctx, ev) {
+				return true
+			}
+		} else if strings.ContainsAny(ev.Text, substr) {
 			return true
 		}
 	}
