@@ -30,6 +30,8 @@ var actionMap = map[string]func(*context.AppContext){
 	"space":               actionSpace,
 	"backspace":           actionBackSpace,
 	"delete":              actionDelete,
+	"cursor-up":           actionMoveCursorUp,
+	"cursor-down":         actionMoveCursorDown,
 	"cursor-right":        actionMoveCursorRight,
 	"cursor-left":         actionMoveCursorLeft,
 	"send":                actionSend,
@@ -226,6 +228,16 @@ func actionDelete(ctx *context.AppContext) {
 
 func actionMoveCursorRight(ctx *context.AppContext) {
 	ctx.View.Input.MoveCursorRight()
+	termui.Render(ctx.View.Input)
+}
+
+func actionMoveCursorUp(ctx *context.AppContext) {
+	ctx.View.Input.MoveCursorUp()
+	termui.Render(ctx.View.Input)
+}
+
+func actionMoveCursorDown(ctx *context.AppContext) {
+	ctx.View.Input.MoveCursorDown()
 	termui.Render(ctx.View.Input)
 }
 

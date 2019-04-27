@@ -1,6 +1,8 @@
 package components
 
 import (
+	"strings"
+
 	"github.com/erroneousboat/termui"
 	runewidth "github.com/mattn/go-runewidth"
 )
@@ -9,9 +11,11 @@ import (
 type Input struct {
 	Par                  *termui.Par
 	Text                 []rune
+	Lines                [][]rune
 	CursorPositionScreen int
 	CursorPositionText   int
 	Offset               int
+	Line                 int
 }
 
 // CreateInput is the constructor of the Input struct
@@ -19,11 +23,14 @@ func CreateInputComponent() *Input {
 	input := &Input{
 		Par:                  termui.NewPar(""),
 		Text:                 make([]rune, 0),
+		Lines:                make([][]rune, 1),
 		CursorPositionScreen: 0,
 		CursorPositionText:   0,
 		Offset:               0,
+		Line:                 0,
 	}
 
+	input.Lines[0] = input.Text
 	input.Par.Height = 3
 
 	return input
@@ -77,26 +84,72 @@ func (i *Input) Insert(key rune) {
 	left = append(left, key)
 
 	// Combine left and right side
-	i.Text = append(left, i.Text[i.CursorPositionText:]...)
+	i.UpdateText(append(left, i.Text[i.CursorPositionText:]...))
 
 	i.MoveCursorRight()
+}
+
+func (i *Input) UpdateText(txt []rune) {
+	i.Text = txt
+	i.Lines[i.Line] = i.Text
+}
+
+func (i *Input) UpdatePar() {
+	i.Par.Text = string(i.Text[i.Offset:])
 }
 
 // Backspace will remove a character in front of the CursorPositionText
 func (i *Input) Backspace() {
 	if i.CursorPositionText > 0 {
 		i.MoveCursorLeft()
-		i.Text = append(i.Text[0:i.CursorPositionText], i.Text[i.CursorPositionText+1:]...)
-		i.Par.Text = string(i.Text[i.Offset:])
+		i.UpdateText(append(i.Text[0:i.CursorPositionText], i.Text[i.CursorPositionText+1:]...))
+		i.UpdatePar()
+	} else if i.Line > 0 {
+		// Delete this line if there's one before
+		var prev = i.Lines[:i.Line + 1]
+		var newlines [][]rune
+		if i.Line + 1 < len(i.Lines) {
+			newlines = append(prev, i.Lines[i.Line + 1:]...)
+		} else {
+			newlines = prev
+		}
+		i.Lines = newlines
+		i.MoveCursorUp()
 	}
 }
 
 // Delete will remove a character at the CursorPositionText
 func (i *Input) Delete() {
 	if i.CursorPositionText < len(i.Text) {
-		i.Text = append(i.Text[0:i.CursorPositionText], i.Text[i.CursorPositionText+1:]...)
-		i.Par.Text = string(i.Text[i.Offset:])
+		i.UpdateText(append(i.Text[0:i.CursorPositionText], i.Text[i.CursorPositionText+1:]...))
+		i.UpdatePar()
 	}
+}
+
+func (i *Input) MoveCursorUp() {
+	if i.Line > 0 {
+		i.Line--
+		i.CursorPositionText = 0
+		i.CursorPositionScreen = 0
+		i.Offset = 0
+		i.Text = i.Lines[i.Line]
+	}
+
+	i.UpdatePar()
+}
+
+func (i *Input) MoveCursorDown() {
+	if i.Line + 1 >= len(i.Lines) {
+		// Make a new line
+		i.Lines = append(i.Lines, make([]rune, 0))
+	}
+	// Go to the line below
+	i.Line++
+	i.CursorPositionText = 0
+	i.CursorPositionScreen = 0
+	i.Offset = 0
+	i.Text = i.Lines[i.Line]
+	i.UpdatePar()
 }
 
 // MoveCursorRight will increase the current CursorPositionText with 1
@@ -106,7 +159,7 @@ func (i *Input) MoveCursorRight() {
 		i.ScrollRight()
 	}
 
-	i.Par.Text = string(i.Text[i.Offset:])
+	i.UpdatePar()
 }
 
 // MoveCursorLeft will decrease the current CursorPositionText with 1
@@ -116,7 +169,7 @@ func (i *Input) MoveCursorLeft() {
 		i.ScrollLeft()
 	}
 
-	i.Par.Text = string(i.Text[i.Offset:])
+	i.UpdatePar()
 }
 
 func (i *Input) ScrollLeft() {
@@ -182,24 +235,28 @@ func (i *Input) GetRuneWidthRight() int {
 
 // IsEmpty will return true when the input is empty
 func (i *Input) IsEmpty() bool {
-	if i.Par.Text == "" {
-		return true
-	}
-	return false
+	return len(i.Text) == 0 && len(i.Lines) == 1
 }
 
 // Clear will empty the input and move the cursor to the start position
 func (i *Input) Clear() {
 	i.Text = make([]rune, 0)
+	i.Lines = make([][]rune, 1)
+	i.Lines[0] = i.Text
 	i.Par.Text = ""
 	i.CursorPositionScreen = 0
 	i.CursorPositionText = 0
 	i.Offset = 0
+	i.Line = 0
 }
 
 // GetText returns the text currently in the input
 func (i *Input) GetText() string {
-	return string(i.Text)
+	var fulltext = make([]string, len(i.Lines))
+	for i, txt := range i.Lines {
+		fulltext[i] = string(txt)
+	}
+	return strings.Join(fulltext, "\n")
 }
 
 // GetMaxWidth returns the maximum number of positions
