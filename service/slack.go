@@ -403,19 +403,25 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 
 	// Get username from cache
 	name, ok := s.UserCache[message.User]
-	name, ok = s.UserCache[message.BotID]
 
 	// Name not in cache
 	if !ok {
 		if message.BotID != "" {
-			// Bot, not in cache get bot info
-			bot, err := s.Client.GetBotInfo(message.BotID)
-			if err != nil {
-				name = "unkown"
-				s.UserCache[message.BotID] = name
-			} else {
-				name = bot.Name
-				s.UserCache[message.BotID] = bot.Name
+			name, ok = s.UserCache[message.BotID]
+			if !ok {
+				if message.Username != "" {
+					name = message.Username
+					s.UserCache[message.BotID] = message.Username
+				} else {
+					bot, err := s.Client.GetBotInfo(message.BotID)
+					if err != nil {
+						name = "unkown"
+						s.UserCache[message.BotID] = name
+					} else {
+						name = bot.Name
+						s.UserCache[message.BotID] = bot.Name
+					}
+				}
 			}
 		} else {
 			// Not a bot, not in cache, get user info
