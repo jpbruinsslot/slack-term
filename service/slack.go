@@ -465,6 +465,14 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 		}
 	}
 
+	// When there are files, add them to Messages
+	if len(message.Files) > 0 {
+		files := s.CreateMessageFromFiles(message.Files)
+		for _, file := range files {
+			msg.Messages[file.ID] = file
+		}
+	}
+
 	// When the message timestamp and thread timestamp are the same, we
 	// have a parent message. This means it contains a thread with replies.
 	//
@@ -558,6 +566,81 @@ func (s *SlackService) CreateMessageFromReplies(message slack.Message, channelID
 	return replies
 }
 
+// CreateMessageFromAttachments will construct an array of strings from the
+// Field values of Attachments of a Message.
+func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []components.Message {
+	var msgs []components.Message
+	for _, att := range atts {
+		for _, field := range att.Fields {
+			msgs = append(msgs, components.Message{
+				Content: fmt.Sprintf(
+					"%s %s",
+					field.Title,
+					field.Value,
+				),
+				StyleTime:   s.Config.Theme.Message.Time,
+				StyleThread: s.Config.Theme.Message.Thread,
+				StyleName:   s.Config.Theme.Message.Name,
+				StyleText:   s.Config.Theme.Message.Text,
+				FormatTime:  s.Config.Theme.Message.TimeFormat,
+			},
+			)
+		}
+
+		if att.Text != "" {
+			msgs = append(
+				msgs,
+				components.Message{
+					Content:     fmt.Sprintf("%s", att.Text),
+					StyleTime:   s.Config.Theme.Message.Time,
+					StyleThread: s.Config.Theme.Message.Thread,
+					StyleName:   s.Config.Theme.Message.Name,
+					StyleText:   s.Config.Theme.Message.Text,
+					FormatTime:  s.Config.Theme.Message.TimeFormat,
+				},
+			)
+		}
+
+		if att.Title != "" {
+			msgs = append(
+				msgs,
+				components.Message{
+					Content:     fmt.Sprintf("%s", att.Title),
+					StyleTime:   s.Config.Theme.Message.Time,
+					StyleThread: s.Config.Theme.Message.Thread,
+					StyleName:   s.Config.Theme.Message.Name,
+					StyleText:   s.Config.Theme.Message.Text,
+					FormatTime:  s.Config.Theme.Message.TimeFormat,
+				},
+			)
+		}
+	}
+
+	return msgs
+}
+
+// CreateMessageFromFiles will create components.Message struct from
+// conversation attached files
+func (s *SlackService) CreateMessageFromFiles(files []slack.File) []components.Message {
+	var msgs []components.Message
+
+	for _, file := range files {
+		msgs = append(msgs, components.Message{
+			Content: fmt.Sprintf(
+				"%s %s", file.Title, file.URLPrivate,
+			),
+			StyleTime:   s.Config.Theme.Message.Time,
+			StyleThread: s.Config.Theme.Message.Thread,
+			StyleName:   s.Config.Theme.Message.Name,
+			StyleText:   s.Config.Theme.Message.Text,
+			FormatTime:  s.Config.Theme.Message.TimeFormat,
+		})
+
+	}
+
+	return msgs
+}
+
 func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent, channelID string) (components.Message, error) {
 	msg := slack.Message{Msg: message.Msg}
 
@@ -576,7 +659,7 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 // parseMessage will parse a message string and find and replace:
 //	- emoji's
 //	- mentions
-//  - html unescape
+//	- html unescape
 func parseMessage(s *SlackService, msg string) string {
 	if s.Config.Emoji {
 		msg = parseEmoji(msg)
@@ -648,59 +731,6 @@ func parseEmoji(msg string) string {
 			return code
 		},
 	)
-}
-
-// CreateMessageFromAttachments will construct an array of strings from the
-// Field values of Attachments of a Message.
-func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []components.Message {
-	var msgs []components.Message
-	for _, att := range atts {
-		for _, field := range att.Fields {
-			msgs = append(msgs, components.Message{
-				Content: fmt.Sprintf(
-					"%s %s",
-					field.Title,
-					field.Value,
-				),
-				StyleTime:   s.Config.Theme.Message.Time,
-				StyleThread: s.Config.Theme.Message.Thread,
-				StyleName:   s.Config.Theme.Message.Name,
-				StyleText:   s.Config.Theme.Message.Text,
-				FormatTime:  s.Config.Theme.Message.TimeFormat,
-			},
-			)
-		}
-
-		if att.Text != "" {
-			msgs = append(
-				msgs,
-				components.Message{
-					Content:     fmt.Sprintf("%s", att.Text),
-					StyleTime:   s.Config.Theme.Message.Time,
-					StyleThread: s.Config.Theme.Message.Thread,
-					StyleName:   s.Config.Theme.Message.Name,
-					StyleText:   s.Config.Theme.Message.Text,
-					FormatTime:  s.Config.Theme.Message.TimeFormat,
-				},
-			)
-		}
-
-		if att.Title != "" {
-			msgs = append(
-				msgs,
-				components.Message{
-					Content:     fmt.Sprintf("%s", att.Title),
-					StyleTime:   s.Config.Theme.Message.Time,
-					StyleThread: s.Config.Theme.Message.Thread,
-					StyleName:   s.Config.Theme.Message.Name,
-					StyleText:   s.Config.Theme.Message.Text,
-					FormatTime:  s.Config.Theme.Message.TimeFormat,
-				},
-			)
-		}
-	}
-
-	return msgs
 }
 
 func (s *SlackService) createChannelItem(chn slack.Channel) components.ChannelItem {
