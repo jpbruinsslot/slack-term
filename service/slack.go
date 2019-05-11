@@ -275,11 +275,29 @@ func (s *SlackService) SetUserAsActive() {
 }
 
 // MarkAsRead will set the channel as read
-func (s *SlackService) MarkAsRead(channelID string) {
-	s.Client.SetChannelReadMark(
-		channelID, fmt.Sprintf("%f",
-			float64(time.Now().Unix())),
-	)
+func (s *SlackService) MarkAsRead(channelItem components.ChannelItem) {
+	switch channelItem.Type {
+	case components.ChannelTypeChannel:
+		s.Client.SetChannelReadMark(
+			channelItem.ID, fmt.Sprintf("%f",
+				float64(time.Now().Unix())),
+		)
+	case components.ChannelTypeGroup:
+		s.Client.SetGroupReadMark(
+			channelItem.ID, fmt.Sprintf("%f",
+				float64(time.Now().Unix())),
+		)
+	case components.ChannelTypeMpIM:
+		s.Client.MarkIMChannel(
+			channelItem.ID, fmt.Sprintf("%f",
+				float64(time.Now().Unix())),
+		)
+	case components.ChannelTypeIM:
+		s.Client.MarkIMChannel(
+			channelItem.ID, fmt.Sprintf("%f",
+				float64(time.Now().Unix())),
+		)
+	}
 }
 
 // SendMessage will send a message to a particular channel

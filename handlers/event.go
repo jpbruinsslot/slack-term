@@ -270,7 +270,7 @@ func actionSend(ctx *context.AppContext) {
 		// Clear notification icon if there is any
 		channelItem := ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel]
 		if channelItem.Notification {
-			ctx.Service.MarkAsRead(channelItem.ID)
+			ctx.Service.MarkAsRead(channelItem)
 			ctx.View.Channels.MarkAsRead(ctx.View.Channels.SelectedChannel)
 		}
 		termui.Render(ctx.View.Channels)
@@ -425,7 +425,7 @@ func actionChangeChannel(ctx *context.AppContext) {
 	// Clear notification icon if there is any
 	channelItem := ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel]
 	if channelItem.Notification {
-		ctx.Service.MarkAsRead(channelItem.ID)
+		ctx.Service.MarkAsRead(channelItem)
 		ctx.View.Channels.MarkAsRead(ctx.View.Channels.SelectedChannel)
 	}
 
