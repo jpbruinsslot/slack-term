@@ -403,16 +403,19 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 
 	// Get username from cache
 	name, ok := s.UserCache[message.User]
+	name, ok = s.UserCache[message.BotID]
 
 	// Name not in cache
 	if !ok {
 		if message.BotID != "" {
-			// Name not found, perhaps a bot, use Username
-			name, ok = s.UserCache[message.BotID]
-			if !ok {
-				// Not found in cache, add it
-				name = message.Username
-				s.UserCache[message.BotID] = message.Username
+			// Bot, not in cache get bot info
+			bot, err := s.Client.GetBotInfo(message.BotID)
+			if err != nil {
+				name = "unkown"
+				s.UserCache[message.BotID] = name
+			} else {
+				name = bot.Name
+				s.UserCache[message.BotID] = bot.Name
 			}
 		} else {
 			// Not a bot, not in cache, get user info
@@ -584,6 +587,20 @@ func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []c
 				StyleText:   s.Config.Theme.Message.Text,
 				FormatTime:  s.Config.Theme.Message.TimeFormat,
 			},
+			)
+		}
+
+		if att.Pretext != "" {
+			msgs = append(
+				msgs,
+				components.Message{
+					Content:     fmt.Sprintf("%s", att.Pretext),
+					StyleTime:   s.Config.Theme.Message.Time,
+					StyleThread: s.Config.Theme.Message.Thread,
+					StyleName:   s.Config.Theme.Message.Name,
+					StyleText:   s.Config.Theme.Message.Text,
+					FormatTime:  s.Config.Theme.Message.TimeFormat,
+				},
 			)
 		}
 
