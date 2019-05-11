@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"html"
 	"log"
 	"regexp"
 	"sort"
@@ -575,12 +576,15 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 // parseMessage will parse a message string and find and replace:
 //	- emoji's
 //	- mentions
+//  - html unescape
 func parseMessage(s *SlackService, msg string) string {
 	if s.Config.Emoji {
 		msg = parseEmoji(msg)
 	}
 
 	msg = parseMentions(s, msg)
+
+	msg = html.UnescapeString(msg)
 
 	return msg
 }
