@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	"github.com/erroneousboat/termui"
@@ -31,9 +32,14 @@ type keyMapping map[string]string
 func NewConfig(filepath string) (*Config, error) {
 	cfg := getDefaultConfig()
 
+	// Open config file, and when none is found or present create
+	// a default empty one, at the filepath location
 	file, err := os.Open(filepath)
 	if err != nil {
-		return &cfg, fmt.Errorf("couldn't find the slack-term config file: %v", err)
+		file, err = CreateConfigFile(filepath)
+		if err != nil {
+			return &cfg, fmt.Errorf("couldn't open the slack-term config file: %v", err)
+		}
 	}
 
 	if err := json.NewDecoder(file).Decode(&cfg); err != nil {
@@ -63,6 +69,21 @@ func NewConfig(filepath string) (*Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+func CreateConfigFile(filepath string) (*os.File, error) {
+	payload := "{\"slack_token\": \"\"}"
+	err := ioutil.WriteFile(filepath, []byte(payload), 0755)
+	if err != nil {
+		return nil, err
+	}
+
+	file, err := os.Open(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	return file, nil
 }
 
 func getDefaultConfig() Config {
