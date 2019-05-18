@@ -44,6 +44,7 @@ var actionMap = map[string]func(*context.AppContext){
 	"channel-bottom":      actionMoveCursorBottomChannels,
 	"channel-search-next": actionSearchNextChannels,
 	"channel-search-prev": actionSearchPrevChannels,
+	"channel-jump":        actionJumpChannels,
 	"chat-up":             actionScrollUpChat,
 	"chat-down":           actionScrollDownChat,
 	"help":                actionHelp,
@@ -403,6 +404,11 @@ func actionSearchNextChannels(ctx *context.AppContext) {
 
 func actionSearchPrevChannels(ctx *context.AppContext) {
 	ctx.View.Channels.SearchPrev()
+	actionChangeChannel(ctx)
+}
+
+func actionJumpChannels(ctx *context.AppContext) {
+	ctx.View.Channels.Jump()
 	actionChangeChannel(ctx)
 }
 

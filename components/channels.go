@@ -321,17 +321,14 @@ func (c *Channels) Search(term string) {
 	}
 
 	if len(c.SearchMatches) > 0 {
-		c.GotoPosition(0)
+		c.GotoPositionSearch(0)
 		c.SearchPosition = 0
 	}
 }
 
-// GotoPosition is used by the search functionality to automatically
-// scroll to a specific location in the channels component
-func (c *Channels) GotoPosition(position int) {
-
-	// The new position
-	newPos := c.SearchMatches[position]
+// GotoPosition is used by to automatically scroll to a specific
+// location in the channels component
+func (c *Channels) GotoPosition(newPos int) {
 
 	// Is the new position in range of the current view?
 	minRange := c.Offset
@@ -358,11 +355,18 @@ func (c *Channels) GotoPosition(position int) {
 	c.CursorPosition = (newPos - c.Offset) + 1
 }
 
+// GotoPosition is used by the search functionality to automatically
+// scroll to a specific location in the channels component
+func (c *Channels) GotoPositionSearch(position int) {
+	newPos := c.SearchMatches[position]
+	c.GotoPosition(newPos)
+}
+
 // SearchNext allows us to cycle through the c.SearchMatches
 func (c *Channels) SearchNext() {
 	newPosition := c.SearchPosition + 1
 	if newPosition <= len(c.SearchMatches)-1 {
-		c.GotoPosition(newPosition)
+		c.GotoPositionSearch(newPosition)
 		c.SearchPosition = newPosition
 	}
 }
@@ -371,7 +375,17 @@ func (c *Channels) SearchNext() {
 func (c *Channels) SearchPrev() {
 	newPosition := c.SearchPosition - 1
 	if newPosition >= 0 {
-		c.GotoPosition(newPosition)
+		c.GotoPositionSearch(newPosition)
 		c.SearchPosition = newPosition
+	}
+}
+
+// Jump to the first channel with a notification
+func (c *Channels) Jump() {
+	for i, channel := range c.ChannelItems {
+		if channel.Notification {
+			c.GotoPosition(i)
+			break
+		}
 	}
 }
