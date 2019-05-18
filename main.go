@@ -108,8 +108,8 @@ func main() {
 		os.Exit(0)
 	}
 
-	// Register handlers
-	handlers.RegisterEventHandlers(ctx)
+	// Initialize handlers
+	handlers.Initialize(ctx)
 
 	termui.Loop()
 }

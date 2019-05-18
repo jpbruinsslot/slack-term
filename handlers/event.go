@@ -49,7 +49,8 @@ var actionMap = map[string]func(*context.AppContext){
 	"help":                actionHelp,
 }
 
-func RegisterEventHandlers(ctx *context.AppContext) {
+// Initialize will start a combination of event handlers and 'background tasks'
+func Initialize(ctx *context.AppContext) {
 
 	// Keyboard events
 	eventHandler(ctx)
