@@ -9,18 +9,10 @@ a fully managed way.
 
 
 
-## Change log
-Support for the EventsAPI has recently been added. It is still in its early stages but nearly all events have been added and tested (except for those events in [Developer Preview](https://api.slack.com/slack-apps-preview) mode). API stability for events is not promised at this time.
 
-### v0.2.0 - Feb 10, 2018
+## Changelog
 
-Release adds a bunch of functionality and improvements, mainly to give people a recent version to vendor against.
-
-Please check [0.2.0](https://github.com/nlopes/slack/releases/tag/v0.2.0)
-
-### CHANGELOG.md
-
- [CHANGELOG.md](https://github.com/nlopes/slack/blob/master/CHANGELOG.md) is available. Please visit it for updates.
+[CHANGELOG.md](https://github.com/nlopes/slack/blob/master/CHANGELOG.md) is available. Please visit it for updates.
 
 ## Installing
 
@@ -43,7 +35,7 @@ func main() {
 	api := slack.New("YOUR_TOKEN_HERE")
 	// If you set debugging, it will log all requests to the console
 	// Useful when encountering issues
-	// api.SetDebug(true)
+	// slack.New("YOUR_TOKEN_HERE", slack.OptionDebug(true))
 	groups, err := api.GetGroups(false)
 	if err != nil {
 		fmt.Printf("%s\n", err)

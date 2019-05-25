@@ -294,14 +294,16 @@ func (s *SlackService) MarkAsRead(channelItem components.ChannelItem) {
 func (s *SlackService) SendMessage(channelID string, message string) error {
 
 	// https://godoc.org/github.com/nlopes/slack#PostMessageParameters
-	postParams := slack.PostMessageParameters{
+	postParams := slack.MsgOptionPostMessageParameters(slack.PostMessageParameters{
 		AsUser:    true,
 		Username:  s.CurrentUsername,
 		LinkNames: 1,
-	}
+	})
+
+	text := slack.MsgOptionText(message, true)
 
 	// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
-	_, _, err := s.Client.PostMessage(channelID, message, postParams)
+	_, _, err := s.Client.PostMessage(channelID, text, postParams)
 	if err != nil {
 		return err
 	}
@@ -314,15 +316,17 @@ func (s *SlackService) SendMessage(channelID string, message string) error {
 // https://api.slack.com/docs/message-threading, 'Posting replies')
 func (s *SlackService) SendReply(channelID string, threadID string, message string) error {
 	// https://godoc.org/github.com/nlopes/slack#PostMessageParameters
-	postParams := slack.PostMessageParameters{
+	postParams := slack.MsgOptionPostMessageParameters(slack.PostMessageParameters{
 		AsUser:          true,
 		Username:        s.CurrentUsername,
 		LinkNames:       1,
 		ThreadTimestamp: threadID,
-	}
+	})
+
+	text := slack.MsgOptionText(message, true)
 
 	// https://godoc.org/github.com/nlopes/slack#Client.PostMessage
-	_, _, err := s.Client.PostMessage(channelID, message, postParams)
+	_, _, err := s.Client.PostMessage(channelID, text, postParams)
 	if err != nil {
 		return err
 	}

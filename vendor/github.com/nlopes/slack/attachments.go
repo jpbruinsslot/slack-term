@@ -17,7 +17,7 @@ type AttachmentAction struct {
 	Name            string                        `json:"name"`                       // Required.
 	Text            string                        `json:"text"`                       // Required.
 	Style           string                        `json:"style,omitempty"`            // Optional. Allowed values: "default", "primary", "danger".
-	Type            string                        `json:"type"`                       // Required. Must be set to "button" or "select".
+	Type            actionType                    `json:"type"`                       // Required. Must be set to "button" or "select".
 	Value           string                        `json:"value,omitempty"`            // Optional.
 	DataSource      string                        `json:"data_source,omitempty"`      // Optional.
 	MinQueryLength  int                           `json:"min_query_length,omitempty"` // Optional. Default value is 1.
@@ -26,6 +26,11 @@ type AttachmentAction struct {
 	OptionGroups    []AttachmentActionOptionGroup `json:"option_groups,omitempty"`    // Optional.
 	Confirm         *ConfirmationField            `json:"confirm,omitempty"`          // Optional.
 	URL             string                        `json:"url,omitempty"`              // Optional.
+}
+
+// actionType returns the type of the action
+func (a AttachmentAction) actionType() actionType {
+	return a.Type
 }
 
 // AttachmentActionOption the individual option to appear in action menu.
@@ -42,25 +47,8 @@ type AttachmentActionOptionGroup struct {
 }
 
 // AttachmentActionCallback is sent from Slack when a user clicks a button in an interactive message (aka AttachmentAction)
-type AttachmentActionCallback struct {
-	Actions    []AttachmentAction `json:"actions"`
-	CallbackID string             `json:"callback_id"`
-	Team       Team               `json:"team"`
-	Channel    Channel            `json:"channel"`
-	User       User               `json:"user"`
-
-	Name  string `json:"name"`
-	Value string `json:"value"`
-
-	OriginalMessage Message `json:"original_message"`
-
-	ActionTs     string `json:"action_ts"`
-	MessageTs    string `json:"message_ts"`
-	AttachmentID string `json:"attachment_id"`
-	Token        string `json:"token"`
-	ResponseURL  string `json:"response_url"`
-	TriggerID    string `json:"trigger_id"`
-}
+// DEPRECATED: use InteractionCallback
+type AttachmentActionCallback InteractionCallback
 
 // ConfirmationField are used to ask users to confirm actions
 type ConfirmationField struct {
