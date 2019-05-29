@@ -19,7 +19,7 @@ type Chat struct {
 	Offset   int
 }
 
-// CreateChat is the constructor for the Chat struct
+// CreateChatComponent is the constructor for the Chat struct
 func CreateChatComponent(inputHeight int) *Chat {
 	chat := &Chat{
 		List:     termui.NewList(),
@@ -307,21 +307,25 @@ func (c *Chat) MessageToCells(msg Message) []termui.Cell {
 
 // Help shows the usage and key bindings in the chat pane
 func (c *Chat) Help(usage string, cfg *config.Config) {
-	help := []Message{
-		Message{
-			Content: usage,
-		},
+	msgUsage := Message{
+		ID:      fmt.Sprintf("%d", time.Now().UnixNano()),
+		Content: usage,
 	}
 
-	for mode, mapping := range cfg.KeyMap {
-		help = append(
-			help,
-			Message{
-				Content: fmt.Sprintf("%s", strings.ToUpper(mode)),
-			},
-		)
+	c.Messages[msgUsage.ID] = msgUsage
 
-		help = append(help, Message{Content: ""})
+	for mode, mapping := range cfg.KeyMap {
+		msgMode := Message{
+			ID:      fmt.Sprintf("%d", time.Now().UnixNano()),
+			Content: fmt.Sprintf("%s", strings.ToUpper(mode)),
+		}
+		c.Messages[msgMode.ID] = msgMode
+
+		msgNewline := Message{
+			ID:      fmt.Sprintf("%d", time.Now().UnixNano()),
+			Content: "",
+		}
+		c.Messages[msgNewline.ID] = msgNewline
 
 		var keys []string
 		for k := range mapping {
@@ -330,18 +334,14 @@ func (c *Chat) Help(usage string, cfg *config.Config) {
 		sort.Strings(keys)
 
 		for _, k := range keys {
-			help = append(
-				help,
-				Message{
-					Content: fmt.Sprintf("    %-12s%-15s", k, mapping[k]),
-				},
-			)
+			msgKey := Message{
+				ID:      fmt.Sprintf("%d", time.Now().UnixNano()),
+				Content: fmt.Sprintf("    %-12s%-15s", k, mapping[k]),
+			}
+			c.Messages[msgKey.ID] = msgKey
 		}
 
-		help = append(help, Message{Content: ""})
-	}
-
-	for _, msg := range help {
-		c.Messages[msg.ID] = msg
+		msgNewline.ID = fmt.Sprintf("%d", time.Now().UnixNano())
+		c.Messages[msgNewline.ID] = msgNewline
 	}
 }
