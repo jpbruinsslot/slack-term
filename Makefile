@@ -43,19 +43,16 @@ dev: build
 # Location of the source files
 build:
 	@ echo "+ $@"
-	@ go mod vendor
 	@ CGO_ENABLED=0 go build -mod=vendor -a -installsuffix cgo -o ./bin/slack-term .
 
 # Cross-compile
 # http://dave.cheney.net/2015/08/22/cross-compilation-with-go-1-5
 build-linux:
 	@ echo "+ $@"
-	@ go mod vendor
 	@ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -mod=vendor -a -installsuffix cgo -o ./bin/slack-term-linux-amd64 .
 
 build-mac:
 	@ echo "+ $@"
-	@ go mod vendor
 	@ GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -mod=vendor -a -installsuffix cgo -o ./bin/slack-term-darwin-amd64 .
 
 run: build
