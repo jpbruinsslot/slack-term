@@ -185,8 +185,14 @@ func (c *Chat) AddMessage(message Message) {
 // AddReply adds a single reply to a parent thread, it also sets
 // the thread separator
 func (c *Chat) AddReply(parentID string, message Message) {
-	message.Thread = "  "
-	c.Messages[parentID].Messages[message.ID] = message
+	// It is possible that a message is received but the parent is not
+	// present in the chat view
+	if _, ok := c.Messages[parentID]; ok {
+		message.Thread = "  "
+		c.Messages[parentID].Messages[message.ID] = message
+	} else {
+		c.AddMessage(message)
+	}
 }
 
 // ClearMessages clear the c.Messages
