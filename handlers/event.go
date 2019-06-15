@@ -135,6 +135,8 @@ func messageHandler(ctx *context.AppContext) {
 						// When timestamp isn't set this is a thread reply,
 						// handle as such
 						if ev.ThreadTimestamp != "" {
+							// FIXME: render in correctly, this will cause
+							// panic
 							ctx.View.Chat.AddReply(ev.ThreadTimestamp, msg)
 						} else {
 							ctx.View.Chat.AddMessage(msg)
@@ -203,6 +205,71 @@ func actionResizeEvent(ctx *context.AppContext, ev termbox.Event) {
 	ctx.View.Chat.List.Height = termui.TermHeight() - ctx.View.Input.Par.Height
 	ctx.View.Debug.List.Height = termui.TermHeight() - ctx.View.Input.Par.Height
 
+	termui.Body.Align()
+	termui.Render(termui.Body)
+}
+
+func actionRedrawGrid(ctx *context.AppContext, threads bool, debug bool) {
+	termui.Clear()
+	termui.Body = termui.NewGrid()
+	termui.Body.X = 0
+	termui.Body.Y = 0
+	termui.Body.BgColor = termui.ThemeAttr("bg")
+	termui.Body.Width = termui.TermWidth()
+
+	columns := []*termui.Row{
+		termui.NewCol(ctx.Config.SidebarWidth, 0, ctx.View.Channels),
+	}
+
+	if threads && debug {
+		ctx.View.Debug.Println(
+			"threads && debug",
+		)
+
+		columns = append(
+			columns,
+			[]*termui.Row{
+				termui.NewCol(ctx.Config.MainWidth-ctx.Config.ThreadsWidth-3, 0, ctx.View.Chat),
+				termui.NewCol(ctx.Config.ThreadsWidth, 0, ctx.View.Threads),
+				termui.NewCol(3, 0, ctx.View.Debug),
+			}...,
+		)
+
+	} else if threads {
+		ctx.View.Debug.Println(
+			"threads",
+		)
+
+		columns = append(
+			columns,
+			[]*termui.Row{
+				termui.NewCol(ctx.Config.MainWidth-ctx.Config.ThreadsWidth, 0, ctx.View.Chat),
+				termui.NewCol(ctx.Config.ThreadsWidth, 0, ctx.View.Threads),
+			}...,
+		)
+	} else if debug {
+		ctx.View.Debug.Println(
+			"debug",
+		)
+		columns = append(
+			columns,
+			[]*termui.Row{
+				termui.NewCol(ctx.Config.MainWidth-5, 0, ctx.View.Chat),
+				termui.NewCol(ctx.Config.MainWidth-6, 0, ctx.View.Debug),
+			}...,
+		)
+	}
+
+	termui.Body.AddRows(
+		termui.NewRow(columns...),
+		termui.NewRow(
+			termui.NewCol(ctx.Config.SidebarWidth, 0, ctx.View.Mode),
+			termui.NewCol(ctx.Config.MainWidth, 0, ctx.View.Input),
+		),
+	)
+
+	// ctx.Body.Align()
+	// termui.Render(ctx.Body)
 	termui.Body.Align()
 	termui.Render(termui.Body)
 }
@@ -438,9 +505,6 @@ func actionChangeChannel(ctx *context.AppContext) {
 		ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].GetChannelName(),
 	)
 
-	// Set threads
-	ctx.View.Threads.SetChannels(threads)
-
 	// Clear notification icon if there is any
 	channelItem := ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel]
 	if channelItem.Notification {
@@ -448,9 +512,18 @@ func actionChangeChannel(ctx *context.AppContext) {
 		ctx.View.Channels.MarkAsRead(ctx.View.Channels.SelectedChannel)
 	}
 
-	termui.Render(ctx.View.Channels)
-	termui.Render(ctx.View.Threads)
-	termui.Render(ctx.View.Chat)
+	// Set threads
+	if len(threads) > 0 {
+		ctx.View.Threads.SetChannels(threads)
+		actionRedrawGrid(ctx, true, ctx.Debug)
+	} else {
+		actionRedrawGrid(ctx, false, ctx.Debug)
+	}
+
+	// termui.Render(ctx.View.Debug)
+	// termui.Render(ctx.View.Channels)
+	// termui.Render(ctx.View.Threads)
+	// termui.Render(ctx.View.Chat)
 }
 
 func actionChangeThread(ctx *context.AppContext) {
@@ -459,6 +532,7 @@ func actionChangeThread(ctx *context.AppContext) {
 
 	// TODO: err
 	// TODO: change function name to match GetMessages
+	// TODO: get initial parent message
 	msgs := ctx.Service.CreateMessageFromReplies(
 		ctx.View.Threads.ChannelItems[ctx.View.Threads.SelectedChannel].ID,
 		ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
