@@ -220,10 +220,6 @@ func actionRedrawGrid(ctx *context.AppContext, threads bool, debug bool) {
 	}
 
 	if threads && debug {
-		ctx.View.Debug.Println(
-			"threads && debug",
-		)
-
 		columns = append(
 			columns,
 			[]*termui.Row{
@@ -234,10 +230,6 @@ func actionRedrawGrid(ctx *context.AppContext, threads bool, debug bool) {
 		)
 
 	} else if threads {
-		ctx.View.Debug.Println(
-			"threads",
-		)
-
 		columns = append(
 			columns,
 			[]*termui.Row{
@@ -246,9 +238,6 @@ func actionRedrawGrid(ctx *context.AppContext, threads bool, debug bool) {
 			}...,
 		)
 	} else if debug {
-		ctx.View.Debug.Println(
-			"debug",
-		)
 		columns = append(
 			columns,
 			[]*termui.Row{
@@ -266,8 +255,6 @@ func actionRedrawGrid(ctx *context.AppContext, threads bool, debug bool) {
 		),
 	)
 
-	// ctx.Body.Align()
-	// termui.Render(ctx.Body)
 	termui.Body.Align()
 	termui.Render(termui.Body)
 }
