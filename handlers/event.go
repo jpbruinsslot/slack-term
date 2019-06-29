@@ -245,6 +245,13 @@ func actionRedrawGrid(ctx *context.AppContext, threads bool, debug bool) {
 				termui.NewCol(ctx.Config.MainWidth-6, 0, ctx.View.Debug),
 			}...,
 		)
+	} else {
+		columns = append(
+			columns,
+			[]*termui.Row{
+				termui.NewCol(ctx.Config.MainWidth, 0, ctx.View.Chat),
+			}...,
+		)
 	}
 
 	termui.Body.AddRows(

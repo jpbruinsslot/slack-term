@@ -106,7 +106,7 @@ func CreateAppContext(flgConfig string, flgToken string, flgDebug bool, version 
 		termui.Body.AddRows(
 			termui.NewRow(
 				termui.NewCol(config.SidebarWidth, 0, view.Channels),
-				termui.NewCol(config.MainWidth-1, 0, view.Chat),
+				termui.NewCol(config.MainWidth, 0, view.Chat),
 			),
 			termui.NewRow(
 				termui.NewCol(config.SidebarWidth, 0, view.Mode),
