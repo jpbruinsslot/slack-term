@@ -135,8 +135,6 @@ func messageHandler(ctx *context.AppContext) {
 						// When timestamp isn't set this is a thread reply,
 						// handle as such
 						if ev.ThreadTimestamp != "" {
-							// FIXME: render in correctly, this will cause
-							// panic
 							ctx.View.Chat.AddReply(ev.ThreadTimestamp, msg)
 						} else {
 							ctx.View.Chat.AddMessage(msg)
@@ -334,14 +332,30 @@ func actionSend(ctx *context.AppContext) {
 
 		// Send message
 		if !isCmd {
-			err := ctx.Service.SendMessage(
-				ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
-				message,
-			)
-			if err != nil {
-				ctx.View.Debug.Println(
-					err.Error(),
+			if ctx.Focus == context.ChatFocus {
+				err := ctx.Service.SendMessage(
+					ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
+					message,
 				)
+				if err != nil {
+					ctx.View.Debug.Println(
+						err.Error(),
+					)
+				}
+
+			}
+
+			if ctx.Focus == context.ThreadFocus {
+				err := ctx.Service.SendReply(
+					ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
+					ctx.View.Threads.ChannelItems[ctx.View.Threads.SelectedChannel].ID,
+					message,
+				)
+				if err != nil {
+					ctx.View.Debug.Println(
+						err.Error(),
+					)
+				}
 			}
 		}
 
@@ -500,6 +514,13 @@ func actionChangeChannel(ctx *context.AppContext) {
 	// Set messages for the channel
 	ctx.View.Chat.SetMessages(msgs)
 
+	// Set the threads identifiers in the threads pane
+	var haveThreads bool
+	if len(threads) > 0 {
+		haveThreads = true
+		ctx.View.Threads.SetChannels(threads)
+	}
+
 	// Set channel name for the Chat pane
 	ctx.View.Chat.SetBorderLabel(
 		ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].GetChannelName(),
@@ -512,18 +533,11 @@ func actionChangeChannel(ctx *context.AppContext) {
 		ctx.View.Channels.MarkAsRead(ctx.View.Channels.SelectedChannel)
 	}
 
-	// Set threads
-	if len(threads) > 0 {
-		ctx.View.Threads.SetChannels(threads)
-		actionRedrawGrid(ctx, true, ctx.Debug)
-	} else {
-		actionRedrawGrid(ctx, false, ctx.Debug)
-	}
+	// Redraw grid, necessary when threads and/or debug is set
+	actionRedrawGrid(ctx, haveThreads, ctx.Debug)
 
-	// termui.Render(ctx.View.Debug)
-	// termui.Render(ctx.View.Channels)
-	// termui.Render(ctx.View.Threads)
-	// termui.Render(ctx.View.Chat)
+	// Set focus, necessary to know when replying to thread or chat
+	ctx.Focus = context.ChatFocus
 }
 
 func actionChangeThread(ctx *context.AppContext) {
@@ -531,9 +545,7 @@ func actionChangeThread(ctx *context.AppContext) {
 	ctx.View.Chat.ClearMessages()
 
 	// TODO: err
-	// TODO: change function name to match GetMessages
-	// TODO: get initial parent message
-	msgs := ctx.Service.CreateMessageFromReplies(
+	msgs, _ := ctx.Service.GetMessageByID(
 		ctx.View.Threads.ChannelItems[ctx.View.Threads.SelectedChannel].ID,
 		ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
 	)
@@ -541,12 +553,14 @@ func actionChangeThread(ctx *context.AppContext) {
 	// Set messages for the channel
 	ctx.View.Chat.SetMessages(msgs)
 
+	// Set focus, necessary to know when replying to thread or chat
+	ctx.Focus = context.ThreadFocus
+
 	termui.Render(ctx.View.Channels)
 	termui.Render(ctx.View.Threads)
 	termui.Render(ctx.View.Chat)
 }
 
-// TODO
 func actionMoveCursorUpThreads(ctx *context.AppContext) {
 	go func() {
 		if scrollTimer != nil {
@@ -562,10 +576,8 @@ func actionMoveCursorUpThreads(ctx *context.AppContext) {
 		// Only actually change channel when the timer expires
 		actionChangeThread(ctx)
 	}()
-
 }
 
-// TODO
 func actionMoveCursorDownThreads(ctx *context.AppContext) {
 	go func() {
 		if scrollTimer != nil {
@@ -581,7 +593,6 @@ func actionMoveCursorDownThreads(ctx *context.AppContext) {
 		// Only actually change thread when the timer expires
 		actionChangeThread(ctx)
 	}()
-
 }
 
 // actionNewMessage will set the new message indicator for a channel, and

@@ -406,7 +406,8 @@ func (s *SlackService) SendCommand(channelID string, message string) (bool, erro
 }
 
 // GetMessages will get messages for a channel, group or im channel delimited
-// by a count.
+// by a count. It will return the messages, the thread identifiers
+// (as ChannelItem), and and error.
 func (s *SlackService) GetMessages(channelID string, count int) ([]components.Message, []components.ChannelItem, error) {
 
 	// https://godoc.org/github.com/nlopes/slack#GetConversationHistoryParameters
@@ -430,7 +431,6 @@ func (s *SlackService) GetMessages(channelID string, count int) ([]components.Me
 
 		// FIXME: create boolean isThread
 		if msg.Thread != "" {
-
 			threads = append(threads, components.ChannelItem{
 				ID:          msg.ID,
 				Name:        msg.Thread,
@@ -450,6 +450,37 @@ func (s *SlackService) GetMessages(channelID string, count int) ([]components.Me
 	}
 
 	return messagesReversed, threads, nil
+}
+
+// CreateMessageByID will construct an array of components.Message with only
+// 1 message, using the message ID (Timestamp).
+//
+// For the choice of history parameters see:
+// https://api.slack.com/messaging/retrieving
+func (s *SlackService) GetMessageByID(messageID string, channelID string) ([]components.Message, error) {
+
+	var msgs []components.Message
+
+	// https://godoc.org/github.com/nlopes/slack#GetConversationHistoryParameters
+	historyParams := slack.GetConversationHistoryParameters{
+		ChannelID: channelID,
+		Limit:     1,
+		Inclusive: true,
+		Latest:    messageID,
+	}
+
+	history, err := s.Client.GetConversationHistory(&historyParams)
+	if err != nil {
+		return msgs, err
+	}
+
+	// We break because we're only asking for 1 message
+	for _, message := range history.Messages {
+		msgs = append(msgs, s.CreateMessage(message, channelID))
+		break
+	}
+
+	return msgs, nil
 }
 
 // CreateMessage will create a string formatted message that can be rendered

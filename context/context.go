@@ -19,6 +19,9 @@ const (
 	CommandMode = "command"
 	InsertMode  = "insert"
 	SearchMode  = "search"
+
+	ChatFocus = iota
+	ThreadFocus
 )
 
 type AppContext struct {
@@ -31,6 +34,7 @@ type AppContext struct {
 	Config     *config.Config
 	Debug      bool
 	Mode       string
+	Focus      int
 	Notify     *notificator.Notificator
 }
 
