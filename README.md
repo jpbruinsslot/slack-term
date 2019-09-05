@@ -32,12 +32,14 @@ $ go install .
 Setup
 -----
 
-1. Get a slack token, click [here](https://api.slack.com/docs/oauth-test-tokens) 
+1. Get a slack token, click [here](https://api.slack.com/docs/oauth-test-tokens)
 
-2. Create a `.slack-term` file, and place it in your home directory. Below is
-   an example of such a file. You are only required to specify a
-   `slack_token`. For more configuration options of the `.slack-term` file,
-   see the [wiki](https://github.com/erroneousboat/slack-term/wiki).
+2. Create a file named `config` in the `$XDG_CONFIG_HOME/slack-term` directory
+   (the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)
+   specifies `$HOME/.config/` if you do not have `$XDG_CONFIG_HOME` explicitly
+   set). Below is an example of such a file. You are only required to specify a
+   `slack_token`. For more configuration options of the `config` file, see
+   the [wiki](https://github.com/erroneousboat/slack-term/wiki).
 
 ```javascript
 {
@@ -49,7 +51,7 @@ Usage
 -----
 
 When everything is setup correctly you can run `slack-term` with the following
-command: 
+command:
 
 ```bash
 $ slack-term
@@ -59,7 +61,7 @@ Default Key Mapping
 -------------------
 
 Below are the default key-mappings for `slack-term`, you can change them
-in your `.slack-term` file.
+in your `config` file.
 
 | mode    | key       | action                     |
 |---------|-----------|----------------------------|

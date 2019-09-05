@@ -1,5 +1,7 @@
 github.com/0xAX/notificator v0.0.0-20171022182052-88d57ee9043b h1:Sn+u6zpXFyfm2X7ruh+z6SJiUVyFg8YElh6HIOhrRCA=
 github.com/0xAX/notificator v0.0.0-20171022182052-88d57ee9043b/go.mod h1:NtXa9WwQsukMHZpjNakTTz0LArxvGYdPA9CjIcUSZ6s=
+github.com/OpenPeeDeeP/xdg v0.2.0 h1:xr89rnllbkRkM7SV9Y++FJ8TGkbdkhhBQm5kOkGT7AE=
+github.com/OpenPeeDeeP/xdg v0.2.0/go.mod h1:tMoSueLQlMf0TCldjrJLNIjAc5qAOIcHt5REi88/Ygo=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/erroneousboat/termui v0.0.0-20170923115141-80f245cdfa04 h1:DaFwoQC0Neeb2y2CVFxDPrS1BeyWAkKc4VVBDTZ0N98=
@@ -24,5 +26,6 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/renstrom/fuzzysearch v1.0.1 h1:hnh2Fhqqa5I41Xgmm7UMAYgEIRn/iZwWItfwUHr1IWE=
 github.com/renstrom/fuzzysearch v1.0.1/go.mod h1:SAEjPB4voP88qmWJXI7mA5m15uNlEnuHLx4Eu2mPGpQ=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
+github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=

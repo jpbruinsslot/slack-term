@@ -8,6 +8,7 @@ import (
 	"os/user"
 	"path"
 
+	"github.com/OpenPeeDeeP/xdg"
 	"github.com/erroneousboat/termui"
 	termbox "github.com/nsf/termbox-go"
 
@@ -16,7 +17,7 @@ import (
 )
 
 const (
-	VERSION = "v0.4.1"
+	VERSION = "v0.4.2"
 	USAGE   = `NAME:
     slack-term - slack client for your terminal
 
@@ -51,11 +52,19 @@ func init() {
 		log.Fatal(err)
 	}
 
+	// Find the default config file
+	xdg := xdg.New("slack-term", "")
+	configFile := xdg.QueryConfig("config")
+	if configFile == "" {
+		// Fall back to $HOME/.slack_term for legacy compatibility
+		configFile = path.Join(usr.HomeDir, ".slack-term")
+	}
+
 	// Parse flags
 	flag.StringVar(
 		&flgConfig,
 		"config",
-		path.Join(usr.HomeDir, ".slack-term"),
+		configFile,
 		"location of config file",
 	)
 
