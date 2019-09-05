@@ -28,4 +28,4 @@ ENV USER root
 COPY --from=builder /usr/bin/slack-term /usr/bin/slack-term
 COPY --from=builder /etc/ssl/certs/ /etc/ssl/certs
 
-ENTRYPOINT stty cols 25 && slack-term -config .slack-term
+ENTRYPOINT stty cols 25 && slack-term -config ~/.config/slack-term/config
