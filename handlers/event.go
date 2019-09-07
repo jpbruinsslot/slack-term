@@ -527,8 +527,19 @@ func actionChangeChannel(ctx *context.AppContext) {
 		ctx.View.Channels.MarkAsRead(ctx.View.Channels.SelectedChannel)
 	}
 
-	// Redraw grid, necessary when threads and/or debug is set
-	actionRedrawGrid(ctx, haveThreads, ctx.Debug)
+	// Redraw grid, necessary when threads and/or debug is set. We will redraw
+	// the grid when there are threads, or we just came from a thread and went
+	// to a channel without threads. Hence the clearing of ChannelItems of
+	// Threads.
+	if haveThreads {
+		actionRedrawGrid(ctx, haveThreads, ctx.Debug)
+	} else if !haveThreads && len(ctx.View.Threads.ChannelItems) > 0 {
+		ctx.View.Threads.SetChannels([]components.ChannelItem{})
+		actionRedrawGrid(ctx, haveThreads, ctx.Debug)
+	} else {
+		termui.Render(ctx.View.Channels)
+		termui.Render(ctx.View.Chat)
+	}
 
 	// Set focus, necessary to know when replying to thread or chat
 	ctx.Focus = context.ChatFocus
