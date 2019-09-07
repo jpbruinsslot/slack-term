@@ -620,7 +620,7 @@ func actionMoveCursorDownThreads(ctx *context.AppContext) {
 		}
 
 		ctx.View.Threads.MoveCursorDown()
-		termui.Render(ctx.View.Channels)
+		termui.Render(ctx.View.Threads)
 
 		scrollTimer = time.NewTimer(time.Second / 4)
 		<-scrollTimer.C
