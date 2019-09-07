@@ -512,7 +512,14 @@ func actionChangeChannel(ctx *context.AppContext) {
 	var haveThreads bool
 	if len(threads) > 0 {
 		haveThreads = true
-		ctx.View.Threads.SetChannels(threads)
+
+		// Make the first thread the current Channel
+		ctx.View.Threads.SetChannels(
+			append(
+				[]components.ChannelItem{ctx.View.Channels.GetSelectedChannel()},
+				threads...,
+			),
+		)
 	}
 
 	// Set channel name for the Chat pane
@@ -549,17 +556,40 @@ func actionChangeThread(ctx *context.AppContext) {
 	// Clear messages from Chat pane
 	ctx.View.Chat.ClearMessages()
 
-	// TODO: err
-	msgs, _ := ctx.Service.GetMessageByID(
-		ctx.View.Threads.ChannelItems[ctx.View.Threads.SelectedChannel].ID,
-		ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
-	)
+	// The first channel in the Thread list is current Channel. Set context
+	// Focus and messages accordingly.
+	var err error
+	msgs := []components.Message{}
+	if ctx.View.Threads.SelectedChannel == 0 {
+		ctx.Focus = context.ChatFocus
+
+		msgs, _, err = ctx.Service.GetMessages(
+			ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
+			ctx.View.Chat.GetMaxItems(),
+		)
+		if err != nil {
+			termbox.Close()
+			log.Println(err)
+			os.Exit(0)
+		}
+	} else {
+		ctx.Focus = context.ThreadFocus
+
+		msgs, err = ctx.Service.GetMessageByID(
+			ctx.View.Threads.ChannelItems[ctx.View.Threads.SelectedChannel].ID,
+			ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
+		)
+		if err != nil {
+			termbox.Close()
+			log.Println(err)
+			os.Exit(0)
+		}
+	}
 
 	// Set messages for the channel
 	ctx.View.Chat.SetMessages(msgs)
 
 	// Set focus, necessary to know when replying to thread or chat
-	ctx.Focus = context.ThreadFocus
 
 	termui.Render(ctx.View.Channels)
 	termui.Render(ctx.View.Threads)
