@@ -520,6 +520,9 @@ func actionChangeChannel(ctx *context.AppContext) {
 				threads...,
 			),
 		)
+
+		// Reset position of SelectedChannel
+		ctx.View.Threads.MoveCursorTop()
 	}
 
 	// Set channel name for the Chat pane
