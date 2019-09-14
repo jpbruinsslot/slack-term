@@ -310,7 +310,6 @@ func actionSend(ctx *context.AppContext) {
 		// quick succession of actionSend
 		message := ctx.View.Input.GetText()
 		ctx.View.Input.Clear()
-		ctx.View.Refresh()
 
 		// Send slash command
 		isCmd, err := ctx.Service.SendCommand(
