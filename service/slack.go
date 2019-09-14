@@ -406,8 +406,9 @@ func (s *SlackService) SendCommand(channelID string, message string) (bool, erro
 }
 
 // GetMessages will get messages for a channel, group or im channel delimited
-// by a count.
-func (s *SlackService) GetMessages(channelID string, count int) ([]components.Message, error) {
+// by a count. It will return the messages, the thread identifiers
+// (as ChannelItem), and and error.
+func (s *SlackService) GetMessages(channelID string, count int) ([]components.Message, []components.ChannelItem, error) {
 
 	// https://godoc.org/github.com/nlopes/slack#GetConversationHistoryParameters
 	historyParams := slack.GetConversationHistoryParameters{
@@ -418,14 +419,27 @@ func (s *SlackService) GetMessages(channelID string, count int) ([]components.Me
 
 	history, err := s.Client.GetConversationHistory(&historyParams)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Construct the messages
 	var messages []components.Message
+	var threads []components.ChannelItem
 	for _, message := range history.Messages {
 		msg := s.CreateMessage(message, channelID)
 		messages = append(messages, msg)
+
+		// FIXME: create boolean isThread
+		if msg.Thread != "" {
+			threads = append(threads, components.ChannelItem{
+				ID:          msg.ID,
+				Name:        msg.Thread,
+				Type:        components.ChannelTypeGroup,
+				StylePrefix: s.Config.Theme.Channel.Prefix,
+				StyleIcon:   s.Config.Theme.Channel.Icon,
+				StyleText:   s.Config.Theme.Channel.Text,
+			})
+		}
 	}
 
 	// Reverse the order of the messages, we want the newest in
@@ -435,7 +449,38 @@ func (s *SlackService) GetMessages(channelID string, count int) ([]components.Me
 		messagesReversed = append(messagesReversed, messages[i])
 	}
 
-	return messagesReversed, nil
+	return messagesReversed, threads, nil
+}
+
+// CreateMessageByID will construct an array of components.Message with only
+// 1 message, using the message ID (Timestamp).
+//
+// For the choice of history parameters see:
+// https://api.slack.com/messaging/retrieving
+func (s *SlackService) GetMessageByID(messageID string, channelID string) ([]components.Message, error) {
+
+	var msgs []components.Message
+
+	// https://godoc.org/github.com/nlopes/slack#GetConversationHistoryParameters
+	historyParams := slack.GetConversationHistoryParameters{
+		ChannelID: channelID,
+		Limit:     1,
+		Inclusive: true,
+		Latest:    messageID,
+	}
+
+	history, err := s.Client.GetConversationHistory(&historyParams)
+	if err != nil {
+		return msgs, err
+	}
+
+	// We break because we're only asking for 1 message
+	for _, message := range history.Messages {
+		msgs = append(msgs, s.CreateMessage(message, channelID))
+		break
+	}
+
+	return msgs, nil
 }
 
 // CreateMessage will create a string formatted message that can be rendered
@@ -545,7 +590,7 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 		msg.Thread = fmt.Sprintf("%s ", threadID)
 
 		// Create the message replies from the thread
-		replies := s.CreateMessageFromReplies(message, channelID)
+		replies := s.CreateMessageFromReplies(message.ThreadTimestamp, channelID)
 		for _, reply := range replies {
 			msg.Messages[reply.ID] = reply
 		}
@@ -563,13 +608,13 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 // https://api.slack.com/methods/conversations.replies
 // https://godoc.org/github.com/nlopes/slack#Client.GetConversationReplies
 // https://godoc.org/github.com/nlopes/slack#GetConversationRepliesParameters
-func (s *SlackService) CreateMessageFromReplies(message slack.Message, channelID string) []components.Message {
+func (s *SlackService) CreateMessageFromReplies(messageID string, channelID string) []components.Message {
 	msgs := make([]slack.Message, 0)
 
 	initReplies, _, initCur, err := s.Client.GetConversationReplies(
 		&slack.GetConversationRepliesParameters{
 			ChannelID: channelID,
-			Timestamp: message.ThreadTimestamp,
+			Timestamp: messageID,
 			Limit:     200,
 		},
 	)
@@ -583,7 +628,7 @@ func (s *SlackService) CreateMessageFromReplies(message slack.Message, channelID
 	for nextCur != "" {
 		conversationReplies, _, cursor, err := s.Client.GetConversationReplies(&slack.GetConversationRepliesParameters{
 			ChannelID: channelID,
-			Timestamp: message.ThreadTimestamp,
+			Timestamp: messageID,
 			Cursor:    nextCur,
 			Limit:     200,
 		})

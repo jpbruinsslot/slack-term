@@ -22,6 +22,7 @@ type Config struct {
 	Emoji        bool                  `json:"emoji"`
 	SidebarWidth int                   `json:"sidebar_width"`
 	MainWidth    int                   `json:"-"`
+	ThreadsWidth int                   `json:"threads_width"`
 	KeyMap       map[string]keyMapping `json:"key_map"`
 	Theme        Theme                 `json:"theme"`
 }
@@ -90,6 +91,7 @@ func getDefaultConfig() Config {
 	return Config{
 		SidebarWidth: 1,
 		MainWidth:    11,
+		ThreadsWidth: 1,
 		Notify:       "",
 		Emoji:        false,
 		KeyMap: map[string]keyMapping{
@@ -100,6 +102,8 @@ func getDefaultConfig() Config {
 				"j":          "channel-down",
 				"g":          "channel-top",
 				"G":          "channel-bottom",
+				"K":          "thread-up",
+				"J":          "thread-down",
 				"<previous>": "chat-up",
 				"C-b":        "chat-up",
 				"C-u":        "chat-up",
