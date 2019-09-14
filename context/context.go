@@ -89,31 +89,57 @@ func CreateAppContext(flgConfig string, flgToken string, flgDebug bool, version 
 		return nil, err
 	}
 
+	columns := []*termui.Row{
+		termui.NewCol(config.SidebarWidth, 0, view.Channels),
+	}
+
+	threads := false
+	if len(view.Threads.ChannelItems) > 0 {
+		threads = true
+	}
+
 	// Setup the interface
-	if flgDebug {
-		termui.Body.AddRows(
-			termui.NewRow(
-				termui.NewCol(config.SidebarWidth, 0, view.Channels),
+	if threads && flgDebug {
+		columns = append(
+			columns,
+			[]*termui.Row{
+				termui.NewCol(config.MainWidth-config.ThreadsWidth-3, 0, view.Chat),
+				termui.NewCol(config.ThreadsWidth, 0, view.Threads),
+				termui.NewCol(3, 0, view.Debug),
+			}...,
+		)
+	} else if threads {
+		columns = append(
+			columns,
+			[]*termui.Row{
+				termui.NewCol(config.MainWidth-config.ThreadsWidth, 0, view.Chat),
+				termui.NewCol(config.ThreadsWidth, 0, view.Threads),
+			}...,
+		)
+	} else if flgDebug {
+		columns = append(
+			columns,
+			[]*termui.Row{
 				termui.NewCol(config.MainWidth-5, 0, view.Chat),
 				termui.NewCol(config.MainWidth-6, 0, view.Debug),
-			),
-			termui.NewRow(
-				termui.NewCol(config.SidebarWidth, 0, view.Mode),
-				termui.NewCol(config.MainWidth, 0, view.Input),
-			),
+			}...,
 		)
 	} else {
-		termui.Body.AddRows(
-			termui.NewRow(
-				termui.NewCol(config.SidebarWidth, 0, view.Channels),
+		columns = append(
+			columns,
+			[]*termui.Row{
 				termui.NewCol(config.MainWidth, 0, view.Chat),
-			),
-			termui.NewRow(
-				termui.NewCol(config.SidebarWidth, 0, view.Mode),
-				termui.NewCol(config.MainWidth, 0, view.Input),
-			),
+			}...,
 		)
 	}
+
+	termui.Body.AddRows(
+		termui.NewRow(columns...),
+		termui.NewRow(
+			termui.NewCol(config.SidebarWidth, 0, view.Mode),
+			termui.NewCol(config.MainWidth, 0, view.Input),
+		),
+	)
 
 	termui.Body.Align()
 	termui.Render(termui.Body)
@@ -128,6 +154,7 @@ func CreateAppContext(flgConfig string, flgToken string, flgDebug bool, version 
 		Config:     config,
 		Debug:      flgDebug,
 		Mode:       CommandMode,
+		Focus:      ChatFocus,
 		Notify:     notify,
 	}, nil
 }

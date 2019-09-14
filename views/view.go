@@ -58,7 +58,16 @@ func CreateView(config *config.Config, svc *service.SlackService) (*View, error)
 	)
 
 	// Threads: set threads in component
-	threads.SetChannels(thr)
+	if len(thr) > 0 {
+
+		// Make the first thread the current Channel
+		threads.SetChannels(
+			append(
+				[]components.ChannelItem{channels.GetSelectedChannel()},
+				thr...,
+			),
+		)
+	}
 
 	// Debug: create the component
 	debug := components.CreateDebugComponent(input.Par.Height)

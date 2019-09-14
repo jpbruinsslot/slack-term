@@ -228,7 +228,6 @@ func actionRedrawGrid(ctx *context.AppContext, threads bool, debug bool) {
 				termui.NewCol(3, 0, ctx.View.Debug),
 			}...,
 		)
-
 	} else if threads {
 		columns = append(
 			columns,
@@ -547,6 +546,7 @@ func actionChangeChannel(ctx *context.AppContext) {
 		ctx.View.Threads.SetChannels([]components.ChannelItem{})
 		actionRedrawGrid(ctx, haveThreads, ctx.Debug)
 	} else {
+		termui.Render(ctx.View.Threads)
 		termui.Render(ctx.View.Channels)
 		termui.Render(ctx.View.Chat)
 	}
@@ -591,8 +591,6 @@ func actionChangeThread(ctx *context.AppContext) {
 
 	// Set messages for the channel
 	ctx.View.Chat.SetMessages(msgs)
-
-	// Set focus, necessary to know when replying to thread or chat
 
 	termui.Render(ctx.View.Channels)
 	termui.Render(ctx.View.Threads)
