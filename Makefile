@@ -63,6 +63,11 @@ install:
 	@ echo "+ $@"
 	@ go install .
 
+modules:
+	@ echo "+ $@"
+	@ go mod tidy
+	@ go mod vendor
+
 build-all: build build-linux build-mac
 
 .PHONY: default test build build-linux build-mac run install
