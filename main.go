@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/user"
-	"path"
 
 	"github.com/OpenPeeDeeP/xdg"
 	"github.com/erroneousboat/termui"
@@ -46,19 +44,9 @@ var (
 )
 
 func init() {
-	// Get home dir for config file default
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	// Find the default config file
-	xdg := xdg.New("slack-term", "")
-	configFile := xdg.QueryConfig("config")
-	if configFile == "" {
-		// Fall back to $HOME/.slack_term for legacy compatibility
-		configFile = path.Join(usr.HomeDir, ".slack-term")
-	}
+	configFile := xdg.New("slack-term", "").QueryConfig("config")
 
 	// Parse flags
 	flag.StringVar(

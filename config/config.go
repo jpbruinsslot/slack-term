@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	fp "path/filepath"
 
+	"github.com/OpenPeeDeeP/xdg"
 	"github.com/erroneousboat/termui"
 )
 
@@ -34,17 +36,17 @@ func NewConfig(filepath string) (*Config, error) {
 	cfg := getDefaultConfig()
 
 	// Open config file, and when none is found or present create
-	// a default empty one, at the filepath location
+	// a default empty one, at the default filepath location
 	file, err := os.Open(filepath)
 	if err != nil {
 		file, err = CreateConfigFile(filepath)
 		if err != nil {
-			return &cfg, fmt.Errorf("couldn't open the slack-term config file: %v", err)
+			return &cfg, fmt.Errorf("couldn't open the slack-term config file: (%v)", err)
 		}
 	}
 
 	if err := json.NewDecoder(file).Decode(&cfg); err != nil {
-		return &cfg, fmt.Errorf("the slack-term config file isn't valid json: %v", err)
+		return &cfg, fmt.Errorf("the slack-term config file isn't valid json: (%v)", err)
 	}
 
 	if cfg.SidebarWidth < 1 || cfg.SidebarWidth > 11 {
@@ -73,6 +75,12 @@ func NewConfig(filepath string) (*Config, error) {
 }
 
 func CreateConfigFile(filepath string) (*os.File, error) {
+	filepath = fmt.Sprintf("%s/slack-term/%s", xdg.ConfigHome(), "config")
+
+	if _, err := os.Stat(filepath); os.IsNotExist(err) {
+		os.MkdirAll(fp.Dir(filepath), os.ModePerm)
+	}
+
 	payload := "{\"slack_token\": \"\"}"
 	err := ioutil.WriteFile(filepath, []byte(payload), 0755)
 	if err != nil {

@@ -34,12 +34,15 @@ Setup
 
 1. Get a slack token, click [here](https://api.slack.com/docs/oauth-test-tokens)
 
-2. Create a file named `config` in the `$XDG_CONFIG_HOME/slack-term` directory
-   (the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)
-   specifies `$HOME/.config/` if you do not have `$XDG_CONFIG_HOME` explicitly
-   set). Below is an example of such a file. You are only required to specify a
-   `slack_token`. For more configuration options of the `config` file, see
-   the [wiki](https://github.com/erroneousboat/slack-term/wiki).
+2. Running `slack-term` for the first time, will create a default config file at
+   `~/.config/slack-term/config`.
+
+```bash
+$ slack-term
+```
+
+3. Update the config file and update your `slack_token` For more configuration
+   options of the `config` file, see the [wiki](https://github.com/erroneousboat/slack-term/wiki).
 
 ```javascript
 {
