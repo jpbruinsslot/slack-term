@@ -74,7 +74,7 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 	return svc, nil
 }
 
-func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
+func (s *SlackService) GetChannels() ([]*components.ChannelItem, error) {
 	slackChans := make([]slack.Channel, 0)
 
 	// Initial request
@@ -123,7 +123,7 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 	// We're creating tempChan, because we want to be able to
 	// sort the types of channels into buckets
 	type tempChan struct {
-		channelItem  components.ChannelItem
+		channelItem  *components.ChannelItem
 		slackChannel slack.Channel
 	}
 
@@ -144,10 +144,6 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 			}
 
 			chanItem.Type = components.ChannelTypeChannel
-
-			if chn.UnreadCount > 0 {
-				chanItem.Notification = true
-			}
 
 			buckets[0][chn.ID] = &tempChan{
 				channelItem:  chanItem,
@@ -225,7 +221,7 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 	}
 	sort.Ints(keys)
 
-	var chans []components.ChannelItem
+	var chans []*components.ChannelItem
 	for _, k := range keys {
 
 		bucket := buckets[k]
@@ -266,7 +262,7 @@ func (s *SlackService) SetUserAsActive() {
 }
 
 // MarkAsRead will set the channel as read
-func (s *SlackService) MarkAsRead(channelItem components.ChannelItem) {
+func (s *SlackService) MarkAsRead(channelItem *components.ChannelItem) {
 	switch channelItem.Type {
 	case components.ChannelTypeChannel:
 		s.Client.SetChannelReadMark(
@@ -401,20 +397,19 @@ func (s *SlackService) SendCommand(channelID string, message string) (bool, erro
 
 		return true, nil
 	}
-
-	return false, nil
 }
 
 // GetMessages will get messages for a channel, group or im channel delimited
 // by a count. It will return the messages, the thread identifiers
 // (as ChannelItem), and and error.
-func (s *SlackService) GetMessages(channelID string, count int) ([]components.Message, []components.ChannelItem, error) {
+func (s *SlackService) GetMessages(channelID string, count int) ([]components.Message, []*components.ChannelItem, error) {
 
 	// https://godoc.org/github.com/nlopes/slack#GetConversationHistoryParameters
 	historyParams := slack.GetConversationHistoryParameters{
 		ChannelID: channelID,
 		Limit:     count,
 		Inclusive: false,
+		Unreads:   true,
 	}
 
 	history, err := s.Client.GetConversationHistory(&historyParams)
@@ -424,14 +419,14 @@ func (s *SlackService) GetMessages(channelID string, count int) ([]components.Me
 
 	// Construct the messages
 	var messages []components.Message
-	var threads []components.ChannelItem
+	var threads []*components.ChannelItem
 	for _, message := range history.Messages {
 		msg := s.CreateMessage(message, channelID)
 		messages = append(messages, msg)
 
 		// FIXME: create boolean isThread
 		if msg.Thread != "" {
-			threads = append(threads, components.ChannelItem{
+			threads = append(threads, &components.ChannelItem{
 				ID:          msg.ID,
 				Name:        msg.Thread,
 				Type:        components.ChannelTypeGroup,
@@ -845,8 +840,8 @@ func parseEmoji(msg string) string {
 	)
 }
 
-func (s *SlackService) createChannelItem(chn slack.Channel) components.ChannelItem {
-	return components.ChannelItem{
+func (s *SlackService) createChannelItem(chn slack.Channel) *components.ChannelItem {
+	return &components.ChannelItem{
 		ID:          chn.ID,
 		Name:        chn.Name,
 		Topic:       chn.Topic.Value,

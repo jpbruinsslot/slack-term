@@ -1,5 +1,9 @@
 github.com/0xAX/notificator v0.0.0-20171022182052-88d57ee9043b h1:Sn+u6zpXFyfm2X7ruh+z6SJiUVyFg8YElh6HIOhrRCA=
 github.com/0xAX/notificator v0.0.0-20171022182052-88d57ee9043b/go.mod h1:NtXa9WwQsukMHZpjNakTTz0LArxvGYdPA9CjIcUSZ6s=
+github.com/acaloiaro/slack v0.6.1 h1:q1UT6Sv57ojq1AO1k5EF4gJpowA42qKj7pKW77P9eIY=
+github.com/acaloiaro/slack v0.6.1/go.mod h1:45gdOh7+WJN/aHOVomIpwm/BZc8RXduFm2liA06f73I=
+github.com/acaloiaro/slack v0.6.2 h1:h/exJfi52Mj98cLCYIYvGp0SExJvGtpyU8wH/lhsx0o=
+github.com/acaloiaro/slack v0.6.2/go.mod h1:3oqZLevjlFjJuMPy2yVe/hMFdgCk55MnTi1gxVPjwm8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
