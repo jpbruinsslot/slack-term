@@ -16,6 +16,7 @@ func CreateDebugComponent(inputHeight int) *Debug {
 
 	debug.List.BorderLabel = "Debug"
 	debug.List.Height = termui.TermHeight() - inputHeight
+	debug.List.Overflow = "wrap"
 
 	return debug
 }
