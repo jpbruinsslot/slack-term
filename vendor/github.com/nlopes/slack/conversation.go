@@ -99,6 +99,7 @@ func (api *Client) GetUsersInConversationContext(ctx context.Context, params *Ge
 		ResponseMetaData responseMetaData `json:"response_metadata"`
 		SlackResponse
 	}{}
+
 	err := api.postMethod(ctx, "conversations.members", values, &response)
 	if err != nil {
 		return nil, "", err
@@ -160,6 +161,7 @@ func (api *Client) ArchiveConversationContext(ctx context.Context, channelID str
 		"token":   {api.token},
 		"channel": {channelID},
 	}
+
 	response := SlackResponse{}
 	err := api.postMethod(ctx, "conversations.archive", values, &response)
 	if err != nil {
@@ -229,6 +231,7 @@ func (api *Client) SetPurposeOfConversationContext(ctx context.Context, channelI
 		SlackResponse
 		Channel *Channel `json:"channel"`
 	}{}
+
 	err := api.postMethod(ctx, "conversations.setPurpose", values, &response)
 	if err != nil {
 		return nil, err
@@ -253,6 +256,7 @@ func (api *Client) RenameConversationContext(ctx context.Context, channelID, cha
 		SlackResponse
 		Channel *Channel `json:"channel"`
 	}{}
+
 	err := api.postMethod(ctx, "conversations.rename", values, &response)
 	if err != nil {
 		return nil, err
@@ -277,6 +281,7 @@ func (api *Client) InviteUsersToConversationContext(ctx context.Context, channel
 		SlackResponse
 		Channel *Channel `json:"channel"`
 	}{}
+
 	err := api.postMethod(ctx, "conversations.invite", values, &response)
 	if err != nil {
 		return nil, err
@@ -297,6 +302,7 @@ func (api *Client) KickUserFromConversationContext(ctx context.Context, channelI
 		"channel": {channelID},
 		"user":    {user},
 	}
+
 	response := SlackResponse{}
 	err := api.postMethod(ctx, "conversations.kick", values, &response)
 	if err != nil {
@@ -479,6 +485,7 @@ func (api *Client) GetConversationsContext(ctx context.Context, params *GetConve
 		ResponseMetaData responseMetaData `json:"response_metadata"`
 		SlackResponse
 	}{}
+
 	err = api.postMethod(ctx, "conversations.list", values, &response)
 	if err != nil {
 		return nil, "", err
@@ -516,6 +523,7 @@ func (api *Client) OpenConversationContext(ctx context.Context, params *OpenConv
 		AlreadyOpen bool     `json:"already_open"`
 		SlackResponse
 	}{}
+
 	err := api.postMethod(ctx, "conversations.open", values, &response)
 	if err != nil {
 		return nil, false, false, err
@@ -540,6 +548,7 @@ func (api *Client) JoinConversationContext(ctx context.Context, channelID string
 		} `json:"response_metadata"`
 		SlackResponse
 	}{}
+
 	err := api.postMethod(ctx, "conversations.join", values, &response)
 	if err != nil {
 		return nil, "", nil, err

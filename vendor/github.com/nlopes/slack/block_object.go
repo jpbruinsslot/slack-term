@@ -178,6 +178,7 @@ func NewConfirmationBlockObject(title, text, confirm, deny *TextBlockObject) *Co
 type OptionBlockObject struct {
 	Text  *TextBlockObject `json:"text"`
 	Value string           `json:"value"`
+	URL   string           `json:"url"`
 }
 
 // NewOptionBlockObject returns an instance of a new Option Block Element
@@ -197,7 +198,7 @@ func (s OptionBlockObject) validateType() MessageObjectType {
 //
 // More Information: https://api.slack.com/reference/messaging/composition-objects#option-group
 type OptionGroupBlockObject struct {
-	Label   *TextBlockObject     `json:"label"`
+	Label   *TextBlockObject     `json:"label,omitempty"`
 	Options []*OptionBlockObject `json:"options"`
 }
 

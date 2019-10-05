@@ -78,9 +78,8 @@ func (rtm *RTM) Disconnect() error {
 }
 
 // GetInfo returns the info structure received when calling
-// "startrtm", holding all channels, groups and other metadata needed
-// to implement a full chat client. It will be non-nil after a call to
-// StartRTM().
+// "startrtm", holding metadata needed to implement a full
+// chat client. It will be non-nil after a call to StartRTM().
 func (rtm *RTM) GetInfo() *Info {
 	return rtm.info
 }

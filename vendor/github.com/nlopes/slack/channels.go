@@ -32,11 +32,7 @@ func (api *Client) channelRequest(ctx context.Context, path string, values url.V
 		return nil, err
 	}
 
-	if err := response.Err(); err != nil {
-		return nil, err
-	}
-
-	return response, nil
+	return response, response.Err()
 }
 
 type channelsConfig struct {
@@ -284,6 +280,7 @@ func (api *Client) GetChannelsContext(ctx context.Context, excludeArchived bool,
 			"token": {api.token},
 		},
 	}
+
 	if excludeArchived {
 		options = append(options, GetChannelsOptionExcludeArchived())
 	}

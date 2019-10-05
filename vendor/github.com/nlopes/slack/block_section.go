@@ -16,12 +16,27 @@ func (s SectionBlock) BlockType() MessageBlockType {
 	return s.Type
 }
 
+// SectionBlockOption allows configuration of options for a new section block
+type SectionBlockOption func(*SectionBlock)
+
+func SectionBlockOptionBlockID(blockID string) SectionBlockOption {
+	return func(block *SectionBlock) {
+		block.BlockID = blockID
+	}
+}
+
 // NewSectionBlock returns a new instance of a section block to be rendered
-func NewSectionBlock(textObj *TextBlockObject, fields []*TextBlockObject, accessory *Accessory) *SectionBlock {
-	return &SectionBlock{
+func NewSectionBlock(textObj *TextBlockObject, fields []*TextBlockObject, accessory *Accessory, options ...SectionBlockOption) *SectionBlock {
+	block := SectionBlock{
 		Type:      MBTSection,
 		Text:      textObj,
 		Fields:    fields,
 		Accessory: accessory,
 	}
+
+	for _, option := range options {
+		option(&block)
+	}
+
+	return &block
 }

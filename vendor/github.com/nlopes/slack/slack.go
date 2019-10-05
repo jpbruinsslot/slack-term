@@ -51,6 +51,8 @@ type authTestResponseFull struct {
 }
 
 // Client for the slack api.
+type ParamOption func(*url.Values)
+
 type Client struct {
 	token      string
 	endpoint   string
