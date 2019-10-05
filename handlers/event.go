@@ -138,7 +138,7 @@ func messageHandler(ctx *context.AppContext) {
 						var threadTimestamp string
 						if ev.ThreadTimestamp != "" {
 							threadTimestamp = ev.ThreadTimestamp
-						} else if ev.PreviousMessage.ThreadTimestamp != "" {
+						} else if ev.PreviousMessage != nil && ev.PreviousMessage.ThreadTimestamp != "" {
 							threadTimestamp = ev.PreviousMessage.ThreadTimestamp
 						} else {
 							threadTimestamp = ""
@@ -147,15 +147,18 @@ func messageHandler(ctx *context.AppContext) {
 						// When timestamp isn't set this is a thread reply,
 						// handle as such
 						if threadTimestamp != "" {
-							ctx.View.Debug.Println(
-								fmt.Sprint("here"),
-							)
 							ctx.View.Chat.AddReply(threadTimestamp, msg)
 						} else if threadTimestamp == "" && ctx.Focus == context.ChatFocus {
 							ctx.View.Chat.AddMessage(msg)
 						}
 
-						termui.Render(ctx.View.Chat)
+						// we (mis)use actionChangeChannel, to rerender, the
+						// view when a new thread has been started
+						if ctx.View.Chat.IsNewThread(threadTimestamp) {
+							actionChangeChannel(ctx)
+						} else {
+							termui.Render(ctx.View.Chat)
+						}
 
 						// TODO: set Chat.Offset to 0, to automatically scroll
 						// down?

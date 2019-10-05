@@ -195,6 +195,17 @@ func (c *Chat) AddReply(parentID string, message Message) {
 	}
 }
 
+// IsNewThread check whether a message that is going to be added as
+// a child to a parent message, is the first one or not
+func (c *Chat) IsNewThread(parentID string) bool {
+	if parent, ok := c.Messages[parentID]; ok {
+		if len(parent.Messages) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 // ClearMessages clear the c.Messages
 func (c *Chat) ClearMessages() {
 	c.Messages = make(map[string]Message)
