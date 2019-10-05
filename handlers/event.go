@@ -136,7 +136,7 @@ func messageHandler(ctx *context.AppContext) {
 						// handle as such
 						if ev.ThreadTimestamp != "" {
 							ctx.View.Chat.AddReply(ev.ThreadTimestamp, msg)
-						} else {
+						} else if ev.ThreadTimestamp == "" && ctx.Focus == context.ChatFocus {
 							ctx.View.Chat.AddMessage(msg)
 						}
 
