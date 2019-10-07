@@ -119,6 +119,8 @@ func getDefaultConfig() Config {
 			"insert": {
 				"<left>":      "cursor-left",
 				"<right>":     "cursor-right",
+				"<up>":        "cursor-up",
+				"<down>":      "cursor-down",
 				"<enter>":     "send",
 				"<escape>":    "mode-command",
 				"<backspace>": "backspace",
