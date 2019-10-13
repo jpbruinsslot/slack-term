@@ -26,6 +26,7 @@ type SlackService struct {
 	Conversations   []slack.Channel
 	UserCache       map[string]string
 	ThreadCache     map[string]string
+	MessageCache    map[string]string
 	CurrentUserID   string
 	CurrentUsername string
 }
@@ -34,10 +35,11 @@ type SlackService struct {
 // the RTM and a Client
 func NewSlackService(config *config.Config) (*SlackService, error) {
 	svc := &SlackService{
-		Config:      config,
-		Client:      slack.New(config.SlackToken),
-		UserCache:   make(map[string]string),
-		ThreadCache: make(map[string]string),
+		Config:       config,
+		Client:       slack.New(config.SlackToken),
+		UserCache:    make(map[string]string),
+		ThreadCache:  make(map[string]string),
+		MessageCache: make(map[string]string),
 	}
 
 	// Get user associated with token, mainly
@@ -260,6 +262,17 @@ func (s *SlackService) GetUserPresence(userID string) (string, error) {
 	return presence.Presence, nil
 }
 
+// IsNewThread checks if a thread has been previously observed by checking
+// for its presence in the thread cache
+func (s *SlackService) IsNewThread(threadID string) bool {
+
+	if _, ok := s.ThreadCache[threadID]; ok || threadID == "" {
+		return false
+	}
+
+	return true
+}
+
 // Set current user presence to active
 func (s *SlackService) SetUserAsActive() {
 	s.Client.SetUserPresence("auto")
@@ -366,12 +379,18 @@ func (s *SlackService) SendCommand(channelID string, message string) (bool, erro
 			return false, errors.New("'/thread' command malformed")
 		}
 
-		threadID := s.ThreadCache[subMatch[2]]
 		msg := subMatch[3]
 
-		err := s.SendReply(channelID, threadID, msg)
-		if err != nil {
-			return false, err
+		if threadID, ok := s.ThreadCache[subMatch[2]]; ok {
+			err := s.SendReply(channelID, threadID, msg)
+			if err != nil {
+				return false, err
+			}
+		} else if msgID, ok := s.MessageCache[subMatch[2]]; ok {
+			err := s.SendReply(channelID, msgID, msg)
+			if err != nil {
+				return true, err
+			}
 		}
 
 		return true, nil
@@ -530,15 +549,24 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 	}
 
 	// Parse time
-	floatTime, err := strconv.ParseFloat(message.Timestamp, 64)
+	msgTime, err := strconv.ParseFloat(message.Timestamp, 64)
+
 	if err != nil {
-		floatTime = 0.0
+		msgTime = 0.0
 	}
-	intTime := int64(floatTime)
+	intTime := int64(msgTime)
+
+	threadTime, err := strconv.ParseFloat(message.ThreadTimestamp, 64)
+
+	if err != nil {
+		threadTime = 0.0
+	}
 
 	// Format message
 	msg := components.Message{
 		ID:          message.Timestamp,
+		MsgID:       hashID(int(msgTime)),
+		ThreadID:    hashID(int(threadTime)),
 		Messages:    make(map[string]components.Message),
 		Time:        time.Unix(intTime, 0),
 		Name:        name,
@@ -582,18 +610,18 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 	if message.ThreadTimestamp != "" && message.ThreadTimestamp == message.Timestamp {
 
 		// Set the thread identifier for thread cache
-		f, _ := strconv.ParseFloat(message.ThreadTimestamp, 64)
-		threadID := hashID(int(f))
-		s.ThreadCache[threadID] = message.ThreadTimestamp
+		s.ThreadCache[msg.ThreadID] = message.ThreadTimestamp
 
 		// Set thread prefix for message
-		msg.Thread = fmt.Sprintf("%s ", threadID)
+		msg.Thread = fmt.Sprintf("%s ", msg.ThreadID)
 
 		// Create the message replies from the thread
 		replies := s.CreateMessageFromReplies(message.ThreadTimestamp, channelID)
 		for _, reply := range replies {
 			msg.Messages[reply.ID] = reply
 		}
+	} else {
+		s.MessageCache[msg.MsgID] = message.Timestamp
 	}
 
 	return msg

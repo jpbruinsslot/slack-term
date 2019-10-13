@@ -45,6 +45,7 @@ var actionMap = map[string]func(*context.AppContext){
 	"channel-search-next": actionSearchNextChannels,
 	"channel-search-prev": actionSearchPrevChannels,
 	"channel-jump":        actionJumpChannels,
+	"toggle-message-ids":  actionToggleMessageIDs,
 	"thread-up":           actionMoveCursorUpThreads,
 	"thread-down":         actionMoveCursorDownThreads,
 	"chat-up":             actionScrollUpChat,
@@ -154,7 +155,7 @@ func messageHandler(ctx *context.AppContext) {
 
 						// we (mis)use actionChangeChannel, to rerender, the
 						// view when a new thread has been started
-						if ctx.View.Chat.IsNewThread(threadTimestamp) {
+						if ctx.Service.IsNewThread(msg.ThreadID) {
 							actionChangeChannel(ctx)
 						} else {
 							termui.Render(ctx.View.Chat)
@@ -503,6 +504,12 @@ func actionSearchPrevChannels(ctx *context.AppContext) {
 
 func actionJumpChannels(ctx *context.AppContext) {
 	ctx.View.Channels.Jump()
+	actionChangeChannel(ctx)
+}
+
+func actionToggleMessageIDs(ctx *context.AppContext) {
+	ctx.View.Chat.ClearMessages()
+	ctx.View.Chat.ToggleMessageIDs()
 	actionChangeChannel(ctx)
 }
 

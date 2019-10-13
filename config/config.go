@@ -110,6 +110,7 @@ func getDefaultConfig() Config {
 				"<next>":     "chat-down",
 				"C-f":        "chat-down",
 				"C-d":        "chat-down",
+				"m":          "toggle-message-ids",
 				"n":          "channel-search-next",
 				"N":          "channel-search-prev",
 				"'":          "channel-jump",

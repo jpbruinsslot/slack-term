@@ -14,17 +14,19 @@ import (
 
 // Chat is the definition of a Chat component
 type Chat struct {
-	List     *termui.List
-	Messages map[string]Message
-	Offset   int
+	List           *termui.List
+	Messages       map[string]Message
+	Offset         int
+	showMessageIDs bool
 }
 
 // CreateChatComponent is the constructor for the Chat struct
 func CreateChatComponent(inputHeight int) *Chat {
 	chat := &Chat{
-		List:     termui.NewList(),
-		Messages: make(map[string]Message),
-		Offset:   0,
+		List:           termui.NewList(),
+		Messages:       make(map[string]Message),
+		Offset:         0,
+		showMessageIDs: false,
 	}
 
 	chat.List.Height = termui.TermHeight() - inputHeight
@@ -195,20 +197,18 @@ func (c *Chat) AddReply(parentID string, message Message) {
 	}
 }
 
-// IsNewThread check whether a message that is going to be added as
-// a child to a parent message, is the first one or not
-func (c *Chat) IsNewThread(parentID string) bool {
-	if parent, ok := c.Messages[parentID]; ok {
-		if len(parent.Messages) > 0 {
-			return true
-		}
-	}
-	return false
-}
-
 // ClearMessages clear the c.Messages
 func (c *Chat) ClearMessages() {
 	c.Messages = make(map[string]Message)
+}
+
+// ToggleMessageIDs toggles the visibility of message IDs on and off in chat view
+func (c *Chat) ToggleMessageIDs() {
+	if c.showMessageIDs {
+		c.showMessageIDs = false
+	} else {
+		c.showMessageIDs = true
+	}
 }
 
 // ScrollUp will render the chat messages based on the Offset of the Chat
@@ -286,6 +286,13 @@ func (c *Chat) MessageToCells(msg Message) []termui.Cell {
 			msg.GetTime(),
 			termui.ColorDefault, termui.ColorDefault)...,
 		)
+
+		if c.showMessageIDs && msg.ThreadID == "" {
+			cells = append(cells, termui.DefaultTxBuilder.Build(
+				msg.GetMsgID(),
+				termui.ColorDefault, termui.ColorDefault)...,
+			)
+		}
 
 		// Thread
 		cells = append(cells, termui.DefaultTxBuilder.Build(
