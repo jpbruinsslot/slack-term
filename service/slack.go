@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html"
 	"log"
-	"net/url"
 	"regexp"
 	"sort"
 	"strconv"
@@ -344,78 +343,18 @@ func (s *SlackService) SendReply(channelID string, threadID string, message stri
 	return nil
 }
 
-// SendCommand will send a specific command to slack. First we check
-// wether we are dealing with a command, and if it is one of the supported
-// ones.
-//
-// NOTE: slack slash commands that are sent to the slack api are undocumented,
-// and as such we need to update the message option that direct it to the
-// correct api endpoint.
-//
-// https://github.com/ErikKalkoken/slackApiDoc/blob/master/chat.command.md
-func (s *SlackService) SendCommand(channelID string, message string) (bool, error) {
-	// First check if it begins with slash and a command
-	r, err := regexp.Compile(`^/\w+`)
+func (s *SlackService) UpdateChat(channelID, messageID, message string) error {
+
+	text := slack.MsgOptionText(message, true)
+
+	// https://godoc.org/github.com/nlopes/slack#Client.UpdateMessage
+	_, _, _, err := s.Client.UpdateMessage(channelID, messageID, text)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	match := r.MatchString(message)
-	if !match {
-		return false, nil
-	}
+	return nil
 
-	// Execute the the command when supported
-	switch r.FindString(message) {
-	case "/thread":
-		r := regexp.MustCompile(`(?P<cmd>^/\w+) (?P<id>\w+) (?P<msg>.*)`)
-		subMatch := r.FindStringSubmatch(message)
-
-		if len(subMatch) < 4 {
-			return false, errors.New("'/thread' command malformed")
-		}
-
-		msg := subMatch[3]
-
-		if threadID, ok := s.ThreadCache[subMatch[2]]; ok {
-			err := s.SendReply(channelID, threadID, msg)
-			if err != nil {
-				return false, err
-			}
-		} else if msgID, ok := s.MessageCache[subMatch[2]]; ok {
-			err := s.SendReply(channelID, msgID, msg)
-			if err != nil {
-				return true, err
-			}
-		}
-
-		return true, nil
-	default:
-		r := regexp.MustCompile(`(?P<cmd>^/\w+) (?P<text>.*)`)
-		subMatch := r.FindStringSubmatch(message)
-
-		if len(subMatch) < 3 {
-			return false, errors.New("slash command malformed")
-		}
-
-		cmd := subMatch[1]
-		text := subMatch[2]
-
-		msgOption := slack.UnsafeMsgOptionEndpoint(
-			fmt.Sprintf("%s%s", slack.APIURL, "chat.command"),
-			func(urlValues url.Values) {
-				urlValues.Add("command", cmd)
-				urlValues.Add("text", text)
-			},
-		)
-
-		_, _, err := s.Client.PostMessage(channelID, msgOption)
-		if err != nil {
-			return false, err
-		}
-
-		return true, nil
-	}
 }
 
 // GetMessages will get messages for a channel, group or im channel delimited

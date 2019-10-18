@@ -287,18 +287,21 @@ func (c *Chat) MessageToCells(msg Message) []termui.Cell {
 			termui.ColorDefault, termui.ColorDefault)...,
 		)
 
-		if c.showMessageIDs && msg.ThreadID == "" {
+		if c.showMessageIDs {
 			cells = append(cells, termui.DefaultTxBuilder.Build(
 				msg.GetMsgID(),
 				termui.ColorDefault, termui.ColorDefault)...,
 			)
 		}
 
-		// Thread
-		cells = append(cells, termui.DefaultTxBuilder.Build(
-			msg.GetThread(),
-			termui.ColorDefault, termui.ColorDefault)...,
-		)
+		// when showMessageIDs is off; we still show thread IDs to distinguish
+		// them in the main chat window from normal messages
+		if !c.showMessageIDs {
+			cells = append(cells, termui.DefaultTxBuilder.Build(
+				msg.GetThread(),
+				termui.ColorDefault, termui.ColorDefault)...,
+			)
+		}
 
 		// Name
 		cells = append(cells, termui.DefaultTxBuilder.Build(

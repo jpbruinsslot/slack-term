@@ -55,8 +55,20 @@ func (m Message) GetThread() string {
 }
 
 func (m Message) GetMsgID() string {
+
+	// is the message a parent or a thread
+	if m.ThreadID == "" || m.ThreadID == m.MsgID {
+		return fmt.Sprintf(
+			"[%s](%s) ",
+			m.MsgID,
+			m.StyleThread,
+		)
+	}
+
+	// indent threaded messages to offset them from non-threaded messages
+	// in the main channel view
 	return fmt.Sprintf(
-		"[%s](%s) ",
+		"  [%s](%s) ",
 		m.MsgID,
 		m.StyleThread,
 	)
