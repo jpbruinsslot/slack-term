@@ -202,6 +202,36 @@ func (c *Chat) ClearMessages() {
 	c.Messages = make(map[string]Message)
 }
 
+// DeleteMessage deletes a single message from Messages
+func (c *Chat) DeleteMessage(messageID string) {
+	msgMap := c.Messages
+	delete(msgMap, messageID)
+
+	var msgs []Message
+	for _, msg := range msgMap {
+		msgs = append(msgs, msg)
+	}
+
+	c.SetMessages(msgs)
+}
+
+// GetMessage gets a message from the chat history
+func (c *Chat) GetMessage(parentID string, threadID string) (message *Message, ok bool) {
+
+	if parent, found := c.Messages[parentID]; found {
+
+		if threadID != "" {
+			if reply, found := c.Messages[parentID].Messages[threadID]; found {
+				return &reply, true
+			}
+		}
+
+		return &parent, true
+	}
+
+	return
+}
+
 // ToggleMessageIDs toggles the visibility of message IDs on and off in chat view
 func (c *Chat) ToggleMessageIDs() {
 	if c.showMessageIDs {
@@ -326,6 +356,14 @@ func (c *Chat) MessageToCells(msg Message) []termui.Cell {
 				Fg: txCells[0].Fg,
 				Bg: txCells[0].Bg,
 			},
+		)
+	}
+
+	// Edited
+	if msg.Edited {
+		cells = append(cells, termui.DefaultTxBuilder.Build(
+			" (edited)",
+			termui.ColorDefault, termui.ColorDefault)...,
 		)
 	}
 

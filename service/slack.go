@@ -24,8 +24,8 @@ type SlackService struct {
 	RTM             *slack.RTM
 	Conversations   []slack.Channel
 	UserCache       map[string]string
-	ThreadCache     map[string]string
-	MessageCache    map[string]string
+	threadCache     map[string]string
+	messageCache    map[string]string
 	CurrentUserID   string
 	CurrentUsername string
 }
@@ -37,8 +37,8 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 		Config:       config,
 		Client:       slack.New(config.SlackToken),
 		UserCache:    make(map[string]string),
-		ThreadCache:  make(map[string]string),
-		MessageCache: make(map[string]string),
+		threadCache:  make(map[string]string),
+		messageCache: make(map[string]string),
 	}
 
 	// Get user associated with token, mainly
@@ -73,6 +73,40 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 	svc.SetUserAsActive()
 
 	return svc, nil
+}
+
+// CacheFetch fetches the ID (timestamp) of messages that have previously been cached.
+// messageID is the hash id (as produced by hashID())
+func (s *SlackService) CacheFetch(messageID string) (id string, err error) {
+
+	var ok bool
+	if id, ok = s.threadCache[messageID]; ok {
+		return
+	} else if id, ok = s.messageCache[messageID]; ok {
+		return
+	}
+
+	err = fmt.Errorf("Sorry. Unable to find a message with ID: '%s'", messageID)
+
+	return
+}
+
+// DeleteMessage deletes a message given a messageID
+func (s *SlackService) DeleteMessage(channelID, msgID string) (err error) {
+
+	var ts string
+	if ts, err = s.CacheFetch(msgID); err != nil {
+		return
+	}
+
+	if _, _, err = s.Client.DeleteMessage(channelID, ts); err != nil {
+		return
+	}
+
+	delete(s.messageCache, msgID)
+	delete(s.threadCache, msgID)
+
+	return
 }
 
 func (s *SlackService) GetChannels() ([]*components.ChannelItem, error) {
@@ -261,7 +295,7 @@ func (s *SlackService) GetUserPresence(userID string) (string, error) {
 // for its presence in the thread cache
 func (s *SlackService) IsNewThread(threadID string) bool {
 
-	if _, ok := s.ThreadCache[threadID]; ok || threadID == "" {
+	if _, ok := s.threadCache[threadID]; ok || threadID == "" {
 		return false
 	}
 
@@ -499,6 +533,7 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 	// Format message
 	msg := components.Message{
 		ID:          message.Timestamp,
+		Edited:      message.Edited != nil,
 		MsgID:       hashID(int(msgTime)),
 		ThreadID:    hashID(int(threadTime)),
 		Messages:    make(map[string]components.Message),
@@ -536,7 +571,7 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 	// When the message timestamp and thread timestamp are the same, we
 	// have a parent message. This means it contains a thread with replies.
 	//
-	// Additionally, we set the thread timestamp in the s.ThreadCache with
+	// Additionally, we set the thread timestamp in the s.threadCache with
 	// the base62 representation of the timestamp. We do this because
 	// we if we want to reply to a thread, we need to reference this
 	// timestamp. Which is too long to type, we shorten it and remember the
@@ -544,7 +579,7 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 	if message.ThreadTimestamp != "" && message.ThreadTimestamp == message.Timestamp {
 
 		// Set the thread identifier for thread cache
-		s.ThreadCache[msg.ThreadID] = message.ThreadTimestamp
+		s.threadCache[msg.ThreadID] = message.ThreadTimestamp
 
 		// Set thread prefix for message
 		msg.Thread = fmt.Sprintf("%s ", msg.ThreadID)
@@ -555,7 +590,7 @@ func (s *SlackService) CreateMessage(message slack.Message, channelID string) co
 			msg.Messages[reply.ID] = reply
 		}
 	} else {
-		s.MessageCache[msg.MsgID] = message.Timestamp
+		s.messageCache[msg.MsgID] = message.Timestamp
 	}
 
 	return msg
@@ -722,7 +757,7 @@ func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent
 	case "message_changed":
 		// Append (edited) when an edited message is received
 		msg = slack.Message{Msg: *message.SubMessage}
-		msg.Text = fmt.Sprintf("%s (edited)", msg.Text)
+		msg.Edited = message.SubMessage.Edited
 	case "message_replied":
 		return components.Message{}, errors.New("ignoring reply events")
 	}

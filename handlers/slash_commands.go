@@ -5,82 +5,104 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"strings"
 
-	"github.com/erroneousboat/slack-term/components"
 	"github.com/erroneousboat/slack-term/context"
 	"github.com/erroneousboat/termui"
 	"github.com/nlopes/slack"
 )
 
-// editCommandHandler accepts user input of the form `/edit msgID` and `/edit msgID Updated message`
+func deleteCommandHandler(ctx *context.AppContext, channelID, cmdParams string) (ok bool, err error) {
+	r := regexp.MustCompile(`(?P<id>\w+)$`)
+	cmdParams = strings.TrimSpace(cmdParams)
+
+	messageID := r.FindString(cmdParams)
+	if messageID == "" {
+		return false, errors.New("Please provide a message ID. E.g. /delete aFksE8")
+	}
+
+	var ts string
+	if ts, err = ctx.Service.CacheFetch(messageID); err != nil {
+		return
+	}
+
+	if err = ctx.Service.DeleteMessage(channelID, messageID); err != nil {
+		return
+	}
+
+	ctx.View.Chat.DeleteMessage(ts)
+	termui.Render(ctx.View.Chat)
+
+	ok = true
+
+	return
+}
+
+// editCommandHandler accepts user input of the form `msgID` and `msgID Updated message`
 //
 // When an updated message is not provided, the msg identified by msgID is fetched from the slack service
 // and placed in the user input component to be edited by the user.
 //
 // When an updated message is provided, the update to the message identified by msgID is sent to the Slack
 // service to be persisited.
-func editCommandHandler(ctx *context.AppContext, channelID, cmd string) (ok bool, err error) {
+func editCommandHandler(ctx *context.AppContext, channelID, cmdParams string) (ok bool, err error) {
 
-	r := regexp.MustCompile(`(?P<cmd>^/\w+) (?P<id>\w+) (?P<msg>.*)`)
-	subMatch := r.FindStringSubmatch(cmd)
+	r := regexp.MustCompile(`(?P<id>\w+)\s*(?P<msg>.*)$`)
 
-	// check if both the message ID to be edited and the updated message are present
-	if len(subMatch) < 3 {
+	cmdParams = strings.TrimSpace(cmdParams)
+	subMatch := r.FindStringSubmatch(cmdParams)
 
-		r := regexp.MustCompile(`(?P<cmd>^/\w+) (?P<id>\w+)$`)
-		subMatch := r.FindStringSubmatch(cmd)
-
-		// if only the message ID was provided, fetch the message contents and place it in the input view
-		if len(subMatch) == 3 {
-
-			internalMsgID := subMatch[2]
-			var ID string
-			if threadID, found := ctx.Service.ThreadCache[internalMsgID]; found {
-				ID = threadID
-			} else if msgID, found := ctx.Service.MessageCache[internalMsgID]; found {
-				ID = msgID
-			}
-			var msgs []components.Message
-
-			if msgs, err = ctx.Service.GetMessageByID(ID, channelID); ID == "" || err != nil {
-				ok = false
-				err = fmt.Errorf("Sorry. We were not able to find the message with ID: '%s'", ID)
-				return
-			}
-
-			editInput := fmt.Sprintf("/edit %s %s", internalMsgID, msgs[0].Content)
-			ctx.View.Input.SetText(editInput)
-
-			termui.Render(ctx.View.Input)
-
-			ok = true
-
-			return
-		}
-
-		err = errors.New("slash command malformed")
+	if len(subMatch) == 0 {
+		err = errors.New("/edit command malformed")
 		return
 	}
 
-	ID := subMatch[2]
-	msg := subMatch[3]
+	msgID := subMatch[1]
+	msg := subMatch[2]
 
-	if threadID, found := ctx.Service.ThreadCache[ID]; found {
-		err = ctx.Service.UpdateChat(channelID, threadID, msg)
-		if err != nil {
+	// if no message was provided, then we need to fetch the message identified by internalMsgID first
+	// and render its contents in the input field
+	if msg == "" {
+
+		var ts string
+		if ts, err = ctx.Service.CacheFetch(msgID); err != nil {
 			return
 		}
-	} else if msgID, found := ctx.Service.MessageCache[ID]; found {
-		err = ctx.Service.UpdateChat(channelID, msgID, msg)
-		if err != nil {
+
+		// check if the user has a thread selected
+		var parentID string
+		if thr, ok := ctx.View.Threads.GetSelectedChannel(); ok && thr.ID != channelID {
+			parentID = thr.ID
+		} else {
+			parentID = ts
+		}
+
+		if m, found := ctx.View.Chat.GetMessage(parentID, ts); found {
+			editInput := fmt.Sprintf("/edit %s %s", msgID, m.Content)
+			ctx.View.Input.SetText(editInput)
+			termui.Render(ctx.View.Input)
+		} else {
+			err = fmt.Errorf("Sorry. Unable to find message with ID: '%s'", ts)
 			return
 		}
+
+		ok = true
+
+		return
+	}
+
+	var ts string
+	if ts, err = ctx.Service.CacheFetch(msgID); err != nil {
+		return
+	}
+
+	if err = ctx.Service.UpdateChat(channelID, ts, msg); err != nil {
+		return
 	}
 
 	ok = true
 
 	return
-
 }
 
 // threadCommandHandler accepts user input of the form `/thread msgID message`.
@@ -88,26 +110,25 @@ func editCommandHandler(ctx *context.AppContext, channelID, cmd string) (ok bool
 // message, the new thread is created.
 func threadCommandHandler(ctx *context.AppContext, channelID, cmd string) (ok bool, err error) {
 
-	r := regexp.MustCompile(`(?P<cmd>^/\w+) (?P<id>\w+) (?P<msg>.*)`)
+	r := regexp.MustCompile(`(?P<id>\w+)\s+(?P<msg>.*)$`)
+	cmd = strings.TrimSpace(cmd)
 	subMatch := r.FindStringSubmatch(cmd)
 
-	if len(subMatch) < 4 {
-		err = errors.New("'/thread' command malformed")
+	if len(subMatch) == 0 {
+		err = errors.New("/thread command malformed")
 		return
 	}
 
-	msg := subMatch[3]
+	msgID := subMatch[1]
+	msg := subMatch[2]
 
-	if threadID, found := ctx.Service.ThreadCache[subMatch[2]]; found {
-		err = ctx.Service.SendReply(channelID, threadID, msg)
-		if err != nil {
-			return
-		}
-	} else if msgID, found := ctx.Service.MessageCache[subMatch[2]]; found {
-		err = ctx.Service.SendReply(channelID, msgID, msg)
-		if err != nil {
-			return
-		}
+	var ts string
+	if ts, err = ctx.Service.CacheFetch(msgID); err != nil {
+		return
+	}
+
+	if err = ctx.Service.SendReply(channelID, ts, msg); err != nil {
+		return
 	}
 
 	ok = true
@@ -120,6 +141,7 @@ func threadCommandHandler(ctx *context.AppContext, channelID, cmd string) (ok bo
 func defaultCommandHandler(ctx *context.AppContext, channelID, cmd string) (ok bool, err error) {
 
 	r := regexp.MustCompile(`(?P<cmd>^/\w+) (?P<text>.*)`)
+	cmd = strings.TrimSpace(cmd)
 	subMatch := r.FindStringSubmatch(cmd)
 
 	if len(subMatch) < 3 {

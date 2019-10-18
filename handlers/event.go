@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -353,7 +354,7 @@ func actionSend(ctx *context.AppContext) {
 		return
 	}
 
-	// user input was not as slash command; send it as a message
+	// user input was not a slash command; send it as a message
 	if ctx.Focus == context.ChatFocus {
 		err := ctx.Service.SendMessage(chn.ID, message)
 		if err != nil {
@@ -546,6 +547,12 @@ func actionChangeChannel(ctx *context.AppContext) {
 	var ok bool
 	if selectedChannel, ok = ctx.View.Channels.GetSelectedChannel(); !ok {
 		return
+	}
+
+	if ctx.Debug {
+		ctx.View.Debug.Println(
+			fmt.Sprintf("Channel: %s", selectedChannel.ID),
+		)
 	}
 
 	// Get messages of the SelectedChannel, and get the count of messages
@@ -803,7 +810,7 @@ func actionHelp(ctx *context.AppContext) {
 	termui.Render(ctx.View.Chat)
 }
 
-// actionSlashCommand checks wether messages contain slash commands that slack-term supports.
+// actionSlashCommand checks whether messages contain slash commands that slack-term supports.
 // If the command is supported, its handler is called.
 //
 // NOTE: slack slash commands that are sent to the slack api are undocumented,
@@ -814,17 +821,29 @@ func actionHelp(ctx *context.AppContext) {
 func actionSlashCommand(ctx *context.AppContext, msg, channelID string) (ok bool, err error) {
 
 	// first check if the message contains a slash command
-	r, _ := regexp.Compile(`^/\w+`)
+	r := regexp.MustCompile(`^(/\w+)\s+(.*)`)
 	if ok = r.MatchString(msg); !ok {
 		return
 	}
 
+	matches := r.FindStringSubmatch(msg)
+	if len(matches) < 2 {
+		ok = false
+		err = errors.New("No command provided")
+		return
+	}
+
+	cmd := matches[1]
+	cmdParams := strings.Join(matches[2:], " ")
+
 	// check for if the command in the message is supported
-	switch r.FindString(msg) {
+	switch cmd {
 	case "/thread":
-		return threadCommandHandler(ctx, channelID, msg)
+		return threadCommandHandler(ctx, channelID, cmdParams)
 	case "/edit":
-		return editCommandHandler(ctx, channelID, msg)
+		return editCommandHandler(ctx, channelID, cmdParams)
+	case "/delete":
+		return deleteCommandHandler(ctx, channelID, cmdParams)
 	default:
 		return defaultCommandHandler(ctx, channelID, msg)
 	}

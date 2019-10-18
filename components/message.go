@@ -21,22 +21,20 @@ var (
 )
 
 type Message struct {
-	ID       string
-	MsgID    string
-	ThreadID string
-	Messages map[string]Message
-
-	Time    time.Time
-	Thread  string
-	Name    string
-	Content string
-
+	ID          string
+	Edited      bool
+	MsgID       string
+	ThreadID    string
+	Messages    map[string]Message
+	Time        time.Time
+	Thread      string
+	Name        string
+	Content     string
 	StyleTime   string
 	StyleThread string
 	StyleName   string
 	StyleText   string
-
-	FormatTime string
+	FormatTime  string
 }
 
 func (m Message) GetTime() string {
