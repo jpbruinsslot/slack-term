@@ -213,6 +213,18 @@ func (i *Input) GetText() string {
 	return string(i.Text)
 }
 
+// SetText sets the text of the input and places the cursor at the end of it
+func (i *Input) SetText(text string) {
+	i.Clear()
+	i.Text = []rune(text)
+	i.Par.Text = text
+
+	for j := 0; j < len(i.Text); j++ {
+		i.MoveCursorRight()
+	}
+
+}
+
 // GetMaxWidth returns the maximum number of positions
 // the Input component can display
 func (i *Input) GetMaxWidth() int {

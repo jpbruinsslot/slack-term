@@ -327,57 +327,59 @@ func actionMoveCursorLeft(ctx *context.AppContext) {
 }
 
 func actionSend(ctx *context.AppContext) {
-	if !ctx.View.Input.IsEmpty() {
 
-		// Clear message before sending, to combat
-		// quick succession of actionSend
-		message := ctx.View.Input.GetText()
-		ctx.View.Input.Clear()
-		termui.Render(ctx.View.Input)
+	if ctx.View.Input.IsEmpty() {
+		return
+	}
 
-		var chn *components.ChannelItem
-		var ok bool
-		if chn, ok = ctx.View.Channels.GetSelectedChannel(); !ok {
-			return
+	// Clear message before sending, to combat
+	// quick succession of actionSend
+	message := ctx.View.Input.GetText()
+	ctx.View.Input.Clear()
+	termui.Render(ctx.View.Input)
+
+	var chn *components.ChannelItem
+	var ok bool
+	if chn, ok = ctx.View.Channels.GetSelectedChannel(); !ok {
+		return
+	}
+
+	// check if the input is a supported slash command
+	if isCmd, err := actionSlashCommand(ctx, message, chn.ID); isCmd || err != nil {
+		if err != nil {
+			ctx.View.Debug.Println(err.Error())
 		}
 
-		// Send slash command
-		isCmd, err := ctx.Service.SendCommand(chn.ID, message)
+		return
+	}
+
+	// user input was not as slash command; send it as a message
+	if ctx.Focus == context.ChatFocus {
+		err := ctx.Service.SendMessage(chn.ID, message)
 		if err != nil {
 			ctx.View.Debug.Println(
 				err.Error(),
 			)
 		}
 
-		// Send message
-		if !isCmd {
-			if ctx.Focus == context.ChatFocus {
-				err := ctx.Service.SendMessage(chn.ID, message)
-				if err != nil {
-					ctx.View.Debug.Println(
-						err.Error(),
-					)
-				}
-
-			}
-
-			if ctx.Focus == context.ThreadFocus {
-				err := ctx.Service.SendReply(chn.ID, ctx.View.Threads.SelectedChannel, message)
-				if err != nil {
-					ctx.View.Debug.Println(
-						err.Error(),
-					)
-				}
-			}
-		}
-
-		// Clear notification icon if there is any
-		if chn.Notification {
-			ctx.Service.MarkAsRead(chn)
-			ctx.View.Channels.MarkAsRead(ctx.View.Channels.SelectedChannel)
-		}
-		termui.Render(ctx.View.Channels)
 	}
+
+	if ctx.Focus == context.ThreadFocus {
+		err := ctx.Service.SendReply(chn.ID, ctx.View.Threads.SelectedChannel, message)
+		if err != nil {
+			ctx.View.Debug.Println(
+				err.Error(),
+			)
+		}
+	}
+
+	// Clear notification icon if there is any
+	if chn.Notification {
+		ctx.Service.MarkAsRead(chn)
+		ctx.View.Channels.MarkAsRead(ctx.View.Channels.SelectedChannel)
+	}
+
+	termui.Render(ctx.View.Channels)
 }
 
 // actionSearch will search through the channels based on the users
@@ -799,6 +801,33 @@ func actionHelp(ctx *context.AppContext) {
 	ctx.View.Chat.ClearMessages()
 	ctx.View.Chat.Help(ctx.Usage, ctx.Config)
 	termui.Render(ctx.View.Chat)
+}
+
+// actionSlashCommand checks wether messages contain slash commands that slack-term supports.
+// If the command is supported, its handler is called.
+//
+// NOTE: slack slash commands that are sent to the slack api are undocumented,
+// and as such we need to update the message option that direct it to the
+// correct api endpoint.
+//
+// https://github.com/ErikKalkoken/slackApiDoc/blob/master/chat.command.md
+func actionSlashCommand(ctx *context.AppContext, msg, channelID string) (ok bool, err error) {
+
+	// first check if the message contains a slash command
+	r, _ := regexp.Compile(`^/\w+`)
+	if ok = r.MatchString(msg); !ok {
+		return
+	}
+
+	// check for if the command in the message is supported
+	switch r.FindString(msg) {
+	case "/thread":
+		return threadCommandHandler(ctx, channelID, msg)
+	case "/edit":
+		return editCommandHandler(ctx, channelID, msg)
+	default:
+		return defaultCommandHandler(ctx, channelID, msg)
+	}
 }
 
 // GetKeyString will return a string that resembles the key event from
