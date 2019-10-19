@@ -22,6 +22,8 @@ var (
 
 type Message struct {
 	ID       string
+	MsgID    string
+	ThreadID string
 	Messages map[string]Message
 
 	Time    time.Time
@@ -48,6 +50,14 @@ func (m Message) GetTime() string {
 func (m Message) GetThread() string {
 	return fmt.Sprintf("[%s](%s)",
 		m.Thread,
+		m.StyleThread,
+	)
+}
+
+func (m Message) GetMsgID() string {
+	return fmt.Sprintf(
+		"[%s](%s) ",
+		m.MsgID,
 		m.StyleThread,
 	)
 }
