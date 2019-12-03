@@ -5,7 +5,7 @@ import (
 	"html"
 
 	"github.com/erroneousboat/termui"
-	"github.com/renstrom/fuzzysearch/fuzzy"
+	"github.com/lithammer/fuzzysearch/fuzzy"
 )
 
 const (
