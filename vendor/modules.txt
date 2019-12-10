@@ -4,7 +4,7 @@ github.com/0xAX/notificator
 github.com/erroneousboat/termui
 # github.com/gorilla/websocket v1.4.1
 github.com/gorilla/websocket
-# github.com/lithammer/fuzzysearch v1.0.2
+# github.com/lithammer/fuzzysearch v1.1.0
 github.com/lithammer/fuzzysearch/fuzzy
 # github.com/maruel/panicparse v1.1.1
 github.com/maruel/panicparse/stack
@@ -21,3 +21,7 @@ github.com/nlopes/slack/slackutilsx
 github.com/nsf/termbox-go
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
+# golang.org/x/text v0.3.2
+golang.org/x/text/runes
+golang.org/x/text/transform
+golang.org/x/text/unicode/norm
