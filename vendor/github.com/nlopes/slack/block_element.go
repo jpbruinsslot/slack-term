@@ -139,13 +139,17 @@ func NewButtonBlockElement(actionID, value string, text *TextBlockObject) *Butto
 //
 // More Information: https://api.slack.com/reference/messaging/block-elements#select
 type SelectBlockElement struct {
-	Type          string                    `json:"type,omitempty"`
-	Placeholder   *TextBlockObject          `json:"placeholder,omitempty"`
-	ActionID      string                    `json:"action_id,omitempty"`
-	Options       []*OptionBlockObject      `json:"options,omitempty"`
-	OptionGroups  []*OptionGroupBlockObject `json:"option_groups,omitempty"`
-	InitialOption *OptionBlockObject        `json:"initial_option,omitempty"`
-	Confirm       *ConfirmationBlockObject  `json:"confirm,omitempty"`
+	Type                string                    `json:"type,omitempty"`
+	Placeholder         *TextBlockObject          `json:"placeholder,omitempty"`
+	ActionID            string                    `json:"action_id,omitempty"`
+	Options             []*OptionBlockObject      `json:"options,omitempty"`
+	OptionGroups        []*OptionGroupBlockObject `json:"option_groups,omitempty"`
+	InitialOption       *OptionBlockObject        `json:"initial_option,omitempty"`
+	InitialUser         string                    `json:"initial_user,omitempty"`
+	InitialConversation string                    `json:"initial_conversation,omitempty"`
+	InitialChannel      string                    `json:"initial_channel,omitempty"`
+	MinQueryLength      int                       `json:"min_query_length,omitempty"`
+	Confirm             *ConfirmationBlockObject  `json:"confirm,omitempty"`
 }
 
 // ElementType returns the type of the Element

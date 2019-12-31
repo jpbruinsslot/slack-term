@@ -20,13 +20,17 @@ type WebhookMessage struct {
 }
 
 func PostWebhook(url string, msg *WebhookMessage) error {
+	return PostWebhookCustomHTTP(url, http.DefaultClient, msg)
+}
+
+func PostWebhookCustomHTTP(url string, httpClient *http.Client, msg *WebhookMessage) error {
 	raw, err := json.Marshal(msg)
 
 	if err != nil {
 		return errors.Wrap(err, "marshal failed")
 	}
 
-	response, err := http.Post(url, "application/json", bytes.NewReader(raw))
+	response, err := httpClient.Post(url, "application/json", bytes.NewReader(raw))
 
 	if err != nil {
 		return errors.Wrap(err, "failed to post webhook")

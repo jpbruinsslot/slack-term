@@ -35,6 +35,7 @@ type ConnectingEvent struct {
 // DisconnectedEvent contains information about how we disconnected
 type DisconnectedEvent struct {
 	Intentional bool
+	Cause       error
 }
 
 // LatencyReport contains information about connection latency

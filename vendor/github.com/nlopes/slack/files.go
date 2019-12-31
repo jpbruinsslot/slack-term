@@ -90,7 +90,8 @@ type File struct {
 }
 
 type Share struct {
-	Public map[string][]ShareFileInfo `json:"public"`
+	Public  map[string][]ShareFileInfo `json:"public"`
+	Private map[string][]ShareFileInfo `json:"private"`
 }
 
 type ShareFileInfo struct {
@@ -133,11 +134,21 @@ type GetFilesParameters struct {
 	Page          int
 }
 
+// ListFilesParameters contains all the parameters necessary (including the optional ones) for a ListFiles() request
+type ListFilesParameters struct {
+	Limit   int
+	User    string
+	Channel string
+	Types   string
+	Cursor  string
+}
+
 type fileResponseFull struct {
 	File     `json:"file"`
 	Paging   `json:"paging"`
-	Comments []Comment `json:"comments"`
-	Files    []File    `json:"files"`
+	Comments []Comment        `json:"comments"`
+	Files    []File           `json:"files"`
+	Metadata ResponseMetadata `json:"response_metadata"`
 
 	SlackResponse
 }
@@ -196,6 +207,40 @@ func (api *Client) GetFiles(params GetFilesParameters) ([]File, *Paging, error) 
 	return api.GetFilesContext(context.Background(), params)
 }
 
+// ListFiles retrieves all files according to the parameters given. Uses cursor based pagination.
+func (api *Client) ListFiles(params ListFilesParameters) ([]File, *ListFilesParameters, error) {
+	return api.ListFilesContext(context.Background(), params)
+}
+
+// ListFilesContext retrieves all files according to the parameters given with a custom context. Uses cursor based pagination.
+func (api *Client) ListFilesContext(ctx context.Context, params ListFilesParameters) ([]File, *ListFilesParameters, error) {
+	values := url.Values{
+		"token": {api.token},
+	}
+
+	if params.User != DEFAULT_FILES_USER {
+		values.Add("user", params.User)
+	}
+	if params.Channel != DEFAULT_FILES_CHANNEL {
+		values.Add("channel", params.Channel)
+	}
+	if params.Limit != DEFAULT_FILES_COUNT {
+		values.Add("limit", strconv.Itoa(params.Limit))
+	}
+	if params.Cursor != "" {
+		values.Add("cursor", params.Cursor)
+	}
+
+	response, err := api.fileRequest(ctx, "files.list", values)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	params.Cursor = response.Metadata.Cursor
+
+	return response.Files, &params, nil
+}
+
 // GetFilesContext retrieves all files according to the parameters given with a custom context
 func (api *Client) GetFilesContext(ctx context.Context, params GetFilesParameters) ([]File, *Paging, error) {
 	values := url.Values{
@@ -243,9 +288,6 @@ func (api *Client) UploadFileContext(ctx context.Context, params FileUploadParam
 	if err != nil {
 		return nil, err
 	}
-	if params.Filename == "" {
-		return nil, fmt.Errorf("files.upload: FileUploadParameters.Filename is mandatory")
-	}
 	response := &fileResponseFull{}
 	values := url.Values{
 		"token": {api.token},
@@ -274,8 +316,12 @@ func (api *Client) UploadFileContext(ctx context.Context, params FileUploadParam
 	} else if params.File != "" {
 		err = postLocalWithMultipartResponse(ctx, api.httpclient, api.endpoint+"files.upload", params.File, "file", values, response, api)
 	} else if params.Reader != nil {
+		if params.Filename == "" {
+			return nil, fmt.Errorf("files.upload: FileUploadParameters.Filename is mandatory when using FileUploadParameters.Reader")
+		}
 		err = postWithMultipartResponse(ctx, api.httpclient, api.endpoint+"files.upload", params.Filename, "file", values, params.Reader, response, api)
 	}
+
 	if err != nil {
 		return nil, err
 	}

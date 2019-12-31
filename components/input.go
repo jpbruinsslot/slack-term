@@ -85,7 +85,18 @@ func (i *Input) Insert(key rune) {
 // Backspace will remove a character in front of the CursorPositionText
 func (i *Input) Backspace() {
 	if i.CursorPositionText > 0 {
-		i.MoveCursorLeft()
+
+		// We want the cursor to stay in the same spot when the text
+		// overflow, revealing the test on the left side when using
+		// backspace. When all the text has been revealed will move
+		// the cursor to the left.
+		if i.Offset > 0 {
+			i.Offset--
+			i.CursorPositionText--
+		} else {
+			i.MoveCursorLeft()
+		}
+
 		i.Text = append(i.Text[0:i.CursorPositionText], i.Text[i.CursorPositionText+1:]...)
 		i.Par.Text = string(i.Text[i.Offset:])
 	}

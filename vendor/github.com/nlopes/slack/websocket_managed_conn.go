@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/nlopes/slack/internal/errorsx"
 	"github.com/nlopes/slack/internal/timex"
 )
 
@@ -138,21 +139,22 @@ func (rtm *RTM) connect(connectionCount int, useRTMStart bool) (*Info, *websocke
 			ErrorObj: err,
 		}}
 
-		// check if Disconnect() has been invoked.
+		// get time we should wait before attempting to connect again
+		rtm.Debugf("reconnection %d failed: %s reconnecting in %v\n", boff.attempts, err, backoff)
+
+		// wait for one of the following to occur,
+		// backoff duration has elapsed, killChannel is signalled, or
+		// the rtm finishes disconnecting.
 		select {
+		case <-time.After(backoff): // retry after the backoff.
 		case intentional := <-rtm.killChannel:
 			if intentional {
-				rtm.killConnection(intentional)
+				rtm.killConnection(intentional, ErrRTMDisconnected)
 				return nil, nil, ErrRTMDisconnected
 			}
 		case <-rtm.disconnected:
 			return nil, nil, ErrRTMDisconnected
-		default:
 		}
-
-		// get time we should wait before attempting to connect again
-		rtm.Debugf("reconnection %d failed: %s reconnecting in %v\n", boff.attempts, err, backoff)
-		time.Sleep(backoff)
 	}
 }
 
@@ -205,14 +207,14 @@ func (rtm *RTM) startRTMAndDial(useRTMStart bool) (info *Info, _ *websocket.Conn
 //
 // This should not be called directly! Instead a boolean value (true for
 // intentional, false otherwise) should be sent to the killChannel on the RTM.
-func (rtm *RTM) killConnection(intentional bool) (err error) {
+func (rtm *RTM) killConnection(intentional bool, cause error) (err error) {
 	rtm.Debugln("killing connection")
 
 	if rtm.conn != nil {
 		err = rtm.conn.Close()
 	}
 
-	rtm.IncomingEvents <- RTMEvent{"disconnected", &DisconnectedEvent{intentional}}
+	rtm.IncomingEvents <- RTMEvent{"disconnected", &DisconnectedEvent{Intentional: intentional, Cause: cause}}
 
 	if intentional {
 		rtm.disconnect()
@@ -233,22 +235,21 @@ func (rtm *RTM) handleEvents() {
 		select {
 		// catch "stop" signal on channel close
 		case intentional := <-rtm.killChannel:
-			_ = rtm.killConnection(intentional)
+			_ = rtm.killConnection(intentional, errorsx.String("signaled"))
 			return
 		// detect when the connection is dead.
 		case <-rtm.pingDeadman.C:
-			rtm.Debugln("deadman switch trigger disconnecting")
-			_ = rtm.killConnection(false)
+			_ = rtm.killConnection(false, errorsx.String("deadman switch triggered"))
 			return
 		// send pings on ticker interval
 		case <-ticker.C:
 			if err := rtm.ping(); err != nil {
-				_ = rtm.killConnection(false)
+				_ = rtm.killConnection(false, err)
 				return
 			}
 		case <-rtm.forcePing:
 			if err := rtm.ping(); err != nil {
-				_ = rtm.killConnection(false)
+				_ = rtm.killConnection(false, err)
 				return
 			}
 		// listen for messages that need to be sent
@@ -258,7 +259,7 @@ func (rtm *RTM) handleEvents() {
 		case rawEvent := <-rtm.rawEvents:
 			switch rtm.handleRawEvent(rawEvent) {
 			case rtmEventTypeGoodbye:
-				_ = rtm.killConnection(false)
+				_ = rtm.killConnection(false, errorsx.String("goodbye detected"))
 				return
 			default:
 			}
@@ -310,7 +311,6 @@ func (rtm *RTM) sendOutgoingMessage(msg OutgoingMessage) {
 			Message:  msg,
 			ErrorObj: err,
 		}}
-		// TODO force ping?
 	}
 }
 

@@ -108,13 +108,13 @@ type Channels struct {
 }
 
 // CreateChannels is the constructor for the Channels component
-func CreateChannelsComponent(inputHeight int) *Channels {
+func CreateChannelsComponent(height int) *Channels {
 	channels := &Channels{
 		List: termui.NewList(),
 	}
 
 	channels.List.BorderLabel = "Channels"
-	channels.List.Height = termui.TermHeight() - inputHeight
+	channels.List.Height = height
 
 	channels.SelectedChannel = 0
 	channels.Offset = 0
@@ -148,17 +148,16 @@ func (c *Channels) Buffer() termui.Buffer {
 		// Append ellipsis when overflows
 		cells = termui.DTrimTxCls(cells, c.List.InnerWidth())
 
-		x := 0
+		x := c.List.InnerBounds().Min.X
 		for _, cell := range cells {
-			width := cell.Width()
-			buf.Set(c.List.InnerBounds().Min.X+x, y, cell)
-			x += width
+			buf.Set(x, y, cell)
+			x += cell.Width()
 		}
 
 		// When not at the end of the pane fill it up empty characters
-		for x < c.List.InnerBounds().Max.X-1 {
+		for x < c.List.InnerBounds().Max.X {
 			if y == c.CursorPosition {
-				buf.Set(x+1, y,
+				buf.Set(x, y,
 					termui.Cell{
 						Ch: ' ',
 						Fg: c.List.ItemBgColor,
@@ -167,7 +166,7 @@ func (c *Channels) Buffer() termui.Buffer {
 				)
 			} else {
 				buf.Set(
-					x+1, y,
+					x, y,
 					termui.Cell{
 						Ch: ' ',
 						Fg: c.List.ItemFgColor,
@@ -234,6 +233,11 @@ func (c *Channels) FindChannel(channelID string) int {
 // SetSelectedChannel sets the SelectedChannel given the index
 func (c *Channels) SetSelectedChannel(index int) {
 	c.SelectedChannel = index
+}
+
+// Get SelectedChannel returns the ChannelItem that is currently selected
+func (c *Channels) GetSelectedChannel() ChannelItem {
+	return c.ChannelItems[c.SelectedChannel]
 }
 
 // MoveCursorUp will decrease the SelectedChannel by 1

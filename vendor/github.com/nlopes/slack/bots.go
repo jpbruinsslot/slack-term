@@ -41,7 +41,10 @@ func (api *Client) GetBotInfo(bot string) (*Bot, error) {
 func (api *Client) GetBotInfoContext(ctx context.Context, bot string) (*Bot, error) {
 	values := url.Values{
 		"token": {api.token},
-		"bot":   {bot},
+	}
+
+	if bot != "" {
+		values.Add("bot", bot)
 	}
 
 	response, err := api.botRequest(ctx, "bots.info", values)

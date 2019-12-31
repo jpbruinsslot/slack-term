@@ -41,6 +41,7 @@ type SearchMessage struct {
 	User        string       `json:"user"`
 	Username    string       `json:"username"`
 	Timestamp   string       `json:"ts"`
+	Blocks      Blocks       `json:"blocks,omitempty"`
 	Text        string       `json:"text"`
 	Permalink   string       `json:"permalink"`
 	Attachments []Attachment `json:"attachments"`

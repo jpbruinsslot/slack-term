@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/url"
 	"strconv"
+	"time"
 )
 
 const (
@@ -117,6 +118,7 @@ type User struct {
 	IsUltraRestricted bool           `json:"is_ultra_restricted"`
 	IsStranger        bool           `json:"is_stranger"`
 	IsAppUser         bool           `json:"is_app_user"`
+	IsInvitedUser     bool           `json:"is_invited_user"`
 	Has2FA            bool           `json:"has_2fa"`
 	HasFiles          bool           `json:"has_files"`
 	Presence          string         `json:"presence"`
@@ -345,12 +347,19 @@ func (api *Client) GetUsers() ([]User, error) {
 
 // GetUsersContext returns the list of users (with their detailed information) with a custom context
 func (api *Client) GetUsersContext(ctx context.Context) (results []User, err error) {
-	var (
-		p UserPagination
-	)
-
-	for p = api.GetUsersPaginated(); !p.Done(err); p, err = p.Next(ctx) {
-		results = append(results, p.Users...)
+	p := api.GetUsersPaginated()
+	for err == nil {
+		p, err = p.Next(ctx)
+		if err == nil {
+			results = append(results, p.Users...)
+		} else if rateLimitedError, ok := err.(*RateLimitedError); ok {
+			select {
+			case <-ctx.Done():
+				err = ctx.Err()
+			case <-time.After(rateLimitedError.RetryAfter):
+				err = nil
+			}
+		}
 	}
 
 	return results, p.Failure(err)
@@ -411,13 +420,13 @@ func (api *Client) GetUserIdentity() (*UserIdentityResponse, error) {
 }
 
 // GetUserIdentityContext will retrieve user info available per identity scopes with a custom context
-func (api *Client) GetUserIdentityContext(ctx context.Context) (*UserIdentityResponse, error) {
+func (api *Client) GetUserIdentityContext(ctx context.Context) (response *UserIdentityResponse, err error) {
 	values := url.Values{
 		"token": {api.token},
 	}
-	response := &UserIdentityResponse{}
+	response = &UserIdentityResponse{}
 
-	err := api.postMethod(ctx, "users.identity", values, response)
+	err = api.postMethod(ctx, "users.identity", values, response)
 	if err != nil {
 		return nil, err
 	}
@@ -435,7 +444,7 @@ func (api *Client) SetUserPhoto(image string, params UserSetPhotoParams) error {
 }
 
 // SetUserPhotoContext changes the currently authenticated user's profile image using a custom context
-func (api *Client) SetUserPhotoContext(ctx context.Context, image string, params UserSetPhotoParams) error {
+func (api *Client) SetUserPhotoContext(ctx context.Context, image string, params UserSetPhotoParams) (err error) {
 	response := &SlackResponse{}
 	values := url.Values{
 		"token": {api.token},
@@ -450,7 +459,7 @@ func (api *Client) SetUserPhotoContext(ctx context.Context, image string, params
 		values.Add("crop_w", strconv.Itoa(params.CropW))
 	}
 
-	err := postLocalWithMultipartResponse(ctx, api.httpclient, api.endpoint+"users.setPhoto", image, "image", values, response, api)
+	err = postLocalWithMultipartResponse(ctx, api.httpclient, api.endpoint+"users.setPhoto", image, "image", values, response, api)
 	if err != nil {
 		return err
 	}
@@ -464,13 +473,13 @@ func (api *Client) DeleteUserPhoto() error {
 }
 
 // DeleteUserPhotoContext deletes the current authenticated user's profile image with a custom context
-func (api *Client) DeleteUserPhotoContext(ctx context.Context) error {
+func (api *Client) DeleteUserPhotoContext(ctx context.Context) (err error) {
 	response := &SlackResponse{}
 	values := url.Values{
 		"token": {api.token},
 	}
 
-	err := api.postMethod(ctx, "users.deletePhoto", values, response)
+	err = api.postMethod(ctx, "users.deletePhoto", values, response)
 	if err != nil {
 		return err
 	}
@@ -484,13 +493,27 @@ func (api *Client) DeleteUserPhotoContext(ctx context.Context) error {
 // the Slack API will unset the custom status/emoji. If statusExpiration is set to 0
 // the status will not expire.
 func (api *Client) SetUserCustomStatus(statusText, statusEmoji string, statusExpiration int64) error {
-	return api.SetUserCustomStatusContext(context.Background(), statusText, statusEmoji, statusExpiration)
+	return api.SetUserCustomStatusContextWithUser(context.Background(), "", statusText, statusEmoji, statusExpiration)
 }
 
 // SetUserCustomStatusContext will set a custom status and emoji for the currently authenticated user with a custom context
 //
 // For more information see SetUserCustomStatus
 func (api *Client) SetUserCustomStatusContext(ctx context.Context, statusText, statusEmoji string, statusExpiration int64) error {
+	return api.SetUserCustomStatusContextWithUser(context.Background(), "", statusText, statusEmoji, statusExpiration)
+}
+
+// SetUserCustomStatusWithUser will set a custom status and emoji for the provided user.
+//
+// For more information see SetUserCustomStatus
+func (api *Client) SetUserCustomStatusWithUser(user, statusText, statusEmoji string, statusExpiration int64) error {
+	return api.SetUserCustomStatusContextWithUser(context.Background(), user, statusText, statusEmoji, statusExpiration)
+}
+
+// SetUserCustomStatusContextWithUser will set a custom status and emoji for the provided user with a custom context
+//
+// For more information see SetUserCustomStatus
+func (api *Client) SetUserCustomStatusContextWithUser(ctx context.Context, user, statusText, statusEmoji string, statusExpiration int64) error {
 	// XXX(theckman): this anonymous struct is for making requests to the Slack
 	// API for setting and unsetting a User's Custom Status/Emoji. To change
 	// these values we must provide a JSON document as the profile POST field.
@@ -518,6 +541,7 @@ func (api *Client) SetUserCustomStatusContext(ctx context.Context, statusText, s
 	}
 
 	values := url.Values{
+		"user":    {user},
 		"token":   {api.token},
 		"profile": {string(profile)},
 	}

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"net/http/httputil"
@@ -80,8 +81,8 @@ func fileUploadReq(ctx context.Context, path string, values url.Values, r io.Rea
 	if err != nil {
 		return nil, err
 	}
-	req = req.WithContext(ctx)
 
+	req = req.WithContext(ctx)
 	req.URL.RawQuery = (values).Encode()
 	return req, nil
 }
@@ -117,6 +118,29 @@ func downloadFile(client httpClient, token string, downloadURL string, writer io
 	return err
 }
 
+func formReq(endpoint string, values url.Values) (req *http.Request, err error) {
+	if req, err = http.NewRequest("POST", endpoint, strings.NewReader(values.Encode())); err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	return req, nil
+}
+
+func jsonReq(endpoint string, body interface{}) (req *http.Request, err error) {
+	buffer := bytes.NewBuffer([]byte{})
+	if err = json.NewEncoder(buffer).Encode(body); err != nil {
+		return nil, err
+	}
+
+	if req, err = http.NewRequest("POST", endpoint, buffer); err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	return req, nil
+}
+
 func parseResponseBody(body io.ReadCloser, intf interface{}, d debug) error {
 	response, err := ioutil.ReadAll(body)
 	if err != nil {
@@ -130,7 +154,7 @@ func parseResponseBody(body io.ReadCloser, intf interface{}, d debug) error {
 	return json.Unmarshal(response, intf)
 }
 
-func postLocalWithMultipartResponse(ctx context.Context, client httpClient, path, fpath, fieldname string, values url.Values, intf interface{}, d debug) error {
+func postLocalWithMultipartResponse(ctx context.Context, client httpClient, method, fpath, fieldname string, values url.Values, intf interface{}, d debug) error {
 	fullpath, err := filepath.Abs(fpath)
 	if err != nil {
 		return err
@@ -140,7 +164,8 @@ func postLocalWithMultipartResponse(ctx context.Context, client httpClient, path
 		return err
 	}
 	defer file.Close()
-	return postWithMultipartResponse(ctx, client, path, filepath.Base(fpath), fieldname, values, file, intf, d)
+
+	return postWithMultipartResponse(ctx, client, method, filepath.Base(fpath), fieldname, values, file, intf, d)
 }
 
 func postWithMultipartResponse(ctx context.Context, client httpClient, path, name, fieldname string, values url.Values, r io.Reader, intf interface{}, d debug) error {
@@ -186,11 +211,11 @@ func postWithMultipartResponse(ctx context.Context, client httpClient, path, nam
 	case err = <-errc:
 		return err
 	default:
-		return parseResponseBody(resp.Body, intf, d)
+		return newJSONParser(intf)(resp)
 	}
 }
 
-func doPost(ctx context.Context, client httpClient, req *http.Request, intf interface{}, d debug) error {
+func doPost(ctx context.Context, client httpClient, req *http.Request, parser responseParser, d debug) error {
 	req = req.WithContext(ctx)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -203,7 +228,7 @@ func doPost(ctx context.Context, client httpClient, req *http.Request, intf inte
 		return err
 	}
 
-	return parseResponseBody(resp.Body, intf, d)
+	return parser(resp)
 }
 
 // post JSON.
@@ -215,7 +240,8 @@ func postJSON(ctx context.Context, client httpClient, endpoint, token string, js
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-	return doPost(ctx, client, req, intf, d)
+
+	return doPost(ctx, client, req, newJSONParser(intf), d)
 }
 
 // post a url encoded form.
@@ -226,7 +252,7 @@ func postForm(ctx context.Context, client httpClient, endpoint string, values ur
 		return err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	return doPost(ctx, client, req, intf, d)
+	return doPost(ctx, client, req, newJSONParser(intf), d)
 }
 
 func getResource(ctx context.Context, client httpClient, endpoint string, values url.Values, intf interface{}, d debug) error {
@@ -237,7 +263,7 @@ func getResource(ctx context.Context, client httpClient, endpoint string, values
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.URL.RawQuery = values.Encode()
 
-	return doPost(ctx, client, req, intf, d)
+	return doPost(ctx, client, req, newJSONParser(intf), d)
 }
 
 func parseAdminResponse(ctx context.Context, client httpClient, method string, teamName string, values url.Values, intf interface{}, d debug) error {
@@ -289,4 +315,46 @@ func checkStatusCode(resp *http.Response, d debug) error {
 	}
 
 	return nil
+}
+
+type responseParser func(*http.Response) error
+
+func newJSONParser(dst interface{}) responseParser {
+	return func(resp *http.Response) error {
+		return json.NewDecoder(resp.Body).Decode(dst)
+	}
+}
+
+func newTextParser(dst interface{}) responseParser {
+	return func(resp *http.Response) error {
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		if !bytes.Equal(b, []byte("ok")) {
+			return errors.New(string(b))
+		}
+
+		return nil
+	}
+}
+
+func newContentTypeParser(dst interface{}) responseParser {
+	return func(req *http.Response) (err error) {
+		var (
+			ctype string
+		)
+
+		if ctype, _, err = mime.ParseMediaType(req.Header.Get("Content-Type")); err != nil {
+			return err
+		}
+
+		switch ctype {
+		case "application/json":
+			return newJSONParser(dst)(req)
+		default:
+			return newTextParser(dst)(req)
+		}
+	}
 }
