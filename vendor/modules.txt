@@ -8,16 +8,16 @@ github.com/gorilla/websocket
 github.com/lithammer/fuzzysearch/fuzzy
 # github.com/maruel/panicparse v1.1.1
 github.com/maruel/panicparse/stack
-# github.com/mattn/go-runewidth v0.0.3
+# github.com/mattn/go-runewidth v0.0.7
 github.com/mattn/go-runewidth
 # github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7
 github.com/mitchellh/go-wordwrap
-# github.com/nlopes/slack v0.6.0
+# github.com/nlopes/slack v0.6.1-0.20191106133607-d06c2a2b3249
 github.com/nlopes/slack
 github.com/nlopes/slack/internal/errorsx
 github.com/nlopes/slack/internal/timex
 github.com/nlopes/slack/slackutilsx
-# github.com/nsf/termbox-go v0.0.0-20180819125858-b66b20ab708e
+# github.com/nsf/termbox-go v0.0.0-20191229070316-58d4fcbce2a7
 github.com/nsf/termbox-go
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
