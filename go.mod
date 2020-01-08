@@ -10,7 +10,7 @@ require (
 	github.com/maruel/panicparse v1.1.1 // indirect
 	github.com/mattn/go-runewidth v0.0.3
 	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect
-	github.com/nlopes/slack v0.6.0
+	github.com/nlopes/slack v0.6.1-0.20191106133607-d06c2a2b3249
 	github.com/nsf/termbox-go v0.0.0-20180819125858-b66b20ab708e
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/renstrom/fuzzysearch v1.0.1
