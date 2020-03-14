@@ -83,6 +83,9 @@ in your `config` file.
 | command | `j`       | move channel cursor down   |
 | command | `g`       | move channel cursor top    |
 | command | `G`       | move channel cursor bottom |
+| command | `K`       | thread up                  |
+| command | `J`       | thread down                |
+| command | `G`       | move channel cursor bottom |
 | command | `pg-up`   | scroll chat pane up        |
 | command | `ctrl-b`  | scroll chat pane up        |
 | command | `ctrl-u`  | scroll chat pane up        |
