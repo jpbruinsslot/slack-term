@@ -91,6 +91,7 @@ in your `config` file.
 | command | `ctrl-d`  | scroll chat pane down      |
 | command | `n`       | next search match          |
 | command | `N`       | previous search match      |
+| command | `,`       | jump to next notification  |
 | command | `q`       | quit                       |
 | command | `f1`      | help                       |
 | insert  | `left`    | move input cursor left     |
