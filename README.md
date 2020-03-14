@@ -29,6 +29,15 @@ $ cd $GOPATH/src/github.com/erroneousboat/slack-term
 $ go install .
 ```
 
+#### Via docker
+
+You can also run it with docker, make sure you have a valid config file
+on your host system.
+
+```bash
+docker run -it -v [config-file]:/config erroneousboat/slack-term
+```
+
 Setup
 -----
 
