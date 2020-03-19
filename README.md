@@ -29,15 +29,29 @@ $ cd $GOPATH/src/github.com/erroneousboat/slack-term
 $ go install .
 ```
 
+#### Via docker
+
+You can also run it with docker, make sure you have a valid config file
+on your host system.
+
+```bash
+docker run -it -v [config-file]:/config erroneousboat/slack-term
+```
+
 Setup
 -----
 
-1. Get a slack token, click [here](https://api.slack.com/docs/oauth-test-tokens) 
+1. Get a slack token, click [here](https://api.slack.com/docs/oauth-test-tokens)
 
-2. Create a `.slack-term` file, and place it in your home directory. Below is
-   an example of such a file. You are only required to specify a
-   `slack_token`. For more configuration options of the `.slack-term` file,
-   see the [wiki](https://github.com/erroneousboat/slack-term/wiki).
+2. Running `slack-term` for the first time, will create a default config file at
+   `~/.config/slack-term/config`.
+
+```bash
+$ slack-term
+```
+
+3. Update the config file and update your `slack_token` For more configuration
+   options of the `config` file, see the [wiki](https://github.com/erroneousboat/slack-term/wiki).
 
 ```javascript
 {
@@ -49,7 +63,7 @@ Usage
 -----
 
 When everything is setup correctly you can run `slack-term` with the following
-command: 
+command:
 
 ```bash
 $ slack-term
@@ -59,7 +73,7 @@ Default Key Mapping
 -------------------
 
 Below are the default key-mappings for `slack-term`, you can change them
-in your `.slack-term` file.
+in your `config` file.
 
 | mode    | key       | action                     |
 |---------|-----------|----------------------------|
@@ -69,6 +83,9 @@ in your `.slack-term` file.
 | command | `j`       | move channel cursor down   |
 | command | `g`       | move channel cursor top    |
 | command | `G`       | move channel cursor bottom |
+| command | `K`       | thread up                  |
+| command | `J`       | thread down                |
+| command | `G`       | move channel cursor bottom |
 | command | `pg-up`   | scroll chat pane up        |
 | command | `ctrl-b`  | scroll chat pane up        |
 | command | `ctrl-u`  | scroll chat pane up        |
@@ -77,6 +94,7 @@ in your `.slack-term` file.
 | command | `ctrl-d`  | scroll chat pane down      |
 | command | `n`       | next search match          |
 | command | `N`       | previous search match      |
+| command | `,`       | jump to next notification  |
 | command | `q`       | quit                       |
 | command | `f1`      | help                       |
 | insert  | `left`    | move input cursor left     |

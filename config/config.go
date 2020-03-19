@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"sort"
+	fp "path/filepath"
 
+	"github.com/OpenPeeDeeP/xdg"
 	"github.com/erroneousboat/termui"
 )
 
@@ -23,6 +26,7 @@ type Config struct {
 	Emoji        bool                  `json:"emoji"`
 	SidebarWidth int                   `json:"sidebar_width"`
 	MainWidth    int                   `json:"-"`
+	ThreadsWidth int                   `json:"threads_width"`
 	KeyMap       map[string]keyMapping `json:"key_map"`
 	Theme        Theme                 `json:"theme"`
 }
@@ -33,13 +37,18 @@ type keyMapping map[string]string
 func NewConfig(filepath string, workspaceName string) (*Config, error) {
 	cfg := getDefaultConfig()
 
+	// Open config file, and when none is found or present create
+	// a default empty one, at the default filepath location
 	file, err := os.Open(filepath)
 	if err != nil {
-		return &cfg, fmt.Errorf("couldn't find the slack-term config file: %v", err)
+		file, err = CreateConfigFile(filepath)
+		if err != nil {
+			return &cfg, fmt.Errorf("couldn't open the slack-term config file: (%v)", err)
+		}
 	}
 
 	if err := json.NewDecoder(file).Decode(&cfg); err != nil {
-		return &cfg, fmt.Errorf("the slack-term config file isn't valid json: %v", err)
+		return &cfg, fmt.Errorf("the slack-term config file isn't valid json: (%v)", err)
 	}
 
 	// If no workspace is specified, select the first (ABC-order).
@@ -104,10 +113,32 @@ func NewConfig(filepath string, workspaceName string) (*Config, error) {
 	return &cfg, nil
 }
 
+func CreateConfigFile(filepath string) (*os.File, error) {
+	filepath = fmt.Sprintf("%s/slack-term/%s", xdg.ConfigHome(), "config")
+
+	if _, err := os.Stat(filepath); os.IsNotExist(err) {
+		os.MkdirAll(fp.Dir(filepath), os.ModePerm)
+	}
+
+	payload := "{\"slack_token\": \"\"}"
+	err := ioutil.WriteFile(filepath, []byte(payload), 0755)
+	if err != nil {
+		return nil, err
+	}
+
+	file, err := os.Open(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	return file, nil
+}
+
 func getDefaultConfig() Config {
 	return Config{
 		SidebarWidth: 1,
 		MainWidth:    11,
+		ThreadsWidth: 1,
 		Notify:       "",
 		Emoji:        false,
 		KeyMap: map[string]keyMapping{
@@ -118,6 +149,8 @@ func getDefaultConfig() Config {
 				"j":          "channel-down",
 				"g":          "channel-top",
 				"G":          "channel-bottom",
+				"K":          "thread-up",
+				"J":          "thread-down",
 				"<previous>": "chat-up",
 				"C-b":        "chat-up",
 				"C-u":        "chat-up",
@@ -126,6 +159,7 @@ func getDefaultConfig() Config {
 				"C-d":        "chat-down",
 				"n":          "channel-search-next",
 				"N":          "channel-search-prev",
+				"'":          "channel-jump",
 				"q":          "quit",
 				"<f1>":       "help",
 			},
@@ -167,6 +201,7 @@ func getDefaultConfig() Config {
 			Message: Message{
 				Time:       "",
 				TimeFormat: "15:04",
+				Thread:     "fg-bold",
 				Name:       "",
 				Text:       "",
 			},

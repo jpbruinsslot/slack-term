@@ -2,7 +2,6 @@ package slack
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,29 +9,16 @@ import (
 	"os"
 )
 
-// Added as a var so that we can change this for testing purposes
-var SLACK_API string = "https://slack.com/api/"
-var SLACK_WEB_API_FORMAT string = "https://%s.slack.com/api/users.admin.%s?t=%s"
+const (
+	// APIURL of the slack api.
+	APIURL = "https://slack.com/api/"
+	// WEBAPIURLFormat ...
+	WEBAPIURLFormat = "https://%s.slack.com/api/users.admin.%s?t=%d"
+)
 
-// HTTPClient sets a custom http.Client
-// deprecated: in favor of SetHTTPClient()
-var HTTPClient = &http.Client{}
-
-var customHTTPClient HTTPRequester = HTTPClient
-
-// HTTPRequester defines the minimal interface needed for an http.Client to be implemented.
-//
-// Use it in conjunction with the SetHTTPClient function to allow for other capabilities
-// like a tracing http.Client
-type HTTPRequester interface {
+// httpClient defines the minimal interface needed for an http.Client to be implemented.
+type httpClient interface {
 	Do(*http.Request) (*http.Response, error)
-}
-
-// SetHTTPClient allows you to specify a custom http.Client
-// Use this instead of the package level HTTPClient variable if you want to use a custom client like the
-// Stackdriver Trace HTTPClient https://godoc.org/cloud.google.com/go/trace#HTTPClient
-func SetHTTPClient(client HTTPRequester) {
-	customHTTPClient = client
 }
 
 // ResponseMetadata holds pagination metadata
@@ -48,12 +34,15 @@ func (t *ResponseMetadata) initialize() *ResponseMetadata {
 	return &ResponseMetadata{}
 }
 
+// AuthTestResponse ...
 type AuthTestResponse struct {
 	URL    string `json:"url"`
 	Team   string `json:"team"`
 	User   string `json:"user"`
 	TeamID string `json:"team_id"`
 	UserID string `json:"user_id"`
+	// EnterpriseID is only returned when an enterprise id present
+	EnterpriseID string `json:"enterprise_id,omitempty"`
 }
 
 type authTestResponseFull struct {
@@ -61,28 +50,53 @@ type authTestResponseFull struct {
 	AuthTestResponse
 }
 
+// Client for the slack api.
+type ParamOption func(*url.Values)
+
 type Client struct {
 	token      string
-	info       Info
+	endpoint   string
 	debug      bool
-	httpclient HTTPRequester
+	log        ilogger
+	httpclient httpClient
 }
 
 // Option defines an option for a Client
 type Option func(*Client)
 
 // OptionHTTPClient - provide a custom http client to the slack client.
-func OptionHTTPClient(c HTTPRequester) func(*Client) {
-	return func(s *Client) {
-		s.httpclient = c
+func OptionHTTPClient(client httpClient) func(*Client) {
+	return func(c *Client) {
+		c.httpclient = client
 	}
+}
+
+// OptionDebug enable debugging for the client
+func OptionDebug(b bool) func(*Client) {
+	return func(c *Client) {
+		c.debug = b
+	}
+}
+
+// OptionLog set logging for client.
+func OptionLog(l logger) func(*Client) {
+	return func(c *Client) {
+		c.log = internalLog{logger: l}
+	}
+}
+
+// OptionAPIURL set the url for the client. only useful for testing.
+func OptionAPIURL(u string) func(*Client) {
+	return func(c *Client) { c.endpoint = u }
 }
 
 // New builds a slack client from the provided token and options.
 func New(token string, options ...Option) *Client {
 	s := &Client{
 		token:      token,
-		httpclient: customHTTPClient,
+		endpoint:   APIURL,
+		httpclient: &http.Client{},
+		log:        log.New(os.Stderr, "nlopes/slack", log.LstdFlags|log.Lshortfile),
 	}
 
 	for _, opt := range options {
@@ -98,43 +112,42 @@ func (api *Client) AuthTest() (response *AuthTestResponse, error error) {
 }
 
 // AuthTestContext tests if the user is able to do authenticated requests or not with a custom context
-func (api *Client) AuthTestContext(ctx context.Context) (response *AuthTestResponse, error error) {
+func (api *Client) AuthTestContext(ctx context.Context) (response *AuthTestResponse, err error) {
 	api.Debugf("Challenging auth...")
 	responseFull := &authTestResponseFull{}
-	err := postSlackMethod(ctx, api.httpclient, "auth.test", url.Values{"token": {api.token}}, responseFull, api.debug)
+	err = api.postMethod(ctx, "auth.test", url.Values{"token": {api.token}}, responseFull)
 	if err != nil {
-		api.Debugf("failed to test for auth: %s", err)
 		return nil, err
 	}
-	if !responseFull.Ok {
-		api.Debugf("auth response was not Ok: %s", responseFull.Error)
-		return nil, errors.New(responseFull.Error)
-	}
 
-	api.Debugf("Auth challenge was successful with response %+v", responseFull.AuthTestResponse)
-	return &responseFull.AuthTestResponse, nil
-}
-
-// SetDebug switches the api into debug mode
-// When in debug mode, it logs various info about what its doing
-// If you ever use this in production, don't call SetDebug(true)
-func (api *Client) SetDebug(debug bool) {
-	api.debug = debug
-	if debug && logger == nil {
-		SetLogger(log.New(os.Stdout, "nlopes/slack", log.LstdFlags|log.Lshortfile))
-	}
+	return &responseFull.AuthTestResponse, responseFull.Err()
 }
 
 // Debugf print a formatted debug line.
 func (api *Client) Debugf(format string, v ...interface{}) {
 	if api.debug {
-		logger.Output(2, fmt.Sprintf(format, v...))
+		api.log.Output(2, fmt.Sprintf(format, v...))
 	}
 }
 
 // Debugln print a debug line.
 func (api *Client) Debugln(v ...interface{}) {
 	if api.debug {
-		logger.Output(2, fmt.Sprintln(v...))
+		api.log.Output(2, fmt.Sprintln(v...))
 	}
+}
+
+// Debug returns if debug is enabled.
+func (api *Client) Debug() bool {
+	return api.debug
+}
+
+// post to a slack web method.
+func (api *Client) postMethod(ctx context.Context, path string, values url.Values, intf interface{}) error {
+	return postForm(ctx, api.httpclient, api.endpoint+path, values, intf, api)
+}
+
+// get a slack web method.
+func (api *Client) getMethod(ctx context.Context, path string, values url.Values, intf interface{}) error {
+	return getResource(ctx, api.httpclient, api.endpoint+path, values, intf, api)
 }

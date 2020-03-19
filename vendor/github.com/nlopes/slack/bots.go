@@ -2,16 +2,18 @@ package slack
 
 import (
 	"context"
-	"errors"
 	"net/url"
 )
 
 // Bot contains information about a bot
 type Bot struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	Deleted bool   `json:"deleted"`
-	Icons   Icons  `json:"icons"`
+	ID      string   `json:"id"`
+	Name    string   `json:"name"`
+	Deleted bool     `json:"deleted"`
+	UserID  string   `json:"user_id"`
+	AppID   string   `json:"app_id"`
+	Updated JSONTime `json:"updated"`
+	Icons   Icons    `json:"icons"`
 }
 
 type botResponseFull struct {
@@ -19,15 +21,17 @@ type botResponseFull struct {
 	SlackResponse
 }
 
-func botRequest(ctx context.Context, client HTTPRequester, path string, values url.Values, debug bool) (*botResponseFull, error) {
+func (api *Client) botRequest(ctx context.Context, path string, values url.Values) (*botResponseFull, error) {
 	response := &botResponseFull{}
-	err := postSlackMethod(ctx, client, path, values, response, debug)
+	err := api.postMethod(ctx, path, values, response)
 	if err != nil {
 		return nil, err
 	}
-	if !response.Ok {
-		return nil, errors.New(response.Error)
+
+	if err := response.Err(); err != nil {
+		return nil, err
 	}
+
 	return response, nil
 }
 
@@ -40,10 +44,13 @@ func (api *Client) GetBotInfo(bot string) (*Bot, error) {
 func (api *Client) GetBotInfoContext(ctx context.Context, bot string) (*Bot, error) {
 	values := url.Values{
 		"token": {api.token},
-		"bot":   {bot},
 	}
 
-	response, err := botRequest(ctx, api.httpclient, "bots.info", values, api.debug)
+	if bot != "" {
+		values.Add("bot", bot)
+	}
+
+	response, err := api.botRequest(ctx, "bots.info", values)
 	if err != nil {
 		return nil, err
 	}

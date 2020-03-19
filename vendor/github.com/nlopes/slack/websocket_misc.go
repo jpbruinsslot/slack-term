@@ -43,9 +43,10 @@ type HelloEvent struct{}
 
 // PresenceChangeEvent represents the presence change event
 type PresenceChangeEvent struct {
-	Type     string `json:"type"`
-	Presence string `json:"presence"`
-	User     string `json:"user"`
+	Type     string   `json:"type"`
+	Presence string   `json:"presence"`
+	User     string   `json:"user"`
+	Users    []string `json:"users"`
 }
 
 // UserTypingEvent represents the user typing event
@@ -130,7 +131,7 @@ type MemberJoinedChannelEvent struct {
 	Inviter     string `json:"inviter"`
 }
 
-// MemberJoinedChannelEvent, a user left a public or private channel
+// MemberLeftChannelEvent a user left a public or private channel
 type MemberLeftChannelEvent struct {
 	Type        string `json:"type"`
 	User        string `json:"user"`

@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/user"
-	"path"
 
+	"github.com/OpenPeeDeeP/xdg"
 	"github.com/erroneousboat/termui"
 	termbox "github.com/nsf/termbox-go"
 
@@ -16,7 +15,7 @@ import (
 )
 
 const (
-	VERSION = "v0.4.1"
+	VERSION = "master"
 	USAGE   = `NAME:
     slack-term - slack client for your terminal
 
@@ -45,11 +44,9 @@ var (
 )
 
 func init() {
-	// Get home dir for config file default
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatal(err)
-	}
+
+	// Find the default config file
+	configFile := xdg.New("slack-term", "").QueryConfig("config")
 
 	// Parse flags.
 
@@ -58,7 +55,7 @@ func init() {
 	flag.StringVar(
 		&flgConfig,
 		"config",
-		path.Join(usr.HomeDir, ".slack-term"),
+		configFile,
 		"location of config file",
 	)
 
@@ -115,8 +112,8 @@ func main() {
 		os.Exit(0)
 	}
 
-	// Register handlers
-	handlers.RegisterEventHandlers(ctx)
+	// Initialize handlers
+	handlers.Initialize(ctx)
 
 	termui.Loop()
 }

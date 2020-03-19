@@ -12,58 +12,19 @@ import (
 	"github.com/erroneousboat/slack-term/config"
 )
 
-var (
-	COLORS = []string{
-		"fg-black",
-		"fg-red",
-		"fg-green",
-		"fg-yellow",
-		"fg-blue",
-		"fg-magenta",
-		"fg-cyan",
-		"fg-white",
-	}
-)
-
-type Message struct {
-	Time    time.Time
-	Name    string
-	Content string
-
-	StyleTime string
-	StyleName string
-	StyleText string
-
-	FormatTime string
-}
-
-func (m Message) colorizeName(styleName string) string {
-	if strings.Contains(styleName, "colorize") {
-		var sum int
-		for _, c := range m.Name {
-			sum = sum + int(c)
-		}
-
-		i := sum % len(COLORS)
-
-		return strings.Replace(m.StyleName, "colorize", COLORS[i], -1)
-	}
-
-	return styleName
-}
-
 // Chat is the definition of a Chat component
 type Chat struct {
 	List     *termui.List
-	Messages []Message
+	Messages map[string]Message
 	Offset   int
 }
 
-// CreateChat is the constructor for the Chat struct
+// CreateChatComponent is the constructor for the Chat struct
 func CreateChatComponent(inputHeight int) *Chat {
 	chat := &Chat{
-		List:   termui.NewList(),
-		Offset: 0,
+		List:     termui.NewList(),
+		Messages: make(map[string]Message),
+		Offset:   0,
 	}
 
 	chat.List.Height = termui.TermHeight() - inputHeight
@@ -74,59 +35,8 @@ func CreateChatComponent(inputHeight int) *Chat {
 
 // Buffer implements interface termui.Bufferer
 func (c *Chat) Buffer() termui.Buffer {
-	// Build cells. We're building parts of the message individually, or else
-	// DefaultTxBuilder will interpret potential markdown usage in a message
-	// as well.
-	cells := make([]termui.Cell, 0)
-	for i, msg := range c.Messages {
-
-		// When msg.Time and msg.Name are empty (in the case of attachments)
-		// don't add the time and name parts.
-		if (msg.Time != time.Time{} && msg.Name != "") {
-			// Time
-			cells = append(cells, termui.DefaultTxBuilder.Build(
-				fmt.Sprintf(
-					"[[%s]](%s) ",
-					msg.Time.Format(msg.FormatTime),
-					msg.StyleTime,
-				),
-				termui.ColorDefault, termui.ColorDefault)...,
-			)
-
-			// Name
-			cells = append(cells, termui.DefaultTxBuilder.Build(
-				fmt.Sprintf("[<%s>](%s) ",
-					msg.Name,
-					msg.colorizeName(msg.StyleName),
-				),
-				termui.ColorDefault, termui.ColorDefault)...,
-			)
-		}
-
-		// Hack, in order to get the correct fg and bg attributes. This is
-		// because the readAttr function in termui is unexported.
-		txCells := termui.DefaultTxBuilder.Build(
-			fmt.Sprintf("[.](%s)", msg.StyleText),
-			termui.ColorDefault, termui.ColorDefault,
-		)
-
-		// Text
-		for _, r := range msg.Content {
-			cells = append(
-				cells,
-				termui.Cell{
-					Ch: r,
-					Fg: txCells[0].Fg,
-					Bg: txCells[0].Bg,
-				},
-			)
-		}
-
-		// Add a newline after every message
-		if i < len(c.Messages)-1 {
-			cells = append(cells, termui.Cell{Ch: '\n'})
-		}
-	}
+	// Convert Messages into termui.Cell
+	cells := c.MessagesToCells(c.Messages)
 
 	// We will create an array of Line structs, this allows us
 	// to more easily render the items in a list. We will range
@@ -262,17 +172,43 @@ func (c *Chat) SetMessages(messages []Message) {
 	// Reset offset first, when scrolling in view and changing channels we
 	// want the offset to be 0 when loading new messages
 	c.Offset = 0
-	c.Messages = messages
+	for _, msg := range messages {
+		c.Messages[msg.ID] = msg
+	}
 }
 
 // AddMessage adds a single message to Messages
 func (c *Chat) AddMessage(message Message) {
-	c.Messages = append(c.Messages, message)
+	c.Messages[message.ID] = message
+}
+
+// AddReply adds a single reply to a parent thread, it also sets
+// the thread separator
+func (c *Chat) AddReply(parentID string, message Message) {
+	// It is possible that a message is received but the parent is not
+	// present in the chat view
+	if _, ok := c.Messages[parentID]; ok {
+		message.Thread = "  "
+		c.Messages[parentID].Messages[message.ID] = message
+	} else {
+		c.AddMessage(message)
+	}
+}
+
+// IsNewThread check whether a message that is going to be added as
+// a child to a parent message, is the first one or not
+func (c *Chat) IsNewThread(parentID string) bool {
+	if parent, ok := c.Messages[parentID]; ok {
+		if len(parent.Messages) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // ClearMessages clear the c.Messages
 func (c *Chat) ClearMessages() {
-	c.Messages = make([]Message, 0)
+	c.Messages = make(map[string]Message)
 }
 
 // ScrollUp will render the chat messages based on the Offset of the Chat
@@ -312,23 +248,101 @@ func (c *Chat) SetBorderLabel(channelName string) {
 	c.List.BorderLabel = channelName
 }
 
-// Help shows the usage and key bindings in the chat pane
-func (c *Chat) Help(usage string, cfg *config.Config) {
-	help := []Message{
-		Message{
-			Content: usage,
-		},
+// MessagesToCells is a wrapper around MessageToCells to use for a slice of
+// of type Message
+func (c *Chat) MessagesToCells(msgs map[string]Message) []termui.Cell {
+	cells := make([]termui.Cell, 0)
+	sortedMessages := SortMessages(msgs)
+
+	for i, msg := range sortedMessages {
+		cells = append(cells, c.MessageToCells(msg)...)
+
+		if len(msg.Messages) > 0 {
+			cells = append(cells, termui.Cell{Ch: '\n'})
+			cells = append(cells, c.MessagesToCells(msg.Messages)...)
+		}
+
+		// Add a newline after every message
+		if i < len(sortedMessages)-1 {
+			cells = append(cells, termui.Cell{Ch: '\n'})
+		}
 	}
 
-	for mode, mapping := range cfg.KeyMap {
-		help = append(
-			help,
-			Message{
-				Content: fmt.Sprintf("%s", strings.ToUpper(mode)),
-			},
+	return cells
+}
+
+// MessageToCells will convert a Message struct to termui.Cell
+//
+// We're building parts of the message individually, or else DefaultTxBuilder
+// will interpret potential markdown usage in a message as well.
+func (c *Chat) MessageToCells(msg Message) []termui.Cell {
+	cells := make([]termui.Cell, 0)
+
+	// When msg.Time and msg.Name are empty (in the case of attachments)
+	// don't add the time and name parts.
+	if (msg.Time != time.Time{} && msg.Name != "") {
+		// Time
+		cells = append(cells, termui.DefaultTxBuilder.Build(
+			msg.GetTime(),
+			termui.ColorDefault, termui.ColorDefault)...,
 		)
 
-		help = append(help, Message{Content: ""})
+		// Thread
+		cells = append(cells, termui.DefaultTxBuilder.Build(
+			msg.GetThread(),
+			termui.ColorDefault, termui.ColorDefault)...,
+		)
+
+		// Name
+		cells = append(cells, termui.DefaultTxBuilder.Build(
+			msg.GetName(),
+			termui.ColorDefault, termui.ColorDefault)...,
+		)
+	}
+
+	// Hack, in order to get the correct fg and bg attributes. This is
+	// because the readAttr function in termui is unexported.
+	txCells := termui.DefaultTxBuilder.Build(
+		msg.GetContent(),
+		termui.ColorDefault, termui.ColorDefault,
+	)
+
+	// Text
+	for _, r := range msg.Content {
+		cells = append(
+			cells,
+			termui.Cell{
+				Ch: r,
+				Fg: txCells[0].Fg,
+				Bg: txCells[0].Bg,
+			},
+		)
+	}
+
+	return cells
+}
+
+// Help shows the usage and key bindings in the chat pane
+func (c *Chat) Help(usage string, cfg *config.Config) {
+	msgUsage := Message{
+		ID:      fmt.Sprintf("%d", time.Now().UnixNano()),
+		Content: usage,
+	}
+
+	c.Messages[msgUsage.ID] = msgUsage
+
+	for mode, mapping := range cfg.KeyMap {
+		msgMode := Message{
+			ID:      fmt.Sprintf("%d", time.Now().UnixNano()),
+			Content: fmt.Sprintf("%s", strings.ToUpper(mode)),
+		}
+		c.Messages[msgMode.ID] = msgMode
+
+		msgNewline := Message{
+			ID:      fmt.Sprintf("%d", time.Now().UnixNano()),
+			Content: "",
+		}
+		c.Messages[msgNewline.ID] = msgNewline
 
 		var keys []string
 		for k := range mapping {
@@ -337,16 +351,14 @@ func (c *Chat) Help(usage string, cfg *config.Config) {
 		sort.Strings(keys)
 
 		for _, k := range keys {
-			help = append(
-				help,
-				Message{
-					Content: fmt.Sprintf("    %-12s%-15s", k, mapping[k]),
-				},
-			)
+			msgKey := Message{
+				ID:      fmt.Sprintf("%d", time.Now().UnixNano()),
+				Content: fmt.Sprintf("    %-12s%-15s", k, mapping[k]),
+			}
+			c.Messages[msgKey.ID] = msgKey
 		}
 
-		help = append(help, Message{Content: ""})
+		msgNewline.ID = fmt.Sprintf("%d", time.Now().UnixNano())
+		c.Messages[msgNewline.ID] = msgNewline
 	}
-
-	c.Messages = help
 }

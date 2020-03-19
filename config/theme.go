@@ -18,6 +18,7 @@ type View struct {
 type Message struct {
 	Time       string `json:"time"`
 	Name       string `json:"name"`
+	Thread     string `json:"thread"`
 	Text       string `json:"text"`
 	TimeFormat string `json:"time_format"`
 }
