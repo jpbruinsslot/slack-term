@@ -4,7 +4,7 @@ github.com/0xAX/notificator
 github.com/OpenPeeDeeP/xdg
 # github.com/erroneousboat/termui v0.0.0-20170923115141-80f245cdfa04
 github.com/erroneousboat/termui
-# github.com/gorilla/websocket v1.4.1
+# github.com/gorilla/websocket v1.4.2
 github.com/gorilla/websocket
 # github.com/lithammer/fuzzysearch v1.1.0
 github.com/lithammer/fuzzysearch/fuzzy
@@ -14,15 +14,15 @@ github.com/maruel/panicparse/stack
 github.com/mattn/go-runewidth
 # github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7
 github.com/mitchellh/go-wordwrap
-# github.com/nlopes/slack v0.6.1-0.20191106133607-d06c2a2b3249
-github.com/nlopes/slack
-github.com/nlopes/slack/internal/errorsx
-github.com/nlopes/slack/internal/timex
-github.com/nlopes/slack/slackutilsx
 # github.com/nsf/termbox-go v0.0.0-20191229070316-58d4fcbce2a7
 github.com/nsf/termbox-go
-# github.com/pkg/errors v0.8.1
+# github.com/pkg/errors v0.9.1
 github.com/pkg/errors
+# github.com/slack-go/slack v0.6.3
+github.com/slack-go/slack
+github.com/slack-go/slack/internal/errorsx
+github.com/slack-go/slack/internal/timex
+github.com/slack-go/slack/slackutilsx
 # golang.org/x/text v0.3.2
 golang.org/x/text/runes
 golang.org/x/text/transform

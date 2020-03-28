@@ -56,15 +56,16 @@ func (b *Blocks) UnmarshalJSON(data []byte) error {
 			block = &ContextBlock{}
 		case "divider":
 			block = &DividerBlock{}
+		case "file":
+			block = &FileBlock{}
 		case "image":
 			block = &ImageBlock{}
+		case "input":
+			block = &InputBlock{}
 		case "section":
 			block = &SectionBlock{}
-		case "rich_text":
-			// for now ignore the (complex) content of rich_text blocks until we can fully support it
-			continue
 		default:
-			return errors.New("unsupported block type")
+			block = &UnknownBlock{}
 		}
 
 		err = json.Unmarshal(r, block)
@@ -76,6 +77,46 @@ func (b *Blocks) UnmarshalJSON(data []byte) error {
 	}
 
 	*b = blocks
+	return nil
+}
+
+// UnmarshalJSON implements the Unmarshaller interface for InputBlock, so that any JSON
+// unmarshalling is delegated and proper type determination can be made before unmarshal
+func (b *InputBlock) UnmarshalJSON(data []byte) error {
+	type alias InputBlock
+	a := struct {
+		Element json.RawMessage `json:"element"`
+		*alias
+	}{
+		alias: (*alias)(b),
+	}
+
+	if err := json.Unmarshal(data, &a); err != nil {
+		return err
+	}
+
+	s := sumtype{}
+	if err := json.Unmarshal(a.Element, &s); err != nil {
+		return nil
+	}
+
+	var e BlockElement
+	switch s.TypeVal {
+	case "datepicker":
+		e = &DatePickerBlockElement{}
+	case "plain_text_input":
+		e = &PlainTextInputBlockElement{}
+	case "static_select", "external_select", "users_select", "conversations_select", "channels_select":
+		e = &SelectBlockElement{}
+	default:
+		return errors.New("unsupported block element type")
+	}
+
+	if err := json.Unmarshal(a.Element, e); err != nil {
+		return err
+	}
+	b.Element = e
+
 	return nil
 }
 
@@ -127,6 +168,8 @@ func (b *BlockElements) UnmarshalJSON(data []byte) error {
 			blockElement = &OverflowBlockElement{}
 		case "datepicker":
 			blockElement = &DatePickerBlockElement{}
+		case "plain_text_input":
+			blockElement = &PlainTextInputBlockElement{}
 		case "static_select", "external_select", "users_select", "conversations_select", "channels_select":
 			blockElement = &SelectBlockElement{}
 		default:
@@ -206,12 +249,36 @@ func (a *Accessory) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		a.DatePickerElement = element.(*DatePickerBlockElement)
-	case "static_select":
+	case "plain_text_input":
+		element, err := unmarshalBlockElement(r, &PlainTextInputBlockElement{})
+		if err != nil {
+			return err
+		}
+		a.PlainTextInputElement = element.(*PlainTextInputBlockElement)
+	case "radio_buttons":
+		element, err := unmarshalBlockElement(r, &RadioButtonsBlockElement{})
+		if err != nil {
+			return err
+		}
+		a.RadioButtonsElement = element.(*RadioButtonsBlockElement)
+	case "static_select", "external_select", "users_select", "conversations_select", "channels_select":
 		element, err := unmarshalBlockElement(r, &SelectBlockElement{})
 		if err != nil {
 			return err
 		}
 		a.SelectElement = element.(*SelectBlockElement)
+	case "multi_static_select", "multi_external_select", "multi_users_select", "multi_conversations_select", "multi_channels_select":
+		element, err := unmarshalBlockElement(r, &MultiSelectBlockElement{})
+		if err != nil {
+			return err
+		}
+		a.MultiSelectElement = element.(*MultiSelectBlockElement)
+	default:
+		element, err := unmarshalBlockElement(r, &UnknownBlockElement{})
+		if err != nil {
+			return err
+		}
+		a.UnknownElement = element.(*UnknownBlockElement)
 	}
 
 	return nil
@@ -238,8 +305,17 @@ func toBlockElement(element *Accessory) BlockElement {
 	if element.DatePickerElement != nil {
 		return element.DatePickerElement
 	}
+	if element.PlainTextInputElement != nil {
+		return element.PlainTextInputElement
+	}
+	if element.RadioButtonsElement != nil {
+		return element.RadioButtonsElement
+	}
 	if element.SelectElement != nil {
 		return element.SelectElement
+	}
+	if element.MultiSelectElement != nil {
+		return element.MultiSelectElement
 	}
 
 	return nil

@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nlopes/slack"
+	"github.com/slack-go/slack"
 
 	"github.com/erroneousboat/slack-term/components"
 	"github.com/erroneousboat/slack-term/config"

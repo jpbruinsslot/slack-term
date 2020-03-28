@@ -11,8 +11,8 @@ import (
 
 	"github.com/0xAX/notificator"
 	"github.com/erroneousboat/termui"
-	"github.com/nlopes/slack"
 	termbox "github.com/nsf/termbox-go"
+	"github.com/slack-go/slack"
 
 	"github.com/erroneousboat/slack-term/components"
 	"github.com/erroneousboat/slack-term/config"
