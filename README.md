@@ -41,7 +41,7 @@ docker run -it -v [config-file]:/config erroneousboat/slack-term
 Setup
 -----
 
-1. Get a slack token, click [here](https://api.slack.com/docs/oauth-test-tokens)
+1. Get a slack token, click [here](https://github.com/erroneousboat/slack-term/wiki#running-slack-term-without-legacy-tokens)
 
 2. Running `slack-term` for the first time, will create a default config file at
    `~/.config/slack-term/config`.
