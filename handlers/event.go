@@ -129,6 +129,43 @@ func messageHandler(ctx *context.AppContext) {
 						continue
 					}
 
+					// We have a new channel (most likely an IM) so we need to re-populate the channel list
+					if ev.Channel != ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID {
+						slackChans, err := ctx.Service.GetChannels()
+						if err != nil {
+							ctx.View.Debug.Println(
+								err.Error(),
+							)
+						}
+
+						// Channels: set channels in component
+						ctx.View.Channels.SetChannels(slackChans)
+
+						// Repopulate message buffer so we don't wipe content repopulating channel list
+						msgs, thr, err := ctx.Service.GetMessages(
+							ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID,
+							ctx.View.Chat.GetMaxItems(),
+						)
+						if err != nil {
+							ctx.View.Debug.Println(
+								err.Error(),
+							)
+						}
+
+						ctx.View.Chat.SetMessages(msgs)
+
+						if len(thr) > 0 {
+
+							// Make the first thread the current Channel
+							ctx.View.Threads.SetChannels(
+								append(
+									[]components.ChannelItem{ctx.View.Channels.GetSelectedChannel()},
+									thr...,
+								),
+							)
+						}
+					}
+
 					// Add message to the selected channel
 					if ev.Channel == ctx.View.Channels.ChannelItems[ctx.View.Channels.SelectedChannel].ID {
 
