@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sort"
 	fp "path/filepath"
 
 	"github.com/OpenPeeDeeP/xdg"
@@ -20,6 +21,7 @@ const (
 // Config is the definition of a Config struct
 type Config struct {
 	SlackToken   string                `json:"slack_token"`
+	Workspaces   map[string]Config     `json:"workspaces"`
 	Notify       string                `json:"notify"`
 	Emoji        bool                  `json:"emoji"`
 	SidebarWidth int                   `json:"sidebar_width"`
@@ -32,7 +34,7 @@ type Config struct {
 type keyMapping map[string]string
 
 // NewConfig loads the config file and returns a Config struct
-func NewConfig(filepath string) (*Config, error) {
+func NewConfig(filepath string, workspaceName string) (*Config, error) {
 	cfg := getDefaultConfig()
 
 	// Open config file, and when none is found or present create
@@ -47,6 +49,43 @@ func NewConfig(filepath string) (*Config, error) {
 
 	if err := json.NewDecoder(file).Decode(&cfg); err != nil {
 		return &cfg, fmt.Errorf("the slack-term config file isn't valid json: (%v)", err)
+	}
+
+	// If no workspace is specified, select the first (ABC-order).
+	if workspaceName == "" {
+		keys := make([]string, len(cfg.Workspaces))
+		i := 0
+		for k := range cfg.Workspaces {
+			keys[i] = k
+			i++
+		}
+		sort.Strings(keys)
+		workspaceName = keys[0]
+	}
+	workspaceConfig := cfg.Workspaces[workspaceName]
+
+	// Overwrite all options if they're specified in the
+	// workspace-specific config:
+	cfg.SlackToken = workspaceConfig.SlackToken
+
+	if workspaceConfig.Notify != "" {
+		cfg.Notify = workspaceConfig.Notify
+	}
+
+	// TODO: There's no way to distinguish between falsy and unset.
+	// cfg.Emoji = workspaceConfig.Emoji
+
+	if workspaceConfig.SidebarWidth != 0 {
+		cfg.SidebarWidth = workspaceConfig.SidebarWidth
+	}
+	if workspaceConfig.MainWidth != 0 {
+		cfg.MainWidth = workspaceConfig.MainWidth
+	}
+	if workspaceConfig.KeyMap != nil {
+		cfg.KeyMap = workspaceConfig.KeyMap
+	}
+	if workspaceConfig.Theme != *new(Theme) {
+		cfg.Theme = workspaceConfig.Theme
 	}
 
 	if cfg.SidebarWidth < 1 || cfg.SidebarWidth > 11 {

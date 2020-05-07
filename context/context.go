@@ -40,7 +40,7 @@ type AppContext struct {
 
 // CreateAppContext creates an application context which can be passed
 // and referenced througout the application
-func CreateAppContext(flgConfig string, flgToken string, flgDebug bool, version string, usage string) (*AppContext, error) {
+func CreateAppContext(flgConfig string, flgWorkspace string, flgDebug bool, version string, usage string) (*AppContext, error) {
 	if flgDebug {
 		go func() {
 			http.ListenAndServe(":6060", nil)
@@ -51,19 +51,15 @@ func CreateAppContext(flgConfig string, flgToken string, flgDebug bool, version 
 	views.Loading()
 
 	// Load config
-	config, err := config.NewConfig(flgConfig)
+	config, err := config.NewConfig(flgConfig, flgWorkspace)
 	if err != nil {
 		return nil, err
 	}
 
-	// When slack token isn't set in the config file, we'll check
+	// When slack token still isn't set in the config file, we'll check
 	// the command-line flag or the environment variable
 	if config.SlackToken == "" {
-		if flgToken != "" {
-			config.SlackToken = flgToken
-		} else {
-			config.SlackToken = os.Getenv("SLACK_TOKEN")
-		}
+		config.SlackToken = os.Getenv("SLACK_TOKEN")
 	}
 
 	// Create desktop notifier
