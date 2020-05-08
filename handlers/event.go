@@ -655,15 +655,14 @@ func actionNewMessage(ctx *context.AppContext, ev *slack.MessageEvent) {
 	ctx.View.Channels.MarkAsUnread(ev.Channel)
 	termui.Render(ctx.View.Channels)
 
-	// Terminal bell
-	fmt.Print("\a")
-
 	// Desktop notification
 	if ctx.Config.Notify == config.NotifyMention {
 		if isMention(ctx, ev) {
 			createNotifyMessage(ctx, ev)
 		}
 	} else if ctx.Config.Notify == config.NotifyAll {
+		createNotifyMessage(ctx, ev)
+	} else if isHighlight(ctx, ev) {
 		createNotifyMessage(ctx, ev)
 	}
 }
@@ -780,7 +779,27 @@ func isMention(ctx *context.AppContext, ev *slack.MessageEvent) bool {
 	return false
 }
 
+// isHighlight check if the message contains a notify keyword
+func isHighlight(ctx *context.AppContext, ev *slack.MessageEvent) bool {
+	for _, substr := range strings.Split(ctx.Config.Notify, ",") {
+		if strings.Compare(substr, config.NotifyMention) == 0 {
+			if isMention(ctx, ev) {
+				return true
+			}
+		} else if strings.Contains(ev.Text, substr) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func createNotifyMessage(ctx *context.AppContext, ev *slack.MessageEvent) {
+	// Terminal bell
+	fmt.Print("\a")
+	// Mark as mentioned
+	ctx.View.Channels.MarkAsMention(ev.Channel)
+	// Desktop notification
 	go func() {
 		if notifyTimer != nil {
 			notifyTimer.Stop()
