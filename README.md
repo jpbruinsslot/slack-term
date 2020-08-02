@@ -44,7 +44,8 @@ Setup
 1. Get a slack token, click [here](https://github.com/erroneousboat/slack-term/wiki#running-slack-term-without-legacy-tokens)
 
 2. Running `slack-term` for the first time, will create a default config file at
-   `~/.config/slack-term/config`.
+   `~/.config/slack-term/config` (Linux; plase see [here](https://github.com/OpenPeeDeeP/xdg#locations-per-os)
+   for default paths on other OS). 
 
 ```bash
 $ slack-term
