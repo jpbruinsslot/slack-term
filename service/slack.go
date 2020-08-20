@@ -312,6 +312,23 @@ func (s *SlackService) SendMessage(channelID string, message string) error {
 	return nil
 }
 
+func (s *SlackService) SendFile(channelID string, filepath string) error {
+
+	// https://godoc.org/github.com/nlopes/slack#Client.UploadFile
+	channels := []string{channelID}
+	params := slack.FileUploadParameters{
+		File:          filepath,
+		Channels:        channels,
+	}
+	_, err := s.Client.UploadFile(params)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // SendReply will send a message to a particular thread, specifying the
 // ThreadTimestamp will make it reply to that specific thread. (see:
 // https://api.slack.com/docs/message-threading, 'Posting replies')
@@ -370,6 +387,21 @@ func (s *SlackService) SendCommand(channelID string, message string) (bool, erro
 		msg := subMatch[3]
 
 		err := s.SendReply(channelID, threadID, msg)
+		if err != nil {
+			return false, err
+		}
+
+		return true, nil
+	case "/file":
+		command := strings.Split(message, " ")
+
+		if len(command) < 2 {
+			return false, err
+		}
+
+		filepath := command[1]
+
+		err := s.SendFile(channelID, filepath)
 		if err != nil {
 			return false, err
 		}
