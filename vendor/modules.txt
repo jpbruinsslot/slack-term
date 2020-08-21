@@ -1,6 +1,6 @@
 # github.com/0xAX/notificator v0.0.0-20171022182052-88d57ee9043b
 github.com/0xAX/notificator
-# github.com/OpenPeeDeeP/xdg v0.2.0
+# github.com/OpenPeeDeeP/xdg v1.0.0
 github.com/OpenPeeDeeP/xdg
 # github.com/erroneousboat/termui v0.0.0-20170923115141-80f245cdfa04
 github.com/erroneousboat/termui
