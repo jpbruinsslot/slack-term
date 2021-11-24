@@ -34,6 +34,7 @@ type ChannelItem struct {
 	UserID       string
 	Presence     string
 	Notification bool
+	Muted        bool
 
 	StylePrefix string
 	StyleIcon   string
@@ -47,6 +48,8 @@ func (c ChannelItem) ToString() string {
 	var prefix string
 	if c.Notification {
 		prefix = IconNotification
+	} else if c.Muted {
+		prefix = "-"
 	} else {
 		prefix = " "
 	}
@@ -248,11 +251,27 @@ func (c *Channels) MoveCursorUp() {
 	}
 }
 
+// MoveCursorUpFast will decrease the SelectedChannel by 10
+func (c *Channels) MoveCursorUpFast() {
+	j := 20
+	if c.SelectedChannel > j {
+		c.GotoPosition(c.SelectedChannel - j)
+	}
+}
+
 // MoveCursorDown will increase the SelectedChannel by 1
 func (c *Channels) MoveCursorDown() {
 	if c.SelectedChannel < len(c.ChannelItems)-1 {
 		c.SetSelectedChannel(c.SelectedChannel + 1)
 		c.ScrollDown()
+	}
+}
+
+// MoveCursorDownFast will increase the SelectedChannel by 10
+func (c *Channels) MoveCursorDownFast() {
+	j := 20
+	if c.SelectedChannel < len(c.ChannelItems)-j {
+		c.GotoPosition(c.SelectedChannel + j)
 	}
 }
 

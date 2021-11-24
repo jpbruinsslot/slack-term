@@ -45,7 +45,9 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 	// arrives
 	authTest, err := svc.Client.AuthTest()
 	if err != nil {
-		return nil, errors.New("not able to authorize client, check your connection and if your slack-token is set correctly")
+		return nil, errors.New(
+			"not able to authorize client, check your connection and if your slack-token is set correctly",
+		)
 	}
 	svc.CurrentUserID = authTest.UserID
 
@@ -75,6 +77,19 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 }
 
 func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
+
+	// find muted
+	userPrefs, err := s.Client.GetUserPrefs()
+	if err != nil {
+		return nil, err
+	}
+	m := strings.Split(userPrefs.UserPrefs.MutedChannels, ",")
+	muted := make(map[string]struct{})
+
+	for _, chn := range m {
+		muted[chn] = struct{}{}
+	}
+
 	slackChans := make([]slack.Channel, 0)
 
 	// Initial request
@@ -136,7 +151,8 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 
 	var wg sync.WaitGroup
 	for _, chn := range slackChans {
-		chanItem := s.createChannelItem(chn)
+		_, mute := muted[chn.ID]
+		chanItem := s.createChannelItem(chn, mute)
 
 		if chn.IsChannel {
 			if !chn.IsMember {
@@ -145,7 +161,7 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 
 			chanItem.Type = components.ChannelTypeChannel
 
-			if chn.UnreadCount > 0 {
+			if chn.UnreadCount > 0 && !mute {
 				chanItem.Notification = true
 			}
 
@@ -168,7 +184,7 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 
 				chanItem.Type = components.ChannelTypeMpIM
 
-				if chn.UnreadCount > 0 {
+				if chn.UnreadCount > 0 && !mute {
 					chanItem.Notification = true
 				}
 
@@ -180,7 +196,7 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 
 				chanItem.Type = components.ChannelTypeGroup
 
-				if chn.UnreadCount > 0 {
+				if chn.UnreadCount > 0 && !mute {
 					chanItem.Notification = true
 				}
 
@@ -408,7 +424,10 @@ func (s *SlackService) SendCommand(channelID string, message string) (bool, erro
 // GetMessages will get messages for a channel, group or im channel delimited
 // by a count. It will return the messages, the thread identifiers
 // (as ChannelItem), and and error.
-func (s *SlackService) GetMessages(channelID string, count int) ([]components.Message, []components.ChannelItem, error) {
+func (s *SlackService) GetMessages(
+	channelID string,
+	count int,
+) ([]components.Message, []components.ChannelItem, error) {
 
 	// https://godoc.org/github.com/nlopes/slack#GetConversationHistoryParameters
 	historyParams := slack.GetConversationHistoryParameters{
@@ -753,7 +772,10 @@ func (s *SlackService) CreateMessageFromFiles(files []slack.File) []components.M
 	return msgs
 }
 
-func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent, channelID string) (components.Message, error) {
+func (s *SlackService) CreateMessageFromMessageEvent(
+	message *slack.MessageEvent,
+	channelID string,
+) (components.Message, error) {
 	msg := slack.Message{Msg: message.Msg}
 
 	switch message.SubType {
@@ -845,12 +867,13 @@ func parseEmoji(msg string) string {
 	)
 }
 
-func (s *SlackService) createChannelItem(chn slack.Channel) components.ChannelItem {
+func (s *SlackService) createChannelItem(chn slack.Channel, m bool) components.ChannelItem {
 	return components.ChannelItem{
 		ID:          chn.ID,
-		Name:        chn.Name,
+		Name:        chn.NameNormalized,
 		Topic:       chn.Topic.Value,
 		UserID:      chn.User,
+		Muted:       m,
 		StylePrefix: s.Config.Theme.Channel.Prefix,
 		StyleIcon:   s.Config.Theme.Channel.Icon,
 		StyleText:   s.Config.Theme.Channel.Text,
