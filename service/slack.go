@@ -61,7 +61,7 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 	for _, user := range users {
 		// only add non-deleted users
 		if !user.Deleted {
-			svc.UserCache[user.ID] = user.Name
+			svc.UserCache[user.ID] = user.RealName
 		}
 	}
 
@@ -100,8 +100,8 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 			Types: []string{
 				"public_channel",
 				"private_channel",
-				"im",
 				"mpim",
+				"im",
 			},
 		},
 	)
@@ -151,8 +151,20 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 
 	var wg sync.WaitGroup
 	for _, chn := range slackChans {
+		// just skip muted channels
 		_, mute := muted[chn.ID]
-		chanItem := s.createChannelItem(chn, mute)
+		if mute {
+			continue
+		}
+
+		// hack for mpdm messages actually showing up as channels for some reason
+		if chn.IsChannel && strings.HasPrefix(chn.Name, "mpdm-") {
+			chn.IsChannel = false
+			chn.IsGroup = true
+			chn.IsMpIM = true
+		}
+
+		chanItem := s.createChannelItem(chn)
 
 		if chn.IsChannel {
 			if !chn.IsMember {
@@ -160,6 +172,8 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 			}
 
 			chanItem.Type = components.ChannelTypeChannel
+
+			chanItem.Muted = mute
 
 			if chn.UnreadCount > 0 && !mute {
 				chanItem.Notification = true
@@ -179,8 +193,18 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 			// This is done because MpIM channels are also considered groups
 			if chn.IsMpIM {
 				if !chn.IsOpen {
-					continue
+					//continue
 				}
+				//if chn.IsArchived {
+				//	continue
+				//}
+				/*
+					chanItem.Name = ""
+					for _, id := range chn.Members {
+						//chanItem.Name = chanItem.Name + ", " + s.UserCache[id]
+						chanItem.Name = chanItem.Name + ", " + id
+					}
+				*/
 
 				chanItem.Type = components.ChannelTypeMpIM
 
@@ -214,6 +238,9 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 			// and see if we have the user in the UserCache
 			name, ok := s.UserCache[chn.User]
 			if !ok {
+				continue
+			}
+			if chn.Unlinked != 0 {
 				continue
 			}
 
@@ -837,8 +864,8 @@ func parseMentions(s *SlackService, msg string) string {
 					name = "unknown"
 					s.UserCache[userID] = name
 				} else {
-					name = user.Name
-					s.UserCache[userID] = user.Name
+					name = user.RealName
+					s.UserCache[userID] = user.RealName
 				}
 			}
 
@@ -867,13 +894,12 @@ func parseEmoji(msg string) string {
 	)
 }
 
-func (s *SlackService) createChannelItem(chn slack.Channel, m bool) components.ChannelItem {
+func (s *SlackService) createChannelItem(chn slack.Channel) components.ChannelItem {
 	return components.ChannelItem{
 		ID:          chn.ID,
 		Name:        chn.NameNormalized,
 		Topic:       chn.Topic.Value,
 		UserID:      chn.User,
-		Muted:       m,
 		StylePrefix: s.Config.Theme.Channel.Prefix,
 		StyleIcon:   s.Config.Theme.Channel.Icon,
 		StyleText:   s.Config.Theme.Channel.Text,

@@ -214,7 +214,9 @@ func (c *Channels) MarkAsRead(channelID int) {
 
 func (c *Channels) MarkAsUnread(channelID string) {
 	index := c.FindChannel(channelID)
-	c.ChannelItems[index].Notification = true
+	if !c.ChannelItems[index].Muted {
+		c.ChannelItems[index].Notification = true
+	}
 }
 
 func (c *Channels) SetPresence(channelID string, presence string) {
@@ -253,7 +255,7 @@ func (c *Channels) MoveCursorUp() {
 
 // MoveCursorUpFast will decrease the SelectedChannel by 10
 func (c *Channels) MoveCursorUpFast() {
-	j := 20
+	j := 30
 	if c.SelectedChannel > j {
 		c.GotoPosition(c.SelectedChannel - j)
 	}
@@ -269,7 +271,7 @@ func (c *Channels) MoveCursorDown() {
 
 // MoveCursorDownFast will increase the SelectedChannel by 10
 func (c *Channels) MoveCursorDownFast() {
-	j := 20
+	j := 30
 	if c.SelectedChannel < len(c.ChannelItems)-j {
 		c.GotoPosition(c.SelectedChannel + j)
 	}
