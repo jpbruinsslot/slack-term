@@ -95,7 +95,7 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 	// Initial request
 	initChans, initCur, err := s.Client.GetConversations(
 		&slack.GetConversationsParameters{
-			ExcludeArchived: "true",
+			ExcludeArchived: true,
 			Limit:           1000,
 			Types: []string{
 				"public_channel",
@@ -117,7 +117,7 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 		channels, cursor, err := s.Client.GetConversations(
 			&slack.GetConversationsParameters{
 				Cursor:          nextCur,
-				ExcludeArchived: "true",
+				ExcludeArchived: true,
 				Limit:           1000,
 				Types: []string{
 					"public_channel",
@@ -312,25 +312,52 @@ func (s *SlackService) SetUserAsActive() {
 func (s *SlackService) MarkAsRead(channelItem components.ChannelItem) {
 	switch channelItem.Type {
 	case components.ChannelTypeChannel:
-		s.Client.SetChannelReadMark(
-			channelItem.ID, fmt.Sprintf("%f",
-				float64(time.Now().Unix())),
-		)
+		e := slack.ChannelMarkedEvent{
+			Type:      "channel_marked",
+			Channel:   channelItem.ID,
+			Timestamp: fmt.Sprintf("%f", float64(time.Now().Unix())),
+		}
+
+		s.RTM.IncomingEvents <- slack.RTMEvent{
+			Type: "channel_marked",
+			Data: e,
+		}
+
 	case components.ChannelTypeGroup:
-		s.Client.SetGroupReadMark(
-			channelItem.ID, fmt.Sprintf("%f",
-				float64(time.Now().Unix())),
-		)
+		e := slack.GroupMarkedEvent{
+			Type:      "channel_marked",
+			Channel:   channelItem.ID,
+			Timestamp: fmt.Sprintf("%f", float64(time.Now().Unix())),
+		}
+
+		s.RTM.IncomingEvents <- slack.RTMEvent{
+			Type: "group_marked",
+			Data: e,
+		}
+
 	case components.ChannelTypeMpIM:
-		s.Client.MarkIMChannel(
-			channelItem.ID, fmt.Sprintf("%f",
-				float64(time.Now().Unix())),
-		)
+		e := slack.GroupMarkedEvent{
+			Type:      "channel_marked",
+			Channel:   channelItem.ID,
+			Timestamp: fmt.Sprintf("%f", float64(time.Now().Unix())),
+		}
+
+		s.RTM.IncomingEvents <- slack.RTMEvent{
+			Type: "group_marked",
+			Data: e,
+		}
+
 	case components.ChannelTypeIM:
-		s.Client.MarkIMChannel(
-			channelItem.ID, fmt.Sprintf("%f",
-				float64(time.Now().Unix())),
-		)
+		e := slack.IMMarkedEvent{
+			Type:      "channel_marked",
+			Channel:   channelItem.ID,
+			Timestamp: fmt.Sprintf("%f", float64(time.Now().Unix())),
+		}
+
+		s.RTM.IncomingEvents <- slack.RTMEvent{
+			Type: "im_marked",
+			Data: e,
+		}
 	}
 }
 
