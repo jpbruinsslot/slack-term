@@ -146,16 +146,12 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 	buckets := make(map[int]map[string]*tempChan)
 	buckets[0] = make(map[string]*tempChan) // Channels
 	buckets[1] = make(map[string]*tempChan) // Group
-	buckets[2] = make(map[string]*tempChan) // MpIM
-	buckets[3] = make(map[string]*tempChan) // IM
+	buckets[2] = make(map[string]*tempChan) // Muted
+	buckets[3] = make(map[string]*tempChan) // MpIM
+	buckets[4] = make(map[string]*tempChan) // IM
 
 	var wg sync.WaitGroup
 	for _, chn := range slackChans {
-		// just skip muted channels
-		_, mute := muted[chn.ID]
-		if mute {
-			continue
-		}
 
 		// hack for mpdm messages actually showing up as channels for some reason
 		if chn.IsChannel && strings.HasPrefix(chn.Name, "mpdm-") {
@@ -164,7 +160,26 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 			chn.IsMpIM = true
 		}
 
+		// check if listed as muted channel
+		_, mute := muted[chn.ID]
+
 		chanItem := s.createChannelItem(chn)
+		chanItem.Muted = mute
+
+		if chn.UnreadCount > 0 {
+			chanItem.Notification = true
+		}
+
+		if mute {
+			chanItem.Type = components.ChannelTypeMuted
+			buckets[2][chn.ID] = &tempChan{
+				channelItem:  chanItem,
+				slackChannel: chn,
+			}
+
+			//muted channels are technically also channels/groups etc so we don't want them to list twice
+			continue
+		}
 
 		if chn.IsChannel {
 			if !chn.IsMember {
@@ -172,12 +187,6 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 			}
 
 			chanItem.Type = components.ChannelTypeChannel
-
-			chanItem.Muted = mute
-
-			if chn.UnreadCount > 0 && !mute {
-				chanItem.Notification = true
-			}
 
 			buckets[0][chn.ID] = &tempChan{
 				channelItem:  chanItem,
@@ -193,8 +202,9 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 			// This is done because MpIM channels are also considered groups
 			if chn.IsMpIM {
 				if !chn.IsOpen {
-					//continue
+					continue
 				}
+
 				//if chn.IsArchived {
 				//	continue
 				//}
@@ -208,21 +218,13 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 
 				chanItem.Type = components.ChannelTypeMpIM
 
-				if chn.UnreadCount > 0 && !mute {
-					chanItem.Notification = true
-				}
-
-				buckets[2][chn.ID] = &tempChan{
+				buckets[3][chn.ID] = &tempChan{
 					channelItem:  chanItem,
 					slackChannel: chn,
 				}
+
 			} else {
-
 				chanItem.Type = components.ChannelTypeGroup
-
-				if chn.UnreadCount > 0 && !mute {
-					chanItem.Notification = true
-				}
 
 				buckets[1][chn.ID] = &tempChan{
 					channelItem:  chanItem,
@@ -234,13 +236,17 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 		// NOTE: user presence is set in the event handler by the function
 		// `actionSetPresenceAll`, that is why we set the presence to away
 		if chn.IsIM {
+			//if !chn.IsOpen {
+			//	//continue
+			//}
+			//if chn.Unlinked != 0 {
+			//	continue
+			//}
+
 			// Check if user is deleted, we do this by checking the user id,
 			// and see if we have the user in the UserCache
 			name, ok := s.UserCache[chn.User]
 			if !ok {
-				continue
-			}
-			if chn.Unlinked != 0 {
 				continue
 			}
 
@@ -248,11 +254,7 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 			chanItem.Type = components.ChannelTypeIM
 			chanItem.Presence = "away"
 
-			if chn.UnreadCount > 0 {
-				chanItem.Notification = true
-			}
-
-			buckets[3][chn.User] = &tempChan{
+			buckets[4][chn.User] = &tempChan{
 				channelItem:  chanItem,
 				slackChannel: chn,
 			}
