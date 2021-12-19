@@ -81,10 +81,12 @@ in your `config` file.
 | command | `/`       | search mode                |
 | command | `k`       | move channel cursor up     |
 | command | `j`       | move channel cursor down   |
+| command | `K`       | move 30 channel cursor up  |
+| command | `J`       | move 30 channel cursor down|
 | command | `g`       | move channel cursor top    |
 | command | `G`       | move channel cursor bottom |
-| command | `K`       | thread up                  |
-| command | `J`       | thread down                |
+| command | `l`       | thread up                  |
+| command | `h`       | thread down                |
 | command | `G`       | move channel cursor bottom |
 | command | `pg-up`   | scroll chat pane up        |
 | command | `ctrl-b`  | scroll chat pane up        |

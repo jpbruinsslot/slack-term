@@ -15,6 +15,7 @@ const (
 	IconGroup        = "☰"
 	IconIM           = "●"
 	IconMpIM         = "☰"
+	IconMuted        = "x"
 	IconNotification = "*"
 
 	PresenceAway   = "away"
@@ -24,6 +25,7 @@ const (
 	ChannelTypeGroup   = "group"
 	ChannelTypeIM      = "im"
 	ChannelTypeMpIM    = "mpim"
+	ChannelTypeMuted   = "mute"
 )
 
 type ChannelItem struct {
@@ -34,6 +36,7 @@ type ChannelItem struct {
 	UserID       string
 	Presence     string
 	Notification bool
+	Muted        bool
 
 	StylePrefix string
 	StyleIcon   string
@@ -59,6 +62,8 @@ func (c ChannelItem) ToString() string {
 		icon = IconGroup
 	case ChannelTypeMpIM:
 		icon = IconMpIM
+	case ChannelTypeMuted:
+		icon = IconMuted
 	case ChannelTypeIM:
 		switch c.Presence {
 		case PresenceActive:
@@ -248,11 +253,31 @@ func (c *Channels) MoveCursorUp() {
 	}
 }
 
+// MoveCursorUpFast will decrease the SelectedChannel by 10
+func (c *Channels) MoveCursorUpFast() {
+	j := 30
+	if c.SelectedChannel > j {
+		c.GotoPosition(c.SelectedChannel - j)
+	} else {
+		c.GotoPosition(0)
+	}
+}
+
 // MoveCursorDown will increase the SelectedChannel by 1
 func (c *Channels) MoveCursorDown() {
 	if c.SelectedChannel < len(c.ChannelItems)-1 {
 		c.SetSelectedChannel(c.SelectedChannel + 1)
 		c.ScrollDown()
+	}
+}
+
+// MoveCursorDownFast will increase the SelectedChannel by 10
+func (c *Channels) MoveCursorDownFast() {
+	j := 30
+	if c.SelectedChannel < len(c.ChannelItems)-j {
+		c.GotoPosition(c.SelectedChannel + j)
+	} else {
+		c.GotoPosition(len(c.ChannelItems) - 1)
 	}
 }
 
@@ -387,7 +412,7 @@ func (c *Channels) SearchPrev() {
 // Jump to the first channel with a notification
 func (c *Channels) Jump() {
 	for i, channel := range c.ChannelItems {
-		if channel.Notification {
+		if channel.Notification && !channel.Muted {
 			c.GotoPosition(i)
 			break
 		}

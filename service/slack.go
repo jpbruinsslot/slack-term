@@ -45,7 +45,9 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 	// arrives
 	authTest, err := svc.Client.AuthTest()
 	if err != nil {
-		return nil, errors.New("not able to authorize client, check your connection and if your slack-token is set correctly")
+		return nil, errors.New(
+			"not able to authorize client, check your connection and if your slack-token is set correctly",
+		)
 	}
 	svc.CurrentUserID = authTest.UserID
 
@@ -59,7 +61,7 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 	for _, user := range users {
 		// only add non-deleted users
 		if !user.Deleted {
-			svc.UserCache[user.ID] = user.Name
+			svc.UserCache[user.ID] = user.RealName
 		}
 	}
 
@@ -75,18 +77,31 @@ func NewSlackService(config *config.Config) (*SlackService, error) {
 }
 
 func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
+
+	// find muted
+	userPrefs, err := s.Client.GetUserPrefs()
+	if err != nil {
+		return nil, err
+	}
+	m := strings.Split(userPrefs.UserPrefs.MutedChannels, ",")
+	muted := make(map[string]struct{})
+
+	for _, chn := range m {
+		muted[chn] = struct{}{}
+	}
+
 	slackChans := make([]slack.Channel, 0)
 
 	// Initial request
 	initChans, initCur, err := s.Client.GetConversations(
 		&slack.GetConversationsParameters{
-			ExcludeArchived: "true",
+			ExcludeArchived: true,
 			Limit:           1000,
 			Types: []string{
 				"public_channel",
 				"private_channel",
-				"im",
 				"mpim",
+				"im",
 			},
 		},
 	)
@@ -102,7 +117,7 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 		channels, cursor, err := s.Client.GetConversations(
 			&slack.GetConversationsParameters{
 				Cursor:          nextCur,
-				ExcludeArchived: "true",
+				ExcludeArchived: true,
 				Limit:           1000,
 				Types: []string{
 					"public_channel",
@@ -131,12 +146,40 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 	buckets := make(map[int]map[string]*tempChan)
 	buckets[0] = make(map[string]*tempChan) // Channels
 	buckets[1] = make(map[string]*tempChan) // Group
-	buckets[2] = make(map[string]*tempChan) // MpIM
-	buckets[3] = make(map[string]*tempChan) // IM
+	buckets[2] = make(map[string]*tempChan) // Muted
+	buckets[3] = make(map[string]*tempChan) // MpIM
+	buckets[4] = make(map[string]*tempChan) // IM
 
 	var wg sync.WaitGroup
 	for _, chn := range slackChans {
+
+		// hack for mpdm messages actually showing up as channels for some reason
+		if chn.IsChannel && strings.HasPrefix(chn.Name, "mpdm-") {
+			chn.IsChannel = false
+			chn.IsGroup = true
+			chn.IsMpIM = true
+		}
+
+		// check if listed as muted channel
+		_, mute := muted[chn.ID]
+
 		chanItem := s.createChannelItem(chn)
+		chanItem.Muted = mute
+
+		if chn.UnreadCount > 0 {
+			chanItem.Notification = true
+		}
+
+		if mute {
+			chanItem.Type = components.ChannelTypeMuted
+			buckets[2][chn.ID] = &tempChan{
+				channelItem:  chanItem,
+				slackChannel: chn,
+			}
+
+			//muted channels are technically also channels/groups etc so we don't want them to list twice
+			continue
+		}
 
 		if chn.IsChannel {
 			if !chn.IsMember {
@@ -144,10 +187,6 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 			}
 
 			chanItem.Type = components.ChannelTypeChannel
-
-			if chn.UnreadCount > 0 {
-				chanItem.Notification = true
-			}
 
 			buckets[0][chn.ID] = &tempChan{
 				channelItem:  chanItem,
@@ -166,23 +205,26 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 					continue
 				}
 
+				//if chn.IsArchived {
+				//	continue
+				//}
+				/*
+					chanItem.Name = ""
+					for _, id := range chn.Members {
+						//chanItem.Name = chanItem.Name + ", " + s.UserCache[id]
+						chanItem.Name = chanItem.Name + ", " + id
+					}
+				*/
+
 				chanItem.Type = components.ChannelTypeMpIM
 
-				if chn.UnreadCount > 0 {
-					chanItem.Notification = true
-				}
-
-				buckets[2][chn.ID] = &tempChan{
+				buckets[3][chn.ID] = &tempChan{
 					channelItem:  chanItem,
 					slackChannel: chn,
 				}
+
 			} else {
-
 				chanItem.Type = components.ChannelTypeGroup
-
-				if chn.UnreadCount > 0 {
-					chanItem.Notification = true
-				}
 
 				buckets[1][chn.ID] = &tempChan{
 					channelItem:  chanItem,
@@ -194,6 +236,13 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 		// NOTE: user presence is set in the event handler by the function
 		// `actionSetPresenceAll`, that is why we set the presence to away
 		if chn.IsIM {
+			//if !chn.IsOpen {
+			//	//continue
+			//}
+			//if chn.Unlinked != 0 {
+			//	continue
+			//}
+
 			// Check if user is deleted, we do this by checking the user id,
 			// and see if we have the user in the UserCache
 			name, ok := s.UserCache[chn.User]
@@ -205,11 +254,7 @@ func (s *SlackService) GetChannels() ([]components.ChannelItem, error) {
 			chanItem.Type = components.ChannelTypeIM
 			chanItem.Presence = "away"
 
-			if chn.UnreadCount > 0 {
-				chanItem.Notification = true
-			}
-
-			buckets[3][chn.User] = &tempChan{
+			buckets[4][chn.User] = &tempChan{
 				channelItem:  chanItem,
 				slackChannel: chn,
 			}
@@ -269,25 +314,52 @@ func (s *SlackService) SetUserAsActive() {
 func (s *SlackService) MarkAsRead(channelItem components.ChannelItem) {
 	switch channelItem.Type {
 	case components.ChannelTypeChannel:
-		s.Client.SetChannelReadMark(
-			channelItem.ID, fmt.Sprintf("%f",
-				float64(time.Now().Unix())),
-		)
+		e := slack.ChannelMarkedEvent{
+			Type:      "channel_marked",
+			Channel:   channelItem.ID,
+			Timestamp: fmt.Sprintf("%f", float64(time.Now().Unix())),
+		}
+
+		s.RTM.IncomingEvents <- slack.RTMEvent{
+			Type: "channel_marked",
+			Data: e,
+		}
+
 	case components.ChannelTypeGroup:
-		s.Client.SetGroupReadMark(
-			channelItem.ID, fmt.Sprintf("%f",
-				float64(time.Now().Unix())),
-		)
+		e := slack.GroupMarkedEvent{
+			Type:      "channel_marked",
+			Channel:   channelItem.ID,
+			Timestamp: fmt.Sprintf("%f", float64(time.Now().Unix())),
+		}
+
+		s.RTM.IncomingEvents <- slack.RTMEvent{
+			Type: "group_marked",
+			Data: e,
+		}
+
 	case components.ChannelTypeMpIM:
-		s.Client.MarkIMChannel(
-			channelItem.ID, fmt.Sprintf("%f",
-				float64(time.Now().Unix())),
-		)
+		e := slack.GroupMarkedEvent{
+			Type:      "channel_marked",
+			Channel:   channelItem.ID,
+			Timestamp: fmt.Sprintf("%f", float64(time.Now().Unix())),
+		}
+
+		s.RTM.IncomingEvents <- slack.RTMEvent{
+			Type: "group_marked",
+			Data: e,
+		}
+
 	case components.ChannelTypeIM:
-		s.Client.MarkIMChannel(
-			channelItem.ID, fmt.Sprintf("%f",
-				float64(time.Now().Unix())),
-		)
+		e := slack.IMMarkedEvent{
+			Type:      "channel_marked",
+			Channel:   channelItem.ID,
+			Timestamp: fmt.Sprintf("%f", float64(time.Now().Unix())),
+		}
+
+		s.RTM.IncomingEvents <- slack.RTMEvent{
+			Type: "im_marked",
+			Data: e,
+		}
 	}
 }
 
@@ -408,7 +480,10 @@ func (s *SlackService) SendCommand(channelID string, message string) (bool, erro
 // GetMessages will get messages for a channel, group or im channel delimited
 // by a count. It will return the messages, the thread identifiers
 // (as ChannelItem), and and error.
-func (s *SlackService) GetMessages(channelID string, count int) ([]components.Message, []components.ChannelItem, error) {
+func (s *SlackService) GetMessages(
+	channelID string,
+	count int,
+) ([]components.Message, []components.ChannelItem, error) {
 
 	// https://godoc.org/github.com/nlopes/slack#GetConversationHistoryParameters
 	historyParams := slack.GetConversationHistoryParameters{
@@ -753,7 +828,10 @@ func (s *SlackService) CreateMessageFromFiles(files []slack.File) []components.M
 	return msgs
 }
 
-func (s *SlackService) CreateMessageFromMessageEvent(message *slack.MessageEvent, channelID string) (components.Message, error) {
+func (s *SlackService) CreateMessageFromMessageEvent(
+	message *slack.MessageEvent,
+	channelID string,
+) (components.Message, error) {
 	msg := slack.Message{Msg: message.Msg}
 
 	switch message.SubType {
@@ -815,8 +893,8 @@ func parseMentions(s *SlackService, msg string) string {
 					name = "unknown"
 					s.UserCache[userID] = name
 				} else {
-					name = user.Name
-					s.UserCache[userID] = user.Name
+					name = user.RealName
+					s.UserCache[userID] = user.RealName
 				}
 			}
 
@@ -848,7 +926,7 @@ func parseEmoji(msg string) string {
 func (s *SlackService) createChannelItem(chn slack.Channel) components.ChannelItem {
 	return components.ChannelItem{
 		ID:          chn.ID,
-		Name:        chn.Name,
+		Name:        chn.NameNormalized,
 		Topic:       chn.Topic.Value,
 		UserID:      chn.User,
 		StylePrefix: s.Config.Theme.Channel.Prefix,

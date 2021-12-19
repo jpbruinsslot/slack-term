@@ -39,7 +39,9 @@ var actionMap = map[string]func(*context.AppContext){
 	"mode-search":         actionSearchMode,
 	"clear-input":         actionClearInput,
 	"channel-up":          actionMoveCursorUpChannels,
+	"channel-up-fast":     actionMoveCursorUpFastChannels,
 	"channel-down":        actionMoveCursorDownChannels,
+	"channel-down-fast":   actionMoveCursorDownFastChannels,
 	"channel-top":         actionMoveCursorTopChannels,
 	"channel-bottom":      actionMoveCursorBottomChannels,
 	"channel-search-next": actionSearchNextChannels,
@@ -81,8 +83,9 @@ func eventHandler(ctx *context.AppContext) {
 
 			// Place your debugging statements here
 			if ctx.Debug {
-				ctx.View.Debug.Println(
-					"event received",
+				ctx.View.Debug.Sprintf(
+					"event received: channel %d, offset %d, pos %d",
+					ctx.View.Channels.SelectedChannel, ctx.View.Channels.Offset, ctx.View.Channels.CursorPosition,
 				)
 			}
 		}
@@ -453,7 +456,24 @@ func actionMoveCursorUpChannels(ctx *context.AppContext) {
 		ctx.View.Channels.MoveCursorUp()
 		termui.Render(ctx.View.Channels)
 
-		scrollTimer = time.NewTimer(time.Second / 4)
+		scrollTimer = time.NewTimer(time.Second / 2)
+		<-scrollTimer.C
+
+		// Only actually change channel when the timer expires
+		actionChangeChannel(ctx)
+	}()
+}
+
+func actionMoveCursorUpFastChannels(ctx *context.AppContext) {
+	go func() {
+		if scrollTimer != nil {
+			scrollTimer.Stop()
+		}
+
+		ctx.View.Channels.MoveCursorUpFast()
+		termui.Render(ctx.View.Channels)
+
+		scrollTimer = time.NewTimer(time.Second / 2)
 		<-scrollTimer.C
 
 		// Only actually change channel when the timer expires
@@ -473,7 +493,27 @@ func actionMoveCursorDownChannels(ctx *context.AppContext) {
 		ctx.View.Channels.MoveCursorDown()
 		termui.Render(ctx.View.Channels)
 
-		scrollTimer = time.NewTimer(time.Second / 4)
+		scrollTimer = time.NewTimer(time.Second / 2)
+		<-scrollTimer.C
+
+		// Only actually change channel when the timer expires
+		actionChangeChannel(ctx)
+	}()
+}
+
+// actionMoveCursorDownFastChannels will execute the actionChangeChannel
+// function. A timer is implemented to support fast scrolling through
+// the list without executing the actionChangeChannel event
+func actionMoveCursorDownFastChannels(ctx *context.AppContext) {
+	go func() {
+		if scrollTimer != nil {
+			scrollTimer.Stop()
+		}
+
+		ctx.View.Channels.MoveCursorDownFast()
+		termui.Render(ctx.View.Channels)
+
+		scrollTimer = time.NewTimer(time.Second / 2)
 		<-scrollTimer.C
 
 		// Only actually change channel when the timer expires
