@@ -334,7 +334,7 @@ func (c *Chat) Help(usage string, cfg *config.Config) {
 	for mode, mapping := range cfg.KeyMap {
 		msgMode := Message{
 			ID:      fmt.Sprintf("%d", time.Now().UnixNano()),
-			Content: fmt.Sprintf("%s", strings.ToUpper(mode)),
+			Content: strings.ToUpper(mode),
 		}
 		c.Messages[msgMode.ID] = msgMode
 
