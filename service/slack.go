@@ -689,7 +689,7 @@ func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []c
 			msgs = append(
 				msgs,
 				components.Message{
-					Content:     fmt.Sprintf("%s", att.Pretext),
+					Content:     att.Pretext,
 					StyleTime:   s.Config.Theme.Message.Time,
 					StyleThread: s.Config.Theme.Message.Thread,
 					StyleName:   s.Config.Theme.Message.Name,
@@ -703,7 +703,7 @@ func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []c
 			msgs = append(
 				msgs,
 				components.Message{
-					Content:     fmt.Sprintf("%s", att.Text),
+					Content:     att.Text,
 					StyleTime:   s.Config.Theme.Message.Time,
 					StyleThread: s.Config.Theme.Message.Thread,
 					StyleName:   s.Config.Theme.Message.Name,
@@ -717,7 +717,7 @@ func (s *SlackService) CreateMessageFromAttachments(atts []slack.Attachment) []c
 			msgs = append(
 				msgs,
 				components.Message{
-					Content:     fmt.Sprintf("%s", att.Title),
+					Content:     att.Title,
 					StyleTime:   s.Config.Theme.Message.Time,
 					StyleThread: s.Config.Theme.Message.Thread,
 					StyleName:   s.Config.Theme.Message.Name,
