@@ -29,6 +29,12 @@ $ cd $GOPATH/src/github.com/erroneousboat/slack-term
 $ go install .
 ```
 
+Note that on newer go versions you'll [need](https://go.dev/doc/go-get-install-deprecation) to use
+```bash
+# You can use whatever version if you don't want latest
+go install github.com/erroneousboat/slack-term@latest
+```
+
 #### Via docker
 
 You can also run it with docker, make sure you have a valid config file
