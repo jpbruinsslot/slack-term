@@ -44,6 +44,7 @@ func NewConfig(filepath string) (*Config, error) {
 			return &cfg, fmt.Errorf("couldn't open the slack-term config file: (%v)", err)
 		}
 	}
+	defer file.Close()
 
 	if err := json.NewDecoder(file).Decode(&cfg); err != nil {
 		return &cfg, fmt.Errorf("the slack-term config file isn't valid json: (%v)", err)
