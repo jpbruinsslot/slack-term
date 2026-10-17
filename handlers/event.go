@@ -734,7 +734,7 @@ func getKeyString(e termbox.Event) string {
 
 		if e.Key <= 0x7F {
 			pre = "C-"
-			k = string('a' - 1 + int(e.Key))
+			k = string(rune('a' - 1 + rune(e.Key)))
 			kmap := map[termbox.Key][2]string{
 				termbox.KeyCtrlSpace:     {"C-", "<space>"},
 				termbox.KeyBackspace:     {"", "<backspace>"},

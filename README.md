@@ -10,7 +10,7 @@ Installation
 
 #### Binary installation
 
-[Download](https://github.com/erroneousboat/slack-term/releases) a
+[Download](https://github.com/jpbruinsslot/slack-term/releases) a
 compatible binary for your system. For convenience, place `slack-term` in a
 directory where you can access it from the command line. Usually this is
 `/usr/local/bin`.
@@ -24,8 +24,8 @@ $ mv slack-term /usr/local/bin
 If you want, you can also get `slack-term` via Go:
 
 ```bash
-$ go get -u github.com/erroneousboat/slack-term
-$ cd $GOPATH/src/github.com/erroneousboat/slack-term
+$ go get -u github.com/jpbruinsslot/slack-term
+$ cd $GOPATH/src/github.com/jpbruinsslot/slack-term
 $ go install .
 ```
 
@@ -35,13 +35,22 @@ You can also run it with docker, make sure you have a valid config file
 on your host system.
 
 ```bash
-docker run -it -v [config-file]:/config erroneousboat/slack-term
+docker run -it -v [config-file]:/config jpbruinsslot/slack-term
 ```
 
 Setup
 -----
 
-1. Get a slack token, click [here](https://github.com/erroneousboat/slack-term/wiki#running-slack-term-without-legacy-tokens)
+1. Obtain a Slack token:
+   - **Method 1 (Browser OAuth):**
+     Generate an OAuth authorization link by running:
+     ```bash
+     $ slack-term -token-url
+     ```
+     Or open the direct link:
+     <https://slack.com/oauth/authorize?client_id=91899392594.382712253827&scope=client&redirect_uri=https%3A%2F%2Fjpbruinsslot.github.io%2Fslack-term-auth%2F>
+     Select the target workspace, click "Authorize", and copy the token shown on the callback page.
+   - For additional token generation methods, refer to the [wiki](https://github.com/jpbruinsslot/slack-term/wiki#running-slack-term-without-legacy-tokens).
 
 2. Running `slack-term` for the first time, will create a default config file at
    `~/.config/slack-term/config`.
@@ -50,8 +59,8 @@ Setup
 $ slack-term
 ```
 
-3. Update the config file and update your `slack_token` For more configuration
-   options of the `config` file, see the [wiki](https://github.com/erroneousboat/slack-term/wiki).
+3. Update the config file and update your `slack_token`. For more configuration
+   options of the `config` file, see the [wiki](https://github.com/jpbruinsslot/slack-term/wiki).
 
 ```javascript
 {

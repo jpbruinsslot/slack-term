@@ -401,8 +401,6 @@ func (s *SlackService) SendCommand(channelID string, message string) (bool, erro
 
 		return true, nil
 	}
-
-	return false, nil
 }
 
 // GetMessages will get messages for a channel, group or im channel delimited
