@@ -12,6 +12,7 @@ import (
 
 	"github.com/erroneousboat/slack-term/context"
 	"github.com/erroneousboat/slack-term/handlers"
+	"github.com/erroneousboat/slack-term/token"
 )
 
 const (
@@ -26,21 +27,23 @@ VERSION:
     %s
 
 WEBSITE:
-    https://github.com/erroneousboat/slack-term
+    https://github.com/jpbruinsslot/slack-term
 
 GLOBAL OPTIONS:
    -config [path-to-config-file]
    -token [slack-token]
+   -token-url
    -debug
    -help, -h
 `
 )
 
 var (
-	flgConfig string
-	flgToken  string
-	flgDebug  bool
-	flgUsage  bool
+	flgConfig   string
+	flgToken    string
+	flgTokenURL bool
+	flgDebug    bool
+	flgUsage    bool
 )
 
 func init() {
@@ -64,6 +67,13 @@ func init() {
 	)
 
 	flag.BoolVar(
+		&flgTokenURL,
+		"token-url",
+		false,
+		"print OAuth authorization URL to obtain a token",
+	)
+
+	flag.BoolVar(
 		&flgDebug,
 		"debug",
 		false,
@@ -78,6 +88,11 @@ func init() {
 }
 
 func main() {
+	if flgTokenURL {
+		fmt.Println(token.Method1AuthorizeURL())
+		return
+	}
+
 	// Start terminal user interface
 	err := termui.Init()
 	if err != nil {
